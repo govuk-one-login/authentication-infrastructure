@@ -1,3 +1,10 @@
-{
-  "AllowedAccounts": "TODO"
-}
+[
+  {
+    "ParameterKey": "Environment",
+    "ParameterValue": "build"
+  },
+  {
+    "ParameterKey": "AllowedAccounts",
+    "ParameterValue": "058264536367,975050272416,211125600642,851725205974"
+  }
+]

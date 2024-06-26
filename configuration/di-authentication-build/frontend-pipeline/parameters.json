@@ -1,7 +1,42 @@
-{
-  "SAMStackName": "build-authentication-frontend",
-  "Environment": "build",
-  "ProgrammaticPermissionsBoundary": "Yes",
-  "VpcStackName": "vpc",
-  "GitHubRepositoryName": "authentication-frontend"
-}
+[
+  {
+    "ParameterKey": "SAMStackName",
+    "ParameterValue": "build-auth-frontend"
+  },
+  {
+    "ParameterKey": "Environment",
+    "ParameterValue": "build"
+  },
+  {
+    "ParameterKey": "ProgrammaticPermissionsBoundary",
+    "ParameterValue": "True"
+  },
+  {
+    "ParameterKey": "VpcStackName",
+    "ParameterValue": "vpc"
+  },
+  {
+    "ParameterKey": "OneLoginRepositoryName",
+    "ParameterValue": "authentication-frontend"
+  },
+  {
+    "ParameterKey": "AdditionalCodeSigningVersionArns",
+    "ParameterValue": "arn:aws:signer:eu-west-2:216552277552:/signing-profiles/DynatraceSigner/5uwzCCGTPq"
+  },
+  {
+    "ParameterKey": "SigningProfileArn",
+    "ParameterValue": "arn:aws:signer:eu-west-2:058264536367:/signing-profiles/SigningProfile_F2cOBN4om5Pm"
+  },
+  {
+    "ParameterKey": "SigningProfileVersionArn",
+    "ParameterValue": "arn:aws:signer:eu-west-2:058264536367:/signing-profiles/SigningProfile_F2cOBN4om5Pm/ARlQRNl4A2"
+  },
+  {
+    "ParameterKey": "ContainerSignerKmsKeyArn",
+    "ParameterValue": "arn:aws:kms:eu-west-2:058264536367:key/397f3274-6034-4ebc-837f-4a913b293dce"
+  },
+  {
+    "ParameterKey": "AllowedAccounts",
+    "ParameterValue": "851725205974"
+  }
+]

@@ -1,18 +1,66 @@
-{
-  "CidrBlock": "10.6.48.0/20",
-  "VpcLinkEnabled": "Yes",
-  "ExecuteApiGatewayEnabled": "Yes",
-  "SQSApiEnabled": "Yes",
-  "DynatraceApiEnabled": "Yes",
-  "DynamoDBApiEnabled": "Yes",
-  "SNSApiEnabled": "Yes",
-  "KMSApiEnabled": "Yes",
-  "SSMApiEnabled": "Yes",
-  "S3ApiEnabled": "Yes",
-  "LambdaApiEnabled": "Yes",
-  "ECRApiEnabled": "Yes",
-  "CloudWatchApiEnabled": "Yes",
-  "CloudWatchLogsApiEnabled": "Yes",
-  "XRayApiEnabled": "Yes",
-  "SecretsManagerApiEnabled": "Yes"
-}
+[
+  {
+    "ParameterKey": "CidrBlock",
+    "ParameterValue": "10.6.0.0/16"
+  },
+  {
+    "ParameterKey": "VpcLinkEnabled",
+    "ParameterValue": "Yes"
+  },
+  {
+    "ParameterKey": "ExecuteApiGatewayEnabled",
+    "ParameterValue": "Yes"
+  },
+  {
+    "ParameterKey": "SQSApiEnabled",
+    "ParameterValue": "Yes"
+  },
+  {
+    "ParameterKey": "DynatraceApiEnabled",
+    "ParameterValue": "Yes"
+  },
+  {
+    "ParameterKey": "DynamoDBApiEnabled",
+    "ParameterValue": "Yes"
+  },
+  {
+    "ParameterKey": "SNSApiEnabled",
+    "ParameterValue": "Yes"
+  },
+  {
+    "ParameterKey": "KMSApiEnabled",
+    "ParameterValue": "Yes"
+  },
+  {
+    "ParameterKey": "SSMApiEnabled",
+    "ParameterValue": "Yes"
+  },
+  {
+    "ParameterKey": "S3ApiEnabled",
+    "ParameterValue": "Yes"
+  },
+  {
+    "ParameterKey": "LambdaApiEnabled",
+    "ParameterValue": "Yes"
+  },
+  {
+    "ParameterKey": "ECRApiEnabled",
+    "ParameterValue": "Yes"
+  },
+  {
+    "ParameterKey": "CloudWatchApiEnabled",
+    "ParameterValue": "Yes"
+  },
+  {
+    "ParameterKey": "CloudWatchLogsApiEnabled",
+    "ParameterValue": "Yes"
+  },
+  {
+    "ParameterKey": "XRayApiEnabled",
+    "ParameterValue": "Yes"
+  },
+  {
+    "ParameterKey": "SecretsManagerApiEnabled",
+    "ParameterValue": "Yes"
+  }
+]
