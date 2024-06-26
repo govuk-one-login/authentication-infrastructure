@@ -1,0 +1,7 @@
+{
+  "SAMStackName": "build-authentication-frontend",
+  "Environment": "build",
+  "ProgrammaticPermissionsBoundary": "Yes",
+  "VpcStackName": "vpc",
+  "GitHubRepositoryName": "authentication-frontend"
+}

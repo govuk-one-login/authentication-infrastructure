@@ -1,0 +1,18 @@
+{
+  "CidrBlock": "10.6.48.0/20",
+  "VpcLinkEnabled": "Yes",
+  "ExecuteApiGatewayEnabled": "Yes",
+  "SQSApiEnabled": "Yes",
+  "DynatraceApiEnabled": "Yes",
+  "DynamoDBApiEnabled": "Yes",
+  "SNSApiEnabled": "Yes",
+  "KMSApiEnabled": "Yes",
+  "SSMApiEnabled": "Yes",
+  "S3ApiEnabled": "Yes",
+  "LambdaApiEnabled": "Yes",
+  "ECRApiEnabled": "Yes",
+  "CloudWatchApiEnabled": "Yes",
+  "CloudWatchLogsApiEnabled": "Yes",
+  "XRayApiEnabled": "Yes",
+  "SecretsManagerApiEnabled": "Yes"
+}
