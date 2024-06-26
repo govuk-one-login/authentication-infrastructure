@@ -36,7 +36,7 @@ region = eu-west-2
 
 [profile di-authentication-production]
 sso_session = digital-identity
-sso_account_id = 058264536367
+sso_account_id = 211125303002
 sso_role_name = AWSAdministratorAccess
 region = eu-west-2
 ```
