@@ -42,5 +42,9 @@
   {
     "ParameterKey": "AllowedServiceOne",
     "ParameterValue": "SSM"
+  },
+  {
+    "ParameterKey": "AllowedServiceTwo",
+    "ParameterValue": "ECR & ECS"
   }
 ]
