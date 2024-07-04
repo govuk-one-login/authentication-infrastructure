@@ -38,5 +38,9 @@
   {
     "ParameterKey": "AllowedAccounts",
     "ParameterValue": "851725205974"
+  },
+  {
+    "ParameterKey": "AllowedServiceOne",
+    "ParameterValue": "SSM"
   }
 ]
