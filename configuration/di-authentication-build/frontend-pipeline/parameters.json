@@ -1,7 +1,7 @@
 [
   {
     "ParameterKey": "SAMStackName",
-    "ParameterValue": "build-auth-frontend"
+    "ParameterValue": "authentication-frontend"
   },
   {
     "ParameterKey": "Environment",
