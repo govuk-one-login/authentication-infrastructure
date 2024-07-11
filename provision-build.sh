@@ -26,10 +26,10 @@ cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 || exit
 # ./provisioner.sh "${AWS_ACCOUNT}" checkov-hook checkov-hook LATEST
 # ./provisioner.sh "${AWS_ACCOUNT}" infra-audit-hook infrastructure-audit-hook LATEST
 # ./provisioner.sh "${AWS_ACCOUNT}" lambda-audit-hook lambda-audit-hook LATEST
-./provisioner.sh "${AWS_ACCOUNT}" vpc vpc v2.5.1
+./provisioner.sh "${AWS_ACCOUNT}" vpc vpc v2.5.2
 
 ./provisioner.sh "${AWS_ACCOUNT}" frontend-image-repository container-image-repository v1.3.2
 ./provisioner.sh "${AWS_ACCOUNT}" basic-auth-sidecar-image-repository container-image-repository v1.3.2
 ./provisioner.sh "${AWS_ACCOUNT}" service-down-page-image-repository container-image-repository v1.3.2
 
-./provisioner.sh "${AWS_ACCOUNT}" frontend-pipeline sam-deploy-pipeline v2.60.1
+./provisioner.sh "${AWS_ACCOUNT}" frontend-pipeline sam-deploy-pipeline v2.60.2
