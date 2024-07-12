@@ -1,7 +1,7 @@
 [
   {
     "ParameterKey": "SAMStackName",
-    "ParameterValue": "build-auth-frontend"
+    "ParameterValue": "authentication-frontend"
   },
   {
     "ParameterKey": "Environment",
@@ -38,5 +38,13 @@
   {
     "ParameterKey": "AllowedAccounts",
     "ParameterValue": "851725205974"
+  },
+  {
+    "ParameterKey": "AllowedServiceOne",
+    "ParameterValue": "SSM"
+  },
+  {
+    "ParameterKey": "AllowedServiceTwo",
+    "ParameterValue": "ECR & ECS"
   }
 ]

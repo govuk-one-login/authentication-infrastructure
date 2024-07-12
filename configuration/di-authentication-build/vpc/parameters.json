@@ -1,5 +1,9 @@
 [
   {
+    "ParameterKey": "AllowedDomains",
+    "ParameterValue": "*.account.gov.uk"
+  },
+  {
     "ParameterKey": "CidrBlock",
     "ParameterValue": "10.6.0.0/16"
   },
