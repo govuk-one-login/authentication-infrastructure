@@ -25,6 +25,9 @@ if [ -z "${parameters}" ]; then
   exit 1
 fi
 
+echo "Reading SSM parameters"
 while IFS=$'\t' read -r name value; do
   export "${name}"="${value}"
 done <<<"${parameters}"
+
+echo "Parameters exported"

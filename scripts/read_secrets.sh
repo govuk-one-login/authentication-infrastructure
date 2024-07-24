@@ -25,7 +25,9 @@ if [ -z "${secrets}" ]; then
   exit 1
 fi
 
+echo "Reading secrets"
 while IFS=$'\t' read -r arn name; do
+  echo -n "."
   value=$(aws secretsmanager get-secret-value --region "${REGION}" --secret-id "${arn}" | jq -r '.SecretString')
   export "${name}"="${value}"
 done <<<"${secrets}"

@@ -6,6 +6,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 || exit
 
 export AWS_ACCOUNT=di-authentication-build
 export AWS_PROFILE=di-authentication-build-AWSAdministratorAccess
+export AUTO_APPLY_CHANGESET="${AUTO_APPLY_CHANGESET:-true}"
 aws sso login --profile "${AWS_PROFILE}"
 
 # shellcheck source=/dev/null
@@ -13,6 +14,21 @@ source "./scripts/read_secrets.sh" "build"
 
 # shellcheck source=/dev/null
 source "./scripts/read_parameters.sh" "build"
+
+# shallow clone templates from authentication repos
+./sync-dependencies.sh
+
+# --------------------------------------------------------
+# auth-fe-cloudfront-waf
+#   Creates a WAF to attach to the Cloudfront distribution
+#   no dependency
+# --------------------------------------------------------
+aws configure set region us-east-1
+TEMPLATE_URL=file://authentication-frontend/cloudformation/cloudfront-waf/template.yaml ./provisioner.sh "${AWS_ACCOUNT}" auth-fe-cloudfront-waf waf LATEST
+
+WAFv2WebACL=$(aws cloudformation describe-stacks \
+    --stack-name auth-fe-cloudfront-waf --region us-east-1 |
+    jq -r '.Stacks[0].Outputs[] | select(.OutputKey| match("WAFv2WebACL")) | .OutputValue')
 
 # ----------------------------------------------------------
 # auth-fe-cloudfront-certificate
@@ -41,7 +57,7 @@ CertificateARN=$(aws cloudformation describe-stacks \
 PARAMETERS_FILE="configuration/$AWS_ACCOUNT/auth-fe-cloudfront/parameters.json"
 OriginCloakingHeader=${signin_origin_cloaking_header:-""}
 PreviousOriginCloakingHeader=${previous_signin_origin_cloaking_header:-""}
-PARAMETERS=$(jq ". += [{\"ParameterKey\":\"CloudFrontCertArn\",\"ParameterValue\":\"${CertificateARN}\"},{\"ParameterKey\":\"OriginCloakingHeader\",\"ParameterValue\":\"${OriginCloakingHeader}\"},{\"ParameterKey\":\"PreviousOriginCloakingHeader\",\"ParameterValue\":\"${PreviousOriginCloakingHeader}\"}] | tojson" -r "${PARAMETERS_FILE}")
+PARAMETERS=$(jq ". += [{\"ParameterKey\":\"CloudFrontWafACL\",\"ParameterValue\":\"${WAFv2WebACL}\"},{\"ParameterKey\":\"CloudFrontCertArn\",\"ParameterValue\":\"${CertificateARN}\"},{\"ParameterKey\":\"OriginCloakingHeader\",\"ParameterValue\":\"${OriginCloakingHeader}\"},{\"ParameterKey\":\"PreviousOriginCloakingHeader\",\"ParameterValue\":\"${PreviousOriginCloakingHeader}\"}] | tojson" -r "${PARAMETERS_FILE}")
 TMP_PARAM_FILE=$(mktemp)
 echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
 

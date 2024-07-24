@@ -80,12 +80,19 @@ function create_stack {
   local template_url="$2"
   local parameters_file="$3"
   local tags_file="$4"
+  local cmd_option=""
+
+  if [[ $template_url =~ "file://" ]]; then
+    cmd_option="--template-body"
+  else
+    cmd_option="--template-url"
+  fi
 
   echo "Creating new stack ${stack_name}"
   aws cloudformation create-stack \
     --stack-name="${stack_name}" \
     --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND \
-    --template-url "${template_url}" \
+    ${cmd_option} "${template_url}" \
     --parameters="$(jq '. | tojson' -r "${parameters_file}")" \
     --tags="$(jq '. | tojson' -r "${tags_file}")"
 
@@ -103,13 +110,20 @@ function create_change_set {
   local template_url="$3"
   local parameters_file="$4"
   local tags_file="$5"
+  local cmd_option=""
+
+  if [[ $template_url =~ "file://" ]]; then
+    cmd_option="--template-body"
+  else
+    cmd_option="--template-url"
+  fi
 
   echo "Creating ${change_set_name} change set"
   aws cloudformation create-change-set \
     --stack-name="${stack_name}" \
     --change-set-name="${change_set_name}" \
     --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND \
-    --template-url "${template_url}" \
+    ${cmd_option} "${template_url}" \
     --parameters="$(jq '. | tojson' -r "${parameters_file}")" \
     --tags="$(jq '. | tojson' -r "${tags_file}")"
 
@@ -214,7 +228,7 @@ function main {
 
   # Defaults
   TEMPLATE_BUCKET="${TEMPLATE_BUCKET:=template-storage-templatebucket-1upzyw6v9cs42}"
-  TEMPLATE_URL="https://${TEMPLATE_BUCKET}.s3.amazonaws.com/${STACK_TEMPLATE}/template.yaml"
+  TEMPLATE_URL="${TEMPLATE_URL:=https://${TEMPLATE_BUCKET}.s3.amazonaws.com/${STACK_TEMPLATE}/template.yaml}"
   PARAMETERS_FILE="${PARAMETERS_FILE:=./configuration/${AWS_ACCOUNT}/${STACK_NAME}/parameters.json}"
   TAGS_FILE="${TAGS_FILE:=./configuration/${AWS_ACCOUNT}/tags.json}"
 

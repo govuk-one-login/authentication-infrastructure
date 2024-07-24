@@ -4,10 +4,6 @@
     "ParameterValue": "false"
   },
   {
-    "ParameterKey": "CloudFrontWafACL",
-    "ParameterValue": "none"
-  },
-  {
     "ParameterKey": "DistributionAlias",
     "ParameterValue": "signin-sp.build.account.gov.uk"
   },
