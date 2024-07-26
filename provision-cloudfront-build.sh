@@ -23,8 +23,14 @@ source "./scripts/read_parameters.sh" "build"
 #   Creates a WAF to attach to the Cloudfront distribution
 #   no dependency
 # --------------------------------------------------------
+PARAMETERS_FILE="configuration/$AWS_ACCOUNT/auth-fe-cloudfront-waf/parameters.json"
+RateLimitedEndpoints=$(echo "${rate_limited_endpoints:-""}" | sed -e 's/\"//g' -e 's/ //g' -e 's/\[//' -e 's/\]//') # trim quotes, spaces and [] brackets
+PARAMETERS=$(jq ". += [{\"ParameterKey\":\"RateLimitedEndpoints\",\"ParameterValue\":\"${RateLimitedEndpoints}\"}] | tojson" -r "${PARAMETERS_FILE}")
+TMP_PARAM_FILE=$(mktemp)
+echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+
 aws configure set region us-east-1
-TEMPLATE_URL=file://authentication-frontend/cloudformation/cloudfront-waf/template.yaml ./provisioner.sh "${AWS_ACCOUNT}" auth-fe-cloudfront-waf waf LATEST
+TEMPLATE_URL=file://authentication-frontend/cloudformation/cloudfront-waf/template.yaml PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" auth-fe-cloudfront-waf waf LATEST
 
 WAFv2WebACL=$(aws cloudformation describe-stacks \
     --stack-name auth-fe-cloudfront-waf --region us-east-1 |
