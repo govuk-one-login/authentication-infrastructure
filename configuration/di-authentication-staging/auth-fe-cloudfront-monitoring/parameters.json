@@ -1,0 +1,14 @@
+[
+  {
+    "ParameterKey": "CloudFrontAdditionaldMetricsEnabled",
+    "ParameterValue": "true"
+  },
+  {
+    "ParameterKey": "CacheHitAlarmSNSTopicARN",
+    "ParameterValue": "none"
+  },
+  {
+    "ParameterKey": "Environment",
+    "ParameterValue": "staging"
+  }
+]

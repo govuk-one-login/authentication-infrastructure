@@ -5,7 +5,7 @@
   },
   {
     "ParameterKey": "Environment",
-    "ParameterValue": "build"
+    "ParameterValue": "staging"
   },
   {
     "ParameterKey": "ProgrammaticPermissionsBoundary",
@@ -16,16 +16,12 @@
     "ParameterValue": "vpc"
   },
   {
-    "ParameterKey": "OneLoginRepositoryName",
-    "ParameterValue": "authentication-frontend"
-  },
-  {
     "ParameterKey": "AdditionalCodeSigningVersionArns",
     "ParameterValue": "arn:aws:signer:eu-west-2:216552277552:/signing-profiles/DynatraceSigner/5uwzCCGTPq"
   },
   {
     "ParameterKey": "AllowedAccounts",
-    "ParameterValue": "851725205974"
+    "ParameterValue": "211125303002,211125600642"
   },
   {
     "ParameterKey": "AllowedServiceOne",
