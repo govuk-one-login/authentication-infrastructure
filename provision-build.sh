@@ -24,8 +24,8 @@ cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 || exit
 # ./provisioner.sh "${AWS_ACCOUNT}" build-notifications build-notifications v2.3.1
 # ./provisioner.sh "${AWS_ACCOUNT}" certificate-expiry certificate-expiry v1.1.1
 # ./provisioner.sh "${AWS_ACCOUNT}" checkov-hook checkov-hook LATEST
-# ./provisioner.sh "${AWS_ACCOUNT}" infra-audit-hook infrastructure-audit-hook LATEST
-# ./provisioner.sh "${AWS_ACCOUNT}" lambda-audit-hook lambda-audit-hook LATEST
+./provisioner.sh "${AWS_ACCOUNT}" infra-audit-hook infrastructure-audit-hook LATEST
+./provisioner.sh "${AWS_ACCOUNT}" lambda-audit-hook lambda-audit-hook LATEST
 ./provisioner.sh "${AWS_ACCOUNT}" vpc vpc v2.5.2
 
 ./provisioner.sh "${AWS_ACCOUNT}" frontend-image-repository container-image-repository v1.3.2
@@ -33,3 +33,8 @@ cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 || exit
 ./provisioner.sh "${AWS_ACCOUNT}" service-down-page-image-repository container-image-repository v1.3.2
 
 ./provisioner.sh "${AWS_ACCOUNT}" frontend-pipeline sam-deploy-pipeline v2.60.2
+
+# shallow clone templates from authentication repos
+./sync-dependencies.sh
+
+TEMPLATE_URL=file://authentication-frontend/cloudformation/domains/template.yaml ./provisioner.sh "${AWS_ACCOUNT}" dns-zones-and-records dns LATEST
