@@ -10,16 +10,16 @@ cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 || exit
 export AWS_PROFILE=di-authentication-build-AWSAdministratorAccess
 aws sso login --profile "${AWS_PROFILE}"
 
-# shellcheck source=/dev/null
+# shellcheck disable=SC1091
 source "./scripts/read_cloudformation_stack_outputs.sh" "aws-signer"
 SigningProfileArn=${CFN_aws_signer_SigningProfileArn:-"none"}
 SigningProfileVersionArn=${CFN_aws_signer_SigningProfileVersionArn:-"none"}
 
-# shellcheck source=/dev/null
+# shellcheck disable=SC1091
 source "./scripts/read_cloudformation_stack_outputs.sh" "container-signer"
 ContainerSignerKmsKeyArn=${CFN_container_signer_ContainerSignerKmsKeyArn:-"none"}
 
-# shellcheck source=/dev/null
+# shellcheck disable=SC1091
 source "./scripts/read_cloudformation_stack_outputs.sh" "frontend-pipeline"
 ArtifactSourceBucketArn=${CFN_frontend_pipeline_ArtifactPromotionBucketArn:-"none"}
 ArtifactSourceBucketEventTriggerRoleArn=${CFN_frontend_pipeline_ArtifactPromotionBucketEventTriggerRoleArn:-"none"}

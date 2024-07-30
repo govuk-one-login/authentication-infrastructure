@@ -37,12 +37,12 @@ export AUTO_APPLY_CHANGESET="${AUTO_APPLY_CHANGESET:-true}"
 
 # provision pipelines
 # -------------------
-# shellcheck source=/dev/null
+# shellcheck disable=SC1091
 source "./scripts/read_cloudformation_stack_outputs.sh" "aws-signer"
 SigningProfileArn=${CFN_aws_signer_SigningProfileArn:-"none"}
 SigningProfileVersionArn=${CFN_aws_signer_SigningProfileVersionArn:-"none"}
 
-# shellcheck source=/dev/null
+# shellcheck disable=SC1091
 source "./scripts/read_cloudformation_stack_outputs.sh" "container-signer"
 ContainerSignerKmsKeyArn=${CFN_container_signer_ContainerSignerKmsKeyArn:-"none"}
 

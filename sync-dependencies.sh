@@ -12,7 +12,8 @@ if [ ! -d "authentication-frontend" ]; then
 else
   pushd authentication-frontend
   git reset --hard HEAD
-  git pull --depth=1 --rebase origin "$current_branch" ||
-  git pull --depth=1 --rebase origin main
+  rm -fr ".git/rebase-merge" || echo "nothing to reset"
+  git pull --depth=1 --rebase origin "$current_branch" --force ||
+  git pull --depth=1 --rebase origin main --force
   popd
 fi
