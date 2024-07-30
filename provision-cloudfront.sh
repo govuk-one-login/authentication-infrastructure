@@ -4,18 +4,33 @@ set -euo pipefail
 # Ensure we are in the directory of the script
 cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 || exit
 
-export AWS_ACCOUNT=di-authentication-build
-export AWS_PROFILE=di-authentication-build-AWSAdministratorAccess
+if [ $# -ne 1 ]; then
+    echo "Exactly one argument must be supplied: the env you wish to deploy to i.e. build, staging, integration or production"
+    echo "Example: $0 build"
+    exit 1
+fi
+
+ENVIRONMENT=${1}
+
+export AWS_ACCOUNT="di-authentication-${ENVIRONMENT}"
+export AWS_PROFILE="di-authentication-${ENVIRONMENT}-AWSAdministratorAccess"
 export AUTO_APPLY_CHANGESET="${AUTO_APPLY_CHANGESET:-true}"
 aws sso login --profile "${AWS_PROFILE}"
 
-# shellcheck disable=SC1091
-source "./scripts/read_secrets.sh" "build"
+# ----------------------------------
+# export secrets and params in shell
+# ----------------------------------
+aws configure set region eu-west-2
 
 # shellcheck disable=SC1091
-source "./scripts/read_parameters.sh" "build"
+source "./scripts/read_secrets.sh" "${ENVIRONMENT}"
 
+# shellcheck disable=SC1091
+source "./scripts/read_parameters.sh" "${ENVIRONMENT}"
+
+# -------------------------------------------------
 # shallow clone templates from authentication repos
+# -------------------------------------------------
 ./sync-dependencies.sh
 
 # --------------------------------------------------------
