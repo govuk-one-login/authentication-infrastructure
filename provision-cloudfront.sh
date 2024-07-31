@@ -4,18 +4,33 @@ set -euo pipefail
 # Ensure we are in the directory of the script
 cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 || exit
 
-export AWS_ACCOUNT=di-authentication-build
-export AWS_PROFILE=di-authentication-build-AWSAdministratorAccess
+if [ $# -ne 1 ]; then
+    echo "Exactly one argument must be supplied: the env you wish to deploy to i.e. build, staging, integration or production"
+    echo "Example: $0 build"
+    exit 1
+fi
+
+ENVIRONMENT=${1}
+
+export AWS_ACCOUNT="di-authentication-${ENVIRONMENT}"
+export AWS_PROFILE="di-authentication-${ENVIRONMENT}-AWSAdministratorAccess"
 export AUTO_APPLY_CHANGESET="${AUTO_APPLY_CHANGESET:-true}"
 aws sso login --profile "${AWS_PROFILE}"
 
-# shellcheck source=/dev/null
-source "./scripts/read_secrets.sh" "build"
+# ----------------------------------
+# export secrets and params in shell
+# ----------------------------------
+aws configure set region eu-west-2
 
-# shellcheck source=/dev/null
-source "./scripts/read_parameters.sh" "build"
+# shellcheck disable=SC1091
+source "./scripts/read_secrets.sh" "${ENVIRONMENT}"
 
+# shellcheck disable=SC1091
+source "./scripts/read_parameters.sh" "${ENVIRONMENT}"
+
+# -------------------------------------------------
 # shallow clone templates from authentication repos
+# -------------------------------------------------
 ./sync-dependencies.sh
 
 # --------------------------------------------------------
@@ -25,16 +40,23 @@ source "./scripts/read_parameters.sh" "build"
 # --------------------------------------------------------
 PARAMETERS_FILE="configuration/$AWS_ACCOUNT/auth-fe-cloudfront-waf/parameters.json"
 RateLimitedEndpoints=$(echo "${rate_limited_endpoints:-""}" | sed -e 's/\"//g' -e 's/ //g' -e 's/\[//' -e 's/\]//') # trim quotes, spaces and [] brackets
-PARAMETERS=$(jq ". += [{\"ParameterKey\":\"RateLimitedEndpoints\",\"ParameterValue\":\"${RateLimitedEndpoints}\"}] | tojson" -r "${PARAMETERS_FILE}")
+RateLimitedEndpointsRateLimitPeriod=${rate_limited_endpoints_rate_limit_period:-120}
+RateLimitedEndpointsRequestsPerPeriod=${rate_limited_endpoints_requests_per_period:-100000}
+PARAMETERS=$(jq ". += [
+                        {\"ParameterKey\":\"RateLimitedEndpoints\",\"ParameterValue\":\"${RateLimitedEndpoints}\"},
+                        {\"ParameterKey\":\"RateLimitedEndpointsRateLimitPeriod\",\"ParameterValue\":\"${RateLimitedEndpointsRateLimitPeriod}\"},
+                        {\"ParameterKey\":\"RateLimitedEndpointsRequestsPerPeriod\",\"ParameterValue\":\"${RateLimitedEndpointsRequestsPerPeriod}\"}
+                    ] | tojson" -r "${PARAMETERS_FILE}")
 TMP_PARAM_FILE=$(mktemp)
 echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
 
 aws configure set region us-east-1
 TEMPLATE_URL=file://authentication-frontend/cloudformation/cloudfront-waf/template.yaml PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" auth-fe-cloudfront-waf waf LATEST
 
-WAFv2WebACL=$(aws cloudformation describe-stacks \
-    --stack-name auth-fe-cloudfront-waf --region us-east-1 |
-    jq -r '.Stacks[0].Outputs[] | select(.OutputKey| match("WAFv2WebACL")) | .OutputValue')
+# Feed output to the next stack
+# shellcheck disable=SC1091
+source "./scripts/read_cloudformation_stack_outputs.sh" "auth-fe-cloudfront-waf"
+WAFv2WebACL=${CFN_auth_fe_cloudfront_waf_WAFv2WebACL:-"none"}
 
 # ----------------------------------------------------------
 # auth-fe-cloudfront-certificate
@@ -43,7 +65,9 @@ WAFv2WebACL=$(aws cloudformation describe-stacks \
 # ----------------------------------------------------------
 PARAMETERS_FILE="configuration/$AWS_ACCOUNT/auth-fe-cloudfront-certificate/parameters.json"
 HostedZoneID=${signin_route53_hostedzone_id:-""}
-PARAMETERS=$(jq ". += [{\"ParameterKey\":\"HostedZoneID\",\"ParameterValue\":\"${HostedZoneID}\"}] | tojson" -r "${PARAMETERS_FILE}")
+PARAMETERS=$(jq ". += [
+                        {\"ParameterKey\":\"HostedZoneID\",\"ParameterValue\":\"${HostedZoneID}\"}
+                    ] | tojson" -r "${PARAMETERS_FILE}")
 TMP_PARAM_FILE=$(mktemp)
 echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
 
@@ -51,9 +75,9 @@ aws configure set region us-east-1
 PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" auth-fe-cloudfront-certificate certificate v1.1.1
 
 # Feed output to the next stack
-CertificateARN=$(aws cloudformation describe-stacks \
-    --stack-name auth-fe-cloudfront-certificate --region us-east-1  |
-    jq -r '.Stacks[0].Outputs[] | select(.OutputKey | match("CertificateARN")) | .OutputValue')
+# shellcheck disable=SC1091
+source "./scripts/read_cloudformation_stack_outputs.sh" "auth-fe-cloudfront-certificate"
+CertificateARN=${CFN_auth_fe_cloudfront_certificate_CertificateARN:-""}
 
 # ------------------------------------------------------------------------------
 # auth-fe-cloudfront
@@ -63,16 +87,22 @@ CertificateARN=$(aws cloudformation describe-stacks \
 PARAMETERS_FILE="configuration/$AWS_ACCOUNT/auth-fe-cloudfront/parameters.json"
 OriginCloakingHeader=${signin_origin_cloaking_header:-""}
 PreviousOriginCloakingHeader=${previous_signin_origin_cloaking_header:-""}
-PARAMETERS=$(jq ". += [{\"ParameterKey\":\"CloudFrontWafACL\",\"ParameterValue\":\"${WAFv2WebACL}\"},{\"ParameterKey\":\"CloudFrontCertArn\",\"ParameterValue\":\"${CertificateARN}\"},{\"ParameterKey\":\"OriginCloakingHeader\",\"ParameterValue\":\"${OriginCloakingHeader}\"},{\"ParameterKey\":\"PreviousOriginCloakingHeader\",\"ParameterValue\":\"${PreviousOriginCloakingHeader}\"}] | tojson" -r "${PARAMETERS_FILE}")
+PARAMETERS=$(jq ". += [
+                        {\"ParameterKey\":\"CloudFrontWafACL\",\"ParameterValue\":\"${WAFv2WebACL}\"},
+                        {\"ParameterKey\":\"CloudFrontCertArn\",\"ParameterValue\":\"${CertificateARN}\"},
+                        {\"ParameterKey\":\"OriginCloakingHeader\",\"ParameterValue\":\"${OriginCloakingHeader}\"},
+                        {\"ParameterKey\":\"PreviousOriginCloakingHeader\",\"ParameterValue\":\"${PreviousOriginCloakingHeader}\"}
+                    ] | tojson" -r "${PARAMETERS_FILE}")
 TMP_PARAM_FILE=$(mktemp)
 echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
 
 aws configure set region eu-west-2
 PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" auth-fe-cloudfront cloudfront-distribution v1.6.0
 
-CloudFrontDistributionID=$(aws cloudformation describe-stacks \
-    --stack-name auth-fe-cloudfront --region eu-west-2 |
-    jq -r '.Stacks[0].Outputs[] | select(.OutputKey | match("DistributionId")) | .OutputValue')
+# Feed output to the next stack
+# shellcheck disable=SC1091
+source "./scripts/read_cloudformation_stack_outputs.sh" "auth-fe-cloudfront"
+CloudFrontDistributionID=${CFN_auth_fe_cloudfront_DistributionId:-""}
 
 # ------------------------------------------------------
 # auth-fe-cloudfront-monitoring
@@ -80,7 +110,9 @@ CloudFrontDistributionID=$(aws cloudformation describe-stacks \
 #   depends on: auth-fe-cloudfront
 # ------------------------------------------------------
 PARAMETERS_FILE="configuration/$AWS_ACCOUNT/auth-fe-cloudfront-monitoring/parameters.json"
-PARAMETERS=$(jq ". += [{\"ParameterKey\":\"CloudfrontDistribution\",\"ParameterValue\":\"${CloudFrontDistributionID}\"}] | tojson" -r "${PARAMETERS_FILE}")
+PARAMETERS=$(jq ". += [
+                        {\"ParameterKey\":\"CloudfrontDistribution\",\"ParameterValue\":\"${CloudFrontDistributionID}\"}
+                    ] | tojson" -r "${PARAMETERS_FILE}")
 TMP_PARAM_FILE=$(mktemp)
 echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
 
