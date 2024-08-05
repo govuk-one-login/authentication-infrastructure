@@ -35,6 +35,8 @@ export AUTO_APPLY_CHANGESET="${AUTO_APPLY_CHANGESET:-true}"
 ./provisioner.sh "${AWS_ACCOUNT}" basic-auth-sidecar-image-repository container-image-repository v1.3.2
 ./provisioner.sh "${AWS_ACCOUNT}" service-down-page-image-repository container-image-repository v1.3.2
 
+./provisioner.sh "${AWS_ACCOUNT}" acceptance-tests-image-repository test-image-repository v1.1.10
+
 # provision pipelines
 # -------------------
 # shellcheck disable=SC1091
