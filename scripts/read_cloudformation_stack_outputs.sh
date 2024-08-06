@@ -6,7 +6,7 @@ set -euo pipefail
   exit 1
 }
 
-PIPELINE_NAME="${1}"
+STACK_NAME="${1}"
 configured_region="$(aws configure get region 2>/dev/null || true)"
 REGION="${configured_region:-eu-west-2}"
 
@@ -25,4 +25,4 @@ function get_stack_outputs {
     --output "${output_format}"
 }
 
-eval "$(awk -v pipelineName="$(echo "${PIPELINE_NAME}" | tr "-" "_")" '{ printf("export CFN_%s_%s=\"%s\"\n", pipelineName, $1, $2) }' <<< "$(get_stack_outputs "${PIPELINE_NAME}" "text")")"
+eval "$(awk -v pipelineName="$(echo "${STACK_NAME}" | tr "-" "_")" '{ printf("export CFN_%s_%s=\"%s\"\n", pipelineName, $1, $2) }' <<< "$(get_stack_outputs "${STACK_NAME}" "text")")"

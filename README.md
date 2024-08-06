@@ -17,3 +17,5 @@ Run `./provision-cloudfront.sh <environment>` to deploy CloudFront distribution 
 [read_parameters.sh](./scripts/read_parameters.sh) - extracts all parameters stored in AWS Systems Manager Parameter store named as `/deploy/\${Environment}/param-name` and export to shell as `param-name=value`
 
 Both secrets and parameters are then injected to the provisioner script
+
+[read_cloudformation_stack_outputs.sh](./scripts/read_cloudformation_stack_outputs.sh) - takes a CloudFormation stack name as input, and exports the outputs from that CloudFormation stack into shell in the `CFN_<stackname>_OutputKey=OutputValue` format. Any hyphens "-" in the stack name are converted to underscores "_"
