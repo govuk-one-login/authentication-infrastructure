@@ -1,0 +1,6 @@
+[
+  {
+    "ParameterKey": "PipelineStackName",
+    "ParameterValue": "frontend-pipeline"
+  }
+]
