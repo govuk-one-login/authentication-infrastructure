@@ -20,6 +20,10 @@
     "ParameterValue": "authentication-frontend"
   },
   {
+    "ParameterKey": "OneLoginTestImageRepositoryNames",
+    "ParameterValue": "authentication-acceptance-tests"
+  },
+  {
     "ParameterKey": "AdditionalCodeSigningVersionArns",
     "ParameterValue": "arn:aws:signer:eu-west-2:216552277552:/signing-profiles/DynatraceSigner/5uwzCCGTPq,arn:aws:signer:eu-west-2:354770603991:/signing-profiles/SigningProfile_SxeU7YX0F6Pb/HyVGO9gC7b"
   },
