@@ -2,5 +2,9 @@
   {
     "ParameterKey": "Environment",
     "ParameterValue": "staging"
+  },
+  {
+    "ParameterKey": "EndpointSuffix",
+    "ParameterValue": "-sp"
   }
 ]
