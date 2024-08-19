@@ -25,9 +25,15 @@ export AUTO_APPLY_CHANGESET="${AUTO_APPLY_CHANGESET:-true}"
 ./provisioner.sh "${AWS_ACCOUNT}" lambda-audit-hook lambda-audit-hook LATEST
 ./provisioner.sh "${AWS_ACCOUNT}" vpc vpc v2.5.2
 
+# NOTE: tag immutability is manually disabled for these ecr repositories
 ./provisioner.sh "${AWS_ACCOUNT}" frontend-image-repository container-image-repository v1.3.2
 ./provisioner.sh "${AWS_ACCOUNT}" basic-auth-sidecar-image-repository container-image-repository v1.3.2
 ./provisioner.sh "${AWS_ACCOUNT}" service-down-page-image-repository container-image-repository v1.3.2
+
+# NOTE: tag immutability is manually disabled for these ecr repositories
+./provisioner.sh "${AWS_ACCOUNT}" authdev1-frontend-image-repository container-image-repository v1.3.2
+./provisioner.sh "${AWS_ACCOUNT}" authdev1-basic-auth-sidecar-image-repository container-image-repository v1.3.2
+./provisioner.sh "${AWS_ACCOUNT}" authdev1-service-down-page-image-repository container-image-repository v1.3.2
 
 # provision pipelines
 # -------------------
@@ -40,6 +46,7 @@ SigningProfileVersionArn=${CFN_aws_signer_SigningProfileVersionArn:-"none"}
 source "./scripts/read_cloudformation_stack_outputs.sh" "container-signer"
 ContainerSignerKmsKeyArn=${CFN_container_signer_ContainerSignerKmsKeyArn:-"none"}
 
+# dev-frontend
 PARAMETERS_FILE="configuration/$AWS_ACCOUNT/frontend-pipeline/parameters.json"
 PARAMETERS=$(jq ". += [
                         {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
@@ -50,3 +57,22 @@ PARAMETERS=$(jq ". += [
 TMP_PARAM_FILE=$(mktemp)
 echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
 PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" frontend-pipeline sam-deploy-pipeline v2.64.0
+
+# authdev1-frontend
+PARAMETERS_FILE="configuration/$AWS_ACCOUNT/authdev1-frontend-pipeline/parameters.json"
+PARAMETERS=$(jq ". += [
+                        {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
+                        {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
+                        {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"}
+                    ] | tojson" -r "${PARAMETERS_FILE}")
+
+TMP_PARAM_FILE=$(mktemp)
+echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev1-frontend-pipeline sam-deploy-pipeline v2.64.0
+
+# setting up domains
+# ------------------
+# shallow clone templates from authentication repos
+./sync-dependencies.sh
+
+TEMPLATE_URL=file://authentication-frontend/cloudformation/domains/template.yaml ./provisioner.sh "${AWS_ACCOUNT}" dns-zones-and-records dns LATEST
