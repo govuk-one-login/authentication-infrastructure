@@ -2,5 +2,9 @@
   {
     "ParameterKey": "Environment",
     "ParameterValue": "build"
+  },
+  {
+    "ParameterKey": "EndpointSuffix",
+    "ParameterValue": "-sp"
   }
 ]

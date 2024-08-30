@@ -1,0 +1,10 @@
+[
+  {
+    "ParameterKey": "PipelineStackName",
+    "ParameterValue": "authdev1-frontend-pipeline"
+  },
+  {
+    "ParameterKey": "RetainedImageCount",
+    "ParameterValue": "7"
+  }
+]

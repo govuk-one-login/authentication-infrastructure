@@ -1,0 +1,22 @@
+[
+  {
+    "ParameterKey": "AddWWWPrefix",
+    "ParameterValue": "false"
+  },
+  {
+    "ParameterKey": "DistributionAlias",
+    "ParameterValue": "signin.authdev1.dev.account.gov.uk"
+  },
+  {
+    "ParameterKey": "FraudHeaderEnabled",
+    "ParameterValue": "false"
+  },
+  {
+    "ParameterKey": "StandardLoggingEnabled",
+    "ParameterValue": "false"
+  },
+  {
+    "ParameterKey": "LogDestination",
+    "ParameterValue": "none"
+  }
+]
