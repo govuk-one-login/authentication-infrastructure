@@ -8,6 +8,10 @@
     "ParameterValue": "dev"
   },
   {
+    "ParameterKey": "SubEnvironment",
+    "ParameterValue": "authdev1"
+  },
+  {
     "ParameterKey": "ProgrammaticPermissionsBoundary",
     "ParameterValue": "True"
   },

@@ -34,6 +34,11 @@ export AUTO_APPLY_CHANGESET="${AUTO_APPLY_CHANGESET:-true}"
 ./provisioner.sh "${AWS_ACCOUNT}" authdev1-frontend-image-repository container-image-repository v1.3.2
 ./provisioner.sh "${AWS_ACCOUNT}" authdev1-basic-auth-sidecar-image-repository container-image-repository v1.3.2
 ./provisioner.sh "${AWS_ACCOUNT}" authdev1-service-down-page-image-repository container-image-repository v1.3.2
+./provisioner.sh "${AWS_ACCOUNT}" authdev1-acceptance-test-image-repository test-image-repository v1.2.0
+
+# shellcheck disable=SC1091
+source "./scripts/read_cloudformation_stack_outputs.sh" "authdev1-acceptance-test-image-repository"
+Authdev1TestImageRepositoryUri=${CFN_authdev1_acceptance_test_image_repository_TestRunnerImageEcrRepositoryUri:-"none"}
 
 # provision pipelines
 # -------------------
@@ -56,19 +61,20 @@ PARAMETERS=$(jq ". += [
 
 TMP_PARAM_FILE=$(mktemp)
 echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
-PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" frontend-pipeline sam-deploy-pipeline v2.64.0
+PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" frontend-pipeline sam-deploy-pipeline v2.66.0
 
 # authdev1-frontend
 PARAMETERS_FILE="configuration/$AWS_ACCOUNT/authdev1-frontend-pipeline/parameters.json"
 PARAMETERS=$(jq ". += [
                         {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
                         {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
-                        {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"}
+                        {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"},
+                        {\"ParameterKey\":\"TestImageRepositoryUri\",\"ParameterValue\":\"${Authdev1TestImageRepositoryUri}\"}
                     ] | tojson" -r "${PARAMETERS_FILE}")
 
 TMP_PARAM_FILE=$(mktemp)
 echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
-PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev1-frontend-pipeline sam-deploy-pipeline v2.64.0
+PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev1-frontend-pipeline sam-deploy-pipeline v2.66.0
 
 # setting up domains
 # ------------------
