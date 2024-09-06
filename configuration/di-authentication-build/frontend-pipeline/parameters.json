@@ -42,5 +42,13 @@
   {
     "ParameterKey": "ECSCanaryDeployment",
     "ParameterValue": "CodeDeployDefault.ECSAllAtOnce"
+  },
+  {
+    "ParameterKey": "TestContainerAllowCrossAccountAssumeRole",
+    "ParameterValue": "Yes"
+  },
+  {
+    "ParameterKey": "TestReportFormat",
+    "ParameterValue": "CUCUMBERJSON"
   }
 ]
