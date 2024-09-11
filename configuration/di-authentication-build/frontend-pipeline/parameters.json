@@ -50,5 +50,9 @@
   {
     "ParameterKey": "TestReportFormat",
     "ParameterValue": "CUCUMBERJSON"
+  },
+  {
+    "ParameterKey": "StoreTestReportInS3Bucket",
+    "ParameterValue": "Yes"
   }
 ]

@@ -62,7 +62,7 @@ PARAMETERS=$(jq ". += [
 
 TMP_PARAM_FILE=$(mktemp)
 echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
-PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" frontend-pipeline sam-deploy-pipeline v2.66.1
+PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" frontend-pipeline sam-deploy-pipeline v2.68.0
 
 # setting up domains
 # ------------------
