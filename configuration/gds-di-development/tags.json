@@ -1,0 +1,18 @@
+[
+  {
+    "Key": "Product",
+    "Value": "GOV.UK Sign In"
+  },
+  {
+    "Key": "System",
+    "Value": "Authentication"
+  },
+  {
+    "Key": "Environment",
+    "Value": "build"
+  },
+  {
+    "Key": "Owner",
+    "Value": "di-authentication@digital.cabinet-office.gov.uk"
+  }
+]
