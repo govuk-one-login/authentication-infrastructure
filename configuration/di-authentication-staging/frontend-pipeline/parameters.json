@@ -30,5 +30,17 @@
   {
     "ParameterKey": "AllowedServiceTwo",
     "ParameterValue": "ECR & ECS"
+  },
+  {
+    "ParameterKey": "TestContainerAllowCrossAccountAssumeRole",
+    "ParameterValue": "Yes"
+  },
+  {
+    "ParameterKey": "TestReportFormat",
+    "ParameterValue": "CUCUMBERJSON"
+  },
+  {
+    "ParameterKey": "StoreTestReportInS3Bucket",
+    "ParameterValue": "Yes"
   }
 ]

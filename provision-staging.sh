@@ -24,6 +24,10 @@ source "./scripts/read_cloudformation_stack_outputs.sh" "frontend-pipeline"
 ArtifactSourceBucketArn=${CFN_frontend_pipeline_ArtifactPromotionBucketArn:-"none"}
 ArtifactSourceBucketEventTriggerRoleArn=${CFN_frontend_pipeline_ArtifactPromotionBucketEventTriggerRoleArn:-"none"}
 
+# shellcheck disable=SC1091
+source "./scripts/read_cloudformation_stack_outputs.sh" "acceptance-tests-image-repository"
+TestImageRepositoryUri=${CFN_acceptance_tests_image_repository_TestRunnerImageEcrRepositoryUri:-"none"}
+
 # ------------------------------
 # Staging account initialisation
 # ------------------------------
@@ -55,7 +59,8 @@ PARAMETERS=$(jq ". += [
                         {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
                         {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"},
                         {\"ParameterKey\":\"ArtifactSourceBucketArn\",\"ParameterValue\":\"${ArtifactSourceBucketArn}\"},
-                        {\"ParameterKey\":\"ArtifactSourceBucketEventTriggerRoleArn\",\"ParameterValue\":\"${ArtifactSourceBucketEventTriggerRoleArn}\"}
+                        {\"ParameterKey\":\"ArtifactSourceBucketEventTriggerRoleArn\",\"ParameterValue\":\"${ArtifactSourceBucketEventTriggerRoleArn}\"},
+                        {\"ParameterKey\":\"TestImageRepositoryUri\",\"ParameterValue\":\"${TestImageRepositoryUri}\"}
                     ] | tojson" -r "${PARAMETERS_FILE}")
 
 TMP_PARAM_FILE=$(mktemp)
