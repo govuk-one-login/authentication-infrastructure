@@ -29,7 +29,7 @@ ArtifactSourceBucketEventTriggerRoleArn=${CFN_frontend_pipeline_ArtifactPromotio
 # ------------------------------
 export AWS_ACCOUNT=di-authentication-staging
 export AWS_PROFILE=di-authentication-staging-AWSAdministratorAccess
-aws sso login --profile "${AWS_PROFILE}"
+# aws sso login --profile "${AWS_PROFILE}"
 
 export AWS_PAGER=
 export SKIP_AWS_AUTHENTICATION="${SKIP_AWS_AUTHENTICATION:-true}"
@@ -60,7 +60,7 @@ PARAMETERS=$(jq ". += [
 
 TMP_PARAM_FILE=$(mktemp)
 echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
-PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" frontend-pipeline sam-deploy-pipeline v2.66.0
+PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" frontend-pipeline sam-deploy-pipeline v2.68.0
 
 # setting up domains
 # ------------------
