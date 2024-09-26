@@ -26,19 +26,29 @@ export AUTO_APPLY_CHANGESET="${AUTO_APPLY_CHANGESET:-true}"
 ./provisioner.sh "${AWS_ACCOUNT}" vpc vpc v2.5.2
 
 # NOTE: tag immutability is manually disabled for these ecr repositories
-./provisioner.sh "${AWS_ACCOUNT}" frontend-image-repository container-image-repository v1.3.2
-./provisioner.sh "${AWS_ACCOUNT}" basic-auth-sidecar-image-repository container-image-repository v1.3.2
-./provisioner.sh "${AWS_ACCOUNT}" service-down-page-image-repository container-image-repository v1.3.2
+./provisioner.sh "${AWS_ACCOUNT}" frontend-image-repository container-image-repository v2.0.0
+./provisioner.sh "${AWS_ACCOUNT}" basic-auth-sidecar-image-repository container-image-repository v2.0.0
+./provisioner.sh "${AWS_ACCOUNT}" service-down-page-image-repository container-image-repository v2.0.0
 
 # NOTE: tag immutability is manually disabled for these ecr repositories
-./provisioner.sh "${AWS_ACCOUNT}" authdev1-frontend-image-repository container-image-repository v1.3.2
-./provisioner.sh "${AWS_ACCOUNT}" authdev1-basic-auth-sidecar-image-repository container-image-repository v1.3.2
-./provisioner.sh "${AWS_ACCOUNT}" authdev1-service-down-page-image-repository container-image-repository v1.3.2
+./provisioner.sh "${AWS_ACCOUNT}" authdev1-frontend-image-repository container-image-repository v2.0.0
+./provisioner.sh "${AWS_ACCOUNT}" authdev1-basic-auth-sidecar-image-repository container-image-repository v2.0.0
+./provisioner.sh "${AWS_ACCOUNT}" authdev1-service-down-page-image-repository container-image-repository v2.0.0
 ./provisioner.sh "${AWS_ACCOUNT}" authdev1-acceptance-test-image-repository test-image-repository v1.2.0
+
+# NOTE: tag immutability is manually disabled for these ecr repositories
+./provisioner.sh "${AWS_ACCOUNT}" authdev2-frontend-image-repository container-image-repository v2.0.0
+./provisioner.sh "${AWS_ACCOUNT}" authdev2-basic-auth-sidecar-image-repository container-image-repository v2.0.0
+./provisioner.sh "${AWS_ACCOUNT}" authdev2-service-down-page-image-repository container-image-repository v2.0.0
+./provisioner.sh "${AWS_ACCOUNT}" authdev2-acceptance-test-image-repository test-image-repository v1.2.0
 
 # shellcheck disable=SC1091
 source "./scripts/read_cloudformation_stack_outputs.sh" "authdev1-acceptance-test-image-repository"
 Authdev1TestImageRepositoryUri=${CFN_authdev1_acceptance_test_image_repository_TestRunnerImageEcrRepositoryUri:-"none"}
+
+# shellcheck disable=SC1091
+source "./scripts/read_cloudformation_stack_outputs.sh" "authdev2-acceptance-test-image-repository"
+Authdev2TestImageRepositoryUri=${CFN_authdev2_acceptance_test_image_repository_TestRunnerImageEcrRepositoryUri:-"none"}
 
 # provision pipelines
 # -------------------
@@ -61,7 +71,7 @@ PARAMETERS=$(jq ". += [
 
 TMP_PARAM_FILE=$(mktemp)
 echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
-PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" frontend-pipeline sam-deploy-pipeline v2.66.0
+PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" frontend-pipeline sam-deploy-pipeline v2.68.4
 
 # authdev1-frontend
 PARAMETERS_FILE="configuration/$AWS_ACCOUNT/authdev1-frontend-pipeline/parameters.json"
@@ -74,7 +84,20 @@ PARAMETERS=$(jq ". += [
 
 TMP_PARAM_FILE=$(mktemp)
 echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
-PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev1-frontend-pipeline sam-deploy-pipeline v2.66.0
+PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev1-frontend-pipeline sam-deploy-pipeline v2.68.4
+
+# authdev2-frontend
+PARAMETERS_FILE="configuration/$AWS_ACCOUNT/authdev2-frontend-pipeline/parameters.json"
+PARAMETERS=$(jq ". += [
+                        {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
+                        {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
+                        {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"},
+                        {\"ParameterKey\":\"TestImageRepositoryUri\",\"ParameterValue\":\"${Authdev2TestImageRepositoryUri}\"}
+                    ] | tojson" -r "${PARAMETERS_FILE}")
+
+TMP_PARAM_FILE=$(mktemp)
+echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev2-frontend-pipeline sam-deploy-pipeline v2.68.4
 
 # setting up domains
 # ------------------
