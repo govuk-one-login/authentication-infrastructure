@@ -9,7 +9,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 || exit
 # --------------------------
 export AWS_ACCOUNT=di-auth-development
 export AWS_PROFILE=di-auth-development-admin
-# aws sso login --profile "${AWS_PROFILE}"
+aws sso login --profile "${AWS_PROFILE}"
 
 export AWS_PAGER=
 export SKIP_AWS_AUTHENTICATION="${SKIP_AWS_AUTHENTICATION:-true}"
@@ -49,3 +49,15 @@ PARAMETERS=$(jq ". += [
 TMP_PARAM_FILE=$(mktemp)
 echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
 PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev1-sp-orch-stub-pipeline sam-deploy-pipeline v2.68.4
+
+# authdev1 orch-stub pipeline
+PARAMETERS_FILE="configuration/$AWS_ACCOUNT/authdev2-sp-orch-stub-pipeline/parameters.json"
+PARAMETERS=$(jq ". += [
+                        {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
+                        {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
+                        {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"}
+                    ] | tojson" -r "${PARAMETERS_FILE}")
+
+TMP_PARAM_FILE=$(mktemp)
+echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev2-sp-orch-stub-pipeline sam-deploy-pipeline v2.68.4
