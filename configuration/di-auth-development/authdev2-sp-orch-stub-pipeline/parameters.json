@@ -1,0 +1,22 @@
+[
+  {
+    "ParameterKey": "SAMStackName",
+    "ParameterValue": "authdev2-sp-orch-stub"
+  },
+  {
+    "ParameterKey": "Environment",
+    "ParameterValue": "dev"
+  },
+  {
+    "ParameterKey": "SubEnvironment",
+    "ParameterValue": "authdev2"
+  },
+  {
+    "ParameterKey": "OneLoginRepositoryName",
+    "ParameterValue": "authentication-stubs"
+  },
+  {
+    "ParameterKey": "IncludePromotion",
+    "ParameterValue": "No"
+  }
+]
