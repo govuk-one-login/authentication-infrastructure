@@ -10,6 +10,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 || exit
 export AWS_ACCOUNT=di-authentication-development
 export AWS_PROFILE=di-authentication-development-AWSAdministratorAccess
 aws sso login --profile "${AWS_PROFILE}"
+aws configure set region eu-west-2
 
 export AWS_PAGER=
 export SKIP_AWS_AUTHENTICATION="${SKIP_AWS_AUTHENTICATION:-true}"
@@ -24,6 +25,8 @@ export AUTO_APPLY_CHANGESET="${AUTO_APPLY_CHANGESET:-true}"
 ./provisioner.sh "${AWS_ACCOUNT}" infra-audit-hook infrastructure-audit-hook LATEST
 ./provisioner.sh "${AWS_ACCOUNT}" lambda-audit-hook lambda-audit-hook LATEST
 ./provisioner.sh "${AWS_ACCOUNT}" vpc vpc v2.5.2
+./provisioner.sh "${AWS_ACCOUNT}" authdev1-vpc vpc v2.6.2
+./provisioner.sh "${AWS_ACCOUNT}" authdev2-vpc vpc v2.6.2
 
 # NOTE: tag immutability is manually disabled for these ecr repositories
 ./provisioner.sh "${AWS_ACCOUNT}" frontend-image-repository container-image-repository v2.0.0
