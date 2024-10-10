@@ -43,10 +43,10 @@ export AUTO_APPLY_CHANGESET="${AUTO_APPLY_CHANGESET:-true}"
 
 # provision base stacks
 # ---------------------
-# ./provisioner.sh "${AWS_ACCOUNT}" infra-audit-hook infrastructure-audit-hook LATEST
-# ./provisioner.sh "${AWS_ACCOUNT}" lambda-audit-hook lambda-audit-hook LATEST
+./provisioner.sh "${AWS_ACCOUNT}" infra-audit-hook infrastructure-audit-hook LATEST
+./provisioner.sh "${AWS_ACCOUNT}" lambda-audit-hook lambda-audit-hook LATEST
 
-# ./provisioner.sh "${AWS_ACCOUNT}" vpc vpc v2.5.2
+./provisioner.sh "${AWS_ACCOUNT}" vpc vpc v2.5.2
 
 # provision pipelines
 # -------------------
@@ -62,3 +62,10 @@ PARAMETERS=$(jq ". += [
 TMP_PARAM_FILE=$(mktemp)
 echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
 PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" frontend-pipeline sam-deploy-pipeline v2.68.0
+
+# setting up domains
+# ------------------
+# shallow clone templates from authentication repos
+./sync-dependencies.sh
+
+TEMPLATE_URL=file://authentication-frontend/cloudformation/domains/template.yaml ./provisioner.sh "${AWS_ACCOUNT}" dns-zones-and-records dns LATEST
