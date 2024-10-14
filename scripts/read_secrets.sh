@@ -29,5 +29,6 @@ echo "Reading secrets"
 while IFS=$'\t' read -r arn name; do
   echo -n "."
   value=$(aws secretsmanager get-secret-value --region "${REGION}" --secret-id "${arn}" | jq -r '.SecretString')
-  export "${name}"="${value}"
+  name_in_underscore=$(echo "${name}" | tr "-" "_")
+  export "${name_in_underscore}"="${value}"
 done <<<"${secrets}"
