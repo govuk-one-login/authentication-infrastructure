@@ -9,6 +9,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 || exit
 # --------------------------------------------
 export AWS_PROFILE=di-authentication-build-AWSAdministratorAccess
 aws sso login --profile "${AWS_PROFILE}"
+aws configure set region eu-west-2
 
 # shellcheck disable=SC1091
 source "./scripts/read_cloudformation_stack_outputs.sh" "aws-signer"
