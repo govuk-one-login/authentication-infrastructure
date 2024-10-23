@@ -1,0 +1,22 @@
+[
+  {
+    "ParameterKey": "AddWWWPrefix",
+    "ParameterValue": "false"
+  },
+  {
+    "ParameterKey": "DistributionAlias",
+    "ParameterValue": "signin-sp.account.gov.uk"
+  },
+  {
+    "ParameterKey": "FraudHeaderEnabled",
+    "ParameterValue": "false"
+  },
+  {
+    "ParameterKey": "StandardLoggingEnabled",
+    "ParameterValue": "true"
+  },
+  {
+    "ParameterKey": "LogDestination",
+    "ParameterValue": "none"
+  }
+]

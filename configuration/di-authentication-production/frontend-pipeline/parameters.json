@@ -1,0 +1,46 @@
+[
+  {
+    "ParameterKey": "SAMStackName",
+    "ParameterValue": "authentication-frontend"
+  },
+  {
+    "ParameterKey": "Environment",
+    "ParameterValue": "production"
+  },
+  {
+    "ParameterKey": "ProgrammaticPermissionsBoundary",
+    "ParameterValue": "True"
+  },
+  {
+    "ParameterKey": "VpcStackName",
+    "ParameterValue": "vpc"
+  },
+  {
+    "ParameterKey": "AdditionalCodeSigningVersionArns",
+    "ParameterValue": "arn:aws:signer:eu-west-2:216552277552:/signing-profiles/DynatraceSigner/5uwzCCGTPq"
+  },
+  {
+    "ParameterKey": "AllowedServiceOne",
+    "ParameterValue": "SSM"
+  },
+  {
+    "ParameterKey": "AllowedServiceTwo",
+    "ParameterValue": "ECR & ECS"
+  },
+  {
+    "ParameterKey": "IncludePromotion",
+    "ParameterValue": "No"
+  },
+  {
+    "ParameterKey": "TestContainerAllowCrossAccountAssumeRole",
+    "ParameterValue": "Yes"
+  },
+  {
+    "ParameterKey": "TestReportFormat",
+    "ParameterValue": "CUCUMBERJSON"
+  },
+  {
+    "ParameterKey": "StoreTestReportInS3Bucket",
+    "ParameterValue": "Yes"
+  }
+]
