@@ -5,7 +5,7 @@
   },
   {
     "ParameterKey": "DistributionAlias",
-    "ParameterValue": "signin-sp.integration.account.gov.uk"
+    "ParameterValue": "signin-sp.account.gov.uk"
   },
   {
     "ParameterKey": "FraudHeaderEnabled",

@@ -9,7 +9,7 @@
   },
   {
     "ParameterKey": "FraudHeaderEnabled",
-    "ParameterValue": "false"
+    "ParameterValue": "true"
   },
   {
     "ParameterKey": "StandardLoggingEnabled",
@@ -17,6 +17,6 @@
   },
   {
     "ParameterKey": "LogDestination",
-    "ParameterValue": "none"
+    "ParameterValue": "csls_cw_logs_destination_prodpython-2"
   }
 ]
