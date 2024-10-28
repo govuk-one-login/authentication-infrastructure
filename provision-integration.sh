@@ -45,7 +45,7 @@ export AUTO_APPLY_CHANGESET="${AUTO_APPLY_CHANGESET:-true}"
 # ---------------------
 ./provisioner.sh "${AWS_ACCOUNT}" infra-audit-hook infrastructure-audit-hook LATEST
 ./provisioner.sh "${AWS_ACCOUNT}" lambda-audit-hook lambda-audit-hook LATEST
-
+./provisioner.sh "${AWS_ACCOUNT}" build-notifications build-notifications v2.3.2
 ./provisioner.sh "${AWS_ACCOUNT}" vpc vpc v2.5.2
 
 # provision pipelines
