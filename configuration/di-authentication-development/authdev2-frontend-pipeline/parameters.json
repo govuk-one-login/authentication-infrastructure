@@ -40,6 +40,14 @@
     "ParameterValue": "ECR & ECS"
   },
   {
+    "ParameterKey": "SlackNotificationType",
+    "ParameterValue": "Failures"
+  },
+  {
+    "ParameterKey": "BuildNotificationStackName",
+    "ParameterValue": "build-notifications"
+  },
+  {
     "ParameterKey": "ECSCanaryDeployment",
     "ParameterValue": "None"
   },

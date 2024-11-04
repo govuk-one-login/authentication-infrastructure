@@ -28,6 +28,8 @@ export AUTO_APPLY_CHANGESET="${AUTO_APPLY_CHANGESET:-true}"
 ./provisioner.sh "${AWS_ACCOUNT}" authdev1-vpc vpc v2.6.2
 ./provisioner.sh "${AWS_ACCOUNT}" authdev2-vpc vpc v2.6.2
 
+./provisioner.sh "${AWS_ACCOUNT}" build-notifications build-notifications v2.3.2
+
 # NOTE: tag immutability is manually disabled for these ecr repositories
 ./provisioner.sh "${AWS_ACCOUNT}" frontend-image-repository container-image-repository v2.0.0
 ./provisioner.sh "${AWS_ACCOUNT}" basic-auth-sidecar-image-repository container-image-repository v2.0.0

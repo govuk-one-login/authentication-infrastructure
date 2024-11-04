@@ -32,6 +32,14 @@
     "ParameterValue": "No"
   },
   {
+    "ParameterKey": "SlackNotificationType",
+    "ParameterValue": "Failures"
+  },
+  {
+    "ParameterKey": "BuildNotificationStackName",
+    "ParameterValue": "build-notifications"
+  },
+  {
     "ParameterKey": "ECSCanaryDeployment",
     "ParameterValue": "CodeDeployDefault.ECSAllAtOnce"
   },
