@@ -1,7 +1,7 @@
 [
   {
     "ParameterKey": "SAMStackName",
-    "ParameterValue": "dev-orch-stub"
+    "ParameterValue": "dev-ipv-stub"
   },
   {
     "ParameterKey": "Environment",
