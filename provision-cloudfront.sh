@@ -121,13 +121,47 @@ cfdisId="CFN_${STACK_PREFIX_UNDERSCORE}_cloudfront_DistributionId"
 CloudFrontDistributionID=${!cfdisId:-""}
 
 # ------------------------------------------------------
+# auth-fe-cloudfront-notification
+#   Creates a SNS topic with slack integration.
+#   Topic is then used as CacheHitAlarmSNSTopicARN in the cloudfront-monitoring stack
+#   no dependency
+# ----------------------------------------------------------
+PARAMETERS_FILE="configuration/${AWS_ACCOUNT}/auth-fe-cloudfront-notification/parameters.json"
+PARAMETERS=$(jq ". += [
+                        {\"ParameterKey\":\"AccountAlias\",\"ParameterValue\":\"${AWS_ACCOUNT}\"}
+                    ] | tojson" -r "${PARAMETERS_FILE}")
+SAM_PARAMETERS=$( echo "$PARAMETERS" | jq -r '.[] | "\(.ParameterKey)=\(.ParameterValue)"' )
+TAGS=$(jq -r '.[] | "\(.Key)=\(.Value)" | gsub(" ";"-")' "configuration/${AWS_ACCOUNT}/tags.json")
+
+aws configure set region us-east-1
+pushd alerts
+sam build
+# shellcheck disable=SC2086
+sam deploy \
+    --stack-name "auth-fe-cloudfront-notification" \
+    --resolve-s3 true \
+    --s3-prefix "auth-fe-cloudfront-notification" \
+    --region "us-east-1" \
+    --capabilities "CAPABILITY_IAM" \
+    --no-confirm-changeset \
+    --no-fail-on-empty-changeset \
+    --parameter-overrides $SAM_PARAMETERS \
+    --tags $TAGS
+popd
+
+# shellcheck disable=SC1091
+source "./scripts/read_cloudformation_stack_outputs.sh" "auth-fe-cloudfront-notification"
+CacheHitAlarmSNSTopicARN=${CFN_auth_fe_cloudfront_notification_NotificationTopicArn:-"none"}
+
+# ------------------------------------------------------
 # auth-fe-cloudfront-monitoring
 #   deploys CloudFront Extended Monitoring configuration
 #   depends on: auth-fe-cloudfront
 # ------------------------------------------------------
 PARAMETERS_FILE="configuration/${AWS_ACCOUNT}/${STACK_PREFIX}-cloudfront-monitoring/parameters.json"
 PARAMETERS=$(jq ". += [
-                        {\"ParameterKey\":\"CloudfrontDistribution\",\"ParameterValue\":\"${CloudFrontDistributionID}\"}
+                        {\"ParameterKey\":\"CloudfrontDistribution\",\"ParameterValue\":\"${CloudFrontDistributionID}\"},
+                        {\"ParameterKey\":\"CacheHitAlarmSNSTopicARN\",\"ParameterValue\":\"${CacheHitAlarmSNSTopicARN}\"}
                     ] | tojson" -r "${PARAMETERS_FILE}")
 TMP_PARAM_FILE=$(mktemp)
 echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
