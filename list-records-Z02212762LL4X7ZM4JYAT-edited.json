@@ -3,61 +3,64 @@
     "Changes": [
         {
             "Action": "CREATE",
-            "ResourceRecordSet":{
-            "Name": "_ae8623d2b51e7aaee95becb396b433e3.signin.staging.account.gov.uk.",
-            "Type": "CNAME",
-            "TTL": 60,
-            "ResourceRecords": [
-                {
-                    "Value": "_49b624b562fabb4c409ef969743d305a.bxmgrlxjqk.acm-validations.aws."
-                }
-             ]
-           }
-        },
-        {
-            "Action": "CREATE",
-            "ResourceRecordSet":{
-            "Name": "_6d04ed5dcf5a074f04451c21d25615aa.orchstub.signin.staging.account.gov.uk.",
-            "Type": "CNAME",
-            "TTL": 300,
-            "ResourceRecords": [
-                {
-                    "Value": "_2bc918e648691df9b09e1bd69d84a36b.djqtsrsxkq.acm-validations.aws."
-                }
-             ]
+            "ResourceRecordSet" : {
+                "ResourceRecords": [
+                    {
+                        "Value": "_49b624b562fabb4c409ef969743d305a.bxmgrlxjqk.acm-validations.aws."
+                    } 
+                ],               
+                "Name": "_ae8623d2b51e7aaee95becb396b433e3.signin.staging.account.gov.uk.",
+                "Type": "CNAME",
+                "TTL": 60
             }
         },
         {
             "Action": "CREATE",
-            "ResourceRecordSet":{
-            "Name": "signin.staging.account.gov.uk.",
-            "Type": "A",
-            "AliasTarget": {
-                "HostedZoneId": "Z2FDTNDATAQYW2",
-                "DNSName": "dn583e4460uqv.cloudfront.net.",
-                "EvaluateTargetHealth": false
-              }
+            "ResourceRecordSet" : {
+                "ResourceRecords": [
+                    {
+                        "Value": "_2bc918e648691df9b09e1bd69d84a36b.djqtsrsxkq.acm-validations.aws."
+                    }
+                ],
+                "Name": "_6d04ed5dcf5a074f04451c21d25615aa.orchstub.signin.staging.account.gov.uk.",
+                "Type": "CNAME",
+                "TTL": 300
             }
         },
         {
             "Action": "CREATE",
-            "ResourceRecordSet":{
-            "Name": "origin.signin.staging.account.gov.uk.",
-            "Type": "A",
-            "AliasTarget": {
-                "HostedZoneId": "ZHURV8PSTC4K8",
-                "DNSName": "dualstack.staging-frontend-972136373.eu-west-2.elb.amazonaws.com.",
-                "EvaluateTargetHealth": false
-             }
-           }
+            "ResourceRecordSet" : {
+                "AliasTarget": {
+                    "HostedZoneId": "Z2FDTNDATAQYW2",
+                    "DNSName": "dn583e4460uqv.cloudfront.net.",
+                    "EvaluateTargetHealth": false
+                },                
+                "Name": "signin.staging.account.gov.uk.",
+                "Type": "A"
+            }
         },
         {
-            "Name": "orchstub.signin.staging.account.gov.uk.",
-            "Type": "A",
-            "AliasTarget": {
-                "HostedZoneId": "ZJ5UAJN8Y3Z2Q",
-                "DNSName": "d-q6uqno3v9l.execute-api.eu-west-2.amazonaws.com.",
-                "EvaluateTargetHealth": false
+            "Action": "CREATE",
+            "ResourceRecordSet": {
+                "Name": "origin.signin.staging.account.gov.uk.",
+                "Type": "A",
+                "AliasTarget": {
+                    "HostedZoneId": "ZHURV8PSTC4K8",
+                    "DNSName": "dualstack.staging-frontend-972136373.eu-west-2.elb.amazonaws.com.",
+                    "EvaluateTargetHealth": false
+                }
+            }
+        },
+        {
+            "Action": "CREATE",
+            "ResourceRecordSet": { 
+                "Name": "orchstub.signin.staging.account.gov.uk.",
+                "Type": "A",
+                "AliasTarget": {
+                    "HostedZoneId": "ZJ5UAJN8Y3Z2Q",
+                    "DNSName": "d-q6uqno3v9l.execute-api.eu-west-2.amazonaws.com.",
+                    "EvaluateTargetHealth": false
+                }
             }
         }
     ]
