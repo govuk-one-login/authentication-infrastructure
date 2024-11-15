@@ -73,4 +73,8 @@ PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" frontend-pipel
 # shallow clone templates from authentication repos
 ./sync-dependencies.sh
 
+# deploy signin-sp domain resources
 TEMPLATE_URL=file://authentication-frontend/cloudformation/domains/template.yaml ./provisioner.sh "${AWS_ACCOUNT}" dns-zones-and-records dns LATEST
+
+# deploy signin domain resources
+TEMPLATE_URL=file://authentication-frontend/cloudformation/domains/template.yaml ./provisioner.sh "${AWS_ACCOUNT}" hosted-zones-and-records dns LATEST
