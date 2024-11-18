@@ -13,6 +13,6 @@
   },
   {
     "ParameterKey": "DeployCertificate",
-    "ParameterValue": "No"
+    "ParameterValue": "Yes"
   }
 ]
