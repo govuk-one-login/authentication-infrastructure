@@ -1,11 +1,11 @@
 [
   {
     "ParameterKey": "Environment",
-    "ParameterValue": "production"
+    "ParameterValue": "staging"
   },
   {
     "ParameterKey": "EndpointSuffix",
-    "ParameterValue": "-sp"
+    "ParameterValue": ""
   },
   {
     "ParameterKey": "DeployHostedZone",
