@@ -1,0 +1,219 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+
+Description: >
+  Authentication alerts SNS topic, enricher function and slack integration
+
+Parameters:
+  AccountAlias:
+    Description: >
+      Account alias of the AWS account where this stack is deployed. This
+      information is passed onto slack notification
+    Type: String
+    Default: ""
+
+  SlackWorkspaceId:
+    Description: >
+      The ID of the Slack workspace where notification messages are
+      posted. This is retrieved from the AWS Chatbot integration.
+    Type: String
+    AllowedPattern: "\\w+"
+    ConstraintDescription: "must be an AWS Chatbot Slack workspace ID"
+
+  SlackChannelId:
+    Description: >
+      The ID of the Slack channel where notification messages are posted.
+      This is taken from the channel details in Slack.
+    Type: String
+    AllowedPattern: "\\w+"
+    ConstraintDescription: "must be a Slack channel ID"
+
+Outputs:
+  NotificationTopicArn:
+    Description: >
+      The ARN of the SNS topic that receives CloudWatch notifications, which are enriched and sent to Slack.
+    Value: !Ref NotificationTopic
+    Export:
+      Name: !Sub "${AWS::StackName}-NotificationTopicArn"
+
+Resources:
+  NotificationTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      KmsMasterKeyId: !Ref NotificationTopicKey
+      Subscription:
+        - Protocol: lambda
+          Endpoint: !GetAtt NotificationEnricherFunction.Arn
+      Tags:
+        - Key: Name
+          Value: !Join
+            - "-"
+            - - !Ref AWS::StackName
+              - "NotificationTopic"
+        - Key: Service
+          Value: "Authentication"
+        - Key: Source
+          Value: "govuk-one-login/authentication-infrastructure/alerts/template.yaml"
+
+  NotificationTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics:
+        - !Ref NotificationTopic
+      PolicyDocument:
+        Statement:
+          - Action: "sns:Publish"
+            Effect: Allow
+            Resource: !Ref NotificationTopic
+            Principal:
+              Service:
+                - cloudwatch.amazonaws.com
+
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Policies:
+        - PolicyName: "NotificationEnricherFunctionPolicy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "kms:Decrypt"
+                  - "kms:Encrypt"
+                  - "kms:GenerateDataKey"
+                Resource: !GetAtt NotificationTopicKey.Arn
+              - Effect: "Allow"
+                Action:
+                  - "sns:Publish"
+                Resource: !GetAtt NotificationDetailedTopic.TopicArn
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  NotificationEnricherFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      # checkov:skip=CKV_AWS_117: Internet access not required
+      Description: Formats notifications events with additional information
+      FunctionName: !Join ["-", [!Ref AWS::StackName, Notification-Enricher]]
+      Handler: alerts.handler
+      MemorySize: 128
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Runtime: nodejs18.x
+      Timeout: 30
+      CodeUri: src
+      Environment:
+        Variables:
+          ACCOUNT_ALIAS: !Ref AccountAlias
+          NOTIFICATION_DETAILED_TOPIC_ARN: !Ref NotificationDetailedTopic
+
+  NotificationEnricherFunctionInvokePermission:
+    Type: "AWS::Lambda::Permission"
+    Properties:
+      Action: "lambda:InvokeFunction"
+      FunctionName: !Ref NotificationEnricherFunction
+      Principal: sns.amazonaws.com
+
+  NotificationDetailedTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      KmsMasterKeyId: !Ref NotificationTopicKey
+      Tags:
+        - Key: Name
+          Value: !Join
+            - "-"
+            - - !Ref AWS::StackName
+              - "NotificationDetailedTopic"
+        - Key: Service
+          Value: "Authentication"
+        - Key: Source
+          Value: "govuk-one-login/authentication-infrastructure/alerts/template.yaml"
+
+  NotificationDetailedTopicPolicy:
+    Type: "AWS::SNS::TopicPolicy"
+    Properties:
+      Topics:
+        - !Ref NotificationDetailedTopic
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action: "sns:Publish"
+            Resource: !Ref NotificationDetailedTopic
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Condition:
+              ArnLike:
+                AWS:SourceArn: !Sub "arn:aws:*:*:${AWS::AccountId}:*"
+
+  NotificationTopicKey:
+    Type: AWS::KMS::Key
+    Properties:
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: 2012-10-17
+        Statement:
+          - Sid: "Allow CloudWatch to enqueue encrypted messages"
+            Effect: Allow
+            Resource: "*"
+            Action:
+              - "kms:Decrypt"
+              - "kms:GenerateDataKey"
+            Principal:
+              Service:
+                - cloudwatch.amazonaws.com
+          - Sid: "Allow the account to manage the key"
+            Effect: Allow
+            Principal:
+              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action: "kms:*"
+            Resource: "*"
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-NotificationTopicKey"
+        - Key: Service
+          Value: "Authentication"
+        - Key: Source
+          Value: "govuk-one-login/authentication-infrastructure/alerts/template.yaml"
+
+  ChatbotRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service: "chatbot.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Tags:
+        - Key: Name
+          Value: !Join
+            - "-"
+            - - !Ref AWS::StackName
+              - "ChatbotRole"
+        - Key: Service
+          Value: "Authentication"
+        - Key: Source
+          Value: "govuk-one-login/authentication-infrastructure/alerts/template.yaml"
+
+  ChatbotChannelConfiguration:
+    Type: AWS::Chatbot::SlackChannelConfiguration
+    Properties:
+      ConfigurationName: !Sub "${AWS::StackName}-slack-notifications"
+      IamRoleArn: !GetAtt ChatbotRole.Arn
+      SlackChannelId: !Ref SlackChannelId
+      SlackWorkspaceId: !Ref SlackWorkspaceId
+      SnsTopicArns:
+        - !Ref NotificationDetailedTopic

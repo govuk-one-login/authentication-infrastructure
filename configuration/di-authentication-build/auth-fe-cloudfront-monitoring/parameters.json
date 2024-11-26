@@ -4,10 +4,6 @@
     "ParameterValue": "true"
   },
   {
-    "ParameterKey": "CacheHitAlarmSNSTopicARN",
-    "ParameterValue": "none"
-  },
-  {
     "ParameterKey": "Environment",
     "ParameterValue": "build"
   }
