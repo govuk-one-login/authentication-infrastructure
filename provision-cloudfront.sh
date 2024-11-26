@@ -78,7 +78,7 @@ WAFv2WebACL=${!webacl:-"none"}
 #   no dependency
 # ----------------------------------------------------------
 PARAMETERS_FILE="configuration/${AWS_ACCOUNT}/${STACK_PREFIX}-cloudfront-certificate/parameters.json"
-HostedZoneID=${signin_route53_hostedzone_id:-""}
+HostedZoneID=${signin_sp_route53_hostedzone_id:-""}
 PARAMETERS=$(jq ". += [
                         {\"ParameterKey\":\"HostedZoneID\",\"ParameterValue\":\"${HostedZoneID}\"}
                     ] | tojson" -r "${PARAMETERS_FILE}")

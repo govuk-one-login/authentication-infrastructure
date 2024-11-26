@@ -27,7 +27,9 @@ fi
 
 echo "Reading SSM parameters"
 while IFS=$'\t' read -r name value; do
-  export "${name}"="${value}"
+  echo -n "."
+  name_in_underscore=$(echo "${name}" | tr "-" "_")
+  export "${name_in_underscore}"="${value}"
 done <<<"${parameters}"
 
 echo "Parameters exported"
