@@ -13,30 +13,6 @@
                 "Type": "CNAME",
                 "TTL": 60
             }
-        },
-        {
-            "Action": "CREATE",
-            "ResourceRecordSet" : {
-                "Name": "signin.integration.account.gov.uk",
-                "Type": "A",
-                "AliasTarget": {
-                    "HostedZoneId": "Z2FDTNDATAQYW2",
-                    "DNSName": "d3dw1x63k50a79.cloudfront.net.",
-                    "EvaluateTargetHealth": false
-                }
-            }
-        },
-        {
-            "Action": "CREATE",
-            "ResourceRecordSet" : {
-                "Name": "origin.signin.integration.account.gov.uk",
-                "Type": "A",
-                "AliasTarget": {
-                    "HostedZoneId": "ZHURV8PSTC4K8",
-                    "DNSName": "dualstack.integration-frontend-1951285918.eu-west-2.elb.amazonaws.com.",
-                    "EvaluateTargetHealth": false
-                }
-            }
         }
     ]
 }
