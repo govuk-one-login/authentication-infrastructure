@@ -1,6 +1,6 @@
 {
     "Comment": "Old records",
-    "changes": [
+    "Changes": [
         {
             "Action": "CREATE",
             "ResourceRecordSet" : {
@@ -13,7 +13,6 @@
                 "Type": "CNAME",
                 "TTL": 60
             }
-
         },
         {
             "Action": "CREATE",
