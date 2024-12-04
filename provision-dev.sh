@@ -24,7 +24,8 @@ export AUTO_APPLY_CHANGESET="${AUTO_APPLY_CHANGESET:-true}"
 
 ./provisioner.sh "${AWS_ACCOUNT}" infra-audit-hook infrastructure-audit-hook LATEST
 ./provisioner.sh "${AWS_ACCOUNT}" lambda-audit-hook lambda-audit-hook LATEST
-./provisioner.sh "${AWS_ACCOUNT}" vpc vpc v2.5.2
+# NOTE:  DEV VPC stack deleted Dev VPC  will be created again when we start building DEV env
+# ./provisioner.sh "${AWS_ACCOUNT}" vpc vpc v2.5.2
 ./provisioner.sh "${AWS_ACCOUNT}" authdev1-vpc vpc v2.6.2
 ./provisioner.sh "${AWS_ACCOUNT}" authdev2-vpc vpc v2.6.2
 
