@@ -1,0 +1,81 @@
+{
+    "Comment": "Old records",
+    "Changes": [
+        {
+            "Action": "CREATE",
+            "ResourceRecordSet" : {
+                "ResourceRecords": [
+                    {
+                        "Value": "_f62ec785441646207708c550e4f5d084.bgpjyrktby.acm-validations.aws."
+                    }
+                ],
+                "Name": "_fbec308923316e93d71e624e2a21772c.signin.build.account.gov.uk.",
+                "Type": "CNAME",
+                "TTL": 60
+            }
+        },
+        {
+            "Action": "CREATE",
+            "ResourceRecordSet" : {
+                "ResourceRecords": [
+                    {
+                        "Value": "_87e19c7803456fbeb75024937d5eb14a.djqtsrsxkq.acm-validations.aws."
+                    }
+                ],
+                "Name": "_4aebdfa165b9aa8cfc31295a7a43bd31.orchstub-old.signin.build.account.gov.uk.",
+                "Type": "CNAME",
+                "TTL": 300
+            }
+        },
+        {
+            "Action": "CREATE",
+            "ResourceRecordSet" : {
+                "ResourceRecords": [
+                    {
+                        "Value": "_68057ee919a9cfefc8ad027c3f95b7c5.djqtsrsxkq.acm-validations.aws."
+                    }
+                ],
+                "Name": "_0b80c4c15c71754df71e314de25da300.orchstub-test.signin.build.account.gov.uk.",
+                "Type": "CNAME",
+                "TTL": 300
+            }
+        },
+        {
+            "Action": "CREATE",
+            "ResourceRecordSet" : {
+                "ResourceRecords": [
+                    {
+                        "Value": "_f665edfcd8dff24e2d31e6350ec066c4.sdgjtdhdhz.acm-validations.aws."
+                    }
+                ],
+                "Name": "_e2e3f22368f5515bad76520d37f1b4c7.orchstub.signin.build.account.gov.uk.",
+                "Type": "CNAME",
+                "TTL": 300
+            }
+        },
+        {
+            "Action": "CREATE",
+            "ResourceRecordSet": {
+                "Name": "orchstub.signin.build.account.gov.uk.",
+                "Type": "A",
+                "AliasTarget": {
+                    "HostedZoneId": "ZJ5UAJN8Y3Z2Q",
+                    "DNSName": "d-4kh22xqqt8.execute-api.eu-west-2.amazonaws.com.",
+                    "EvaluateTargetHealth": false
+                }
+            }
+        },
+        {
+            "Action": "CREATE",
+            "ResourceRecordSet": {
+                "Name": "orchstub-old.signin.build.account.gov.uk.",
+                "Type": "A",
+                "AliasTarget": {
+                    "HostedZoneId": "ZJ5UAJN8Y3Z2Q",
+                    "DNSName": "d-421smh5m2e.execute-api.eu-west-2.amazonaws.com.",
+                    "EvaluateTargetHealth": false
+                }
+            }
+        }
+    ]
+}

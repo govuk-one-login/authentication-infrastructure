@@ -7,8 +7,8 @@
                 "ResourceRecords": [
                     {
                         "Value": "_49b624b562fabb4c409ef969743d305a.bxmgrlxjqk.acm-validations.aws."
-                    } 
-                ],               
+                    }
+                ],
                 "Name": "_ae8623d2b51e7aaee95becb396b433e3.signin.staging.account.gov.uk.",
                 "Type": "CNAME",
                 "TTL": 60
@@ -29,31 +29,7 @@
         },
         {
             "Action": "CREATE",
-            "ResourceRecordSet" : {
-                "AliasTarget": {
-                    "HostedZoneId": "Z2FDTNDATAQYW2",
-                    "DNSName": "dn583e4460uqv.cloudfront.net.",
-                    "EvaluateTargetHealth": false
-                },                
-                "Name": "signin.staging.account.gov.uk.",
-                "Type": "A"
-            }
-        },
-        {
-            "Action": "CREATE",
             "ResourceRecordSet": {
-                "Name": "origin.signin.staging.account.gov.uk.",
-                "Type": "A",
-                "AliasTarget": {
-                    "HostedZoneId": "ZHURV8PSTC4K8",
-                    "DNSName": "dualstack.staging-frontend-972136373.eu-west-2.elb.amazonaws.com.",
-                    "EvaluateTargetHealth": false
-                }
-            }
-        },
-        {
-            "Action": "CREATE",
-            "ResourceRecordSet": { 
                 "Name": "orchstub.signin.staging.account.gov.uk.",
                 "Type": "A",
                 "AliasTarget": {
