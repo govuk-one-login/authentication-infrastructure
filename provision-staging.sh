@@ -4,6 +4,55 @@ set -euo pipefail
 # Ensure we are in the directory of the script
 cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 || exit
 
+function usage {
+    cat <<USAGE
+  Script to bootstrap staging account
+
+  Usage:
+    $0 [-b|--base-stacks] [-p|--pipelines] [-t|--transitional-zone-resources] [-l|--live-zone-resources <zone-only|all>]
+
+  Options:
+    -b, --base-stacks                      Provision base stacks
+    -p, --pipelines                        Provision secure pipelines
+    -t, --transitional-zone-resources      Provision transitional hosted zone, certificates and SSM params
+    -l, --live-zone-resources              Provision live hosted zone, certificates and SSM params
+USAGE
+}
+
+if [ $# -lt 1 ]; then
+    usage
+    exit 1
+fi
+
+PROVISION_BASE_STACKS=false
+PROVISION_PIPELINES=false
+PROVISION_TRANSITIONAL_HOSTED_ZONE_AND_RECORDS=false
+PROVISION_LIVE_HOSTED_ZONE_AND_RECORDS=false
+
+while [[ $# -gt 0 ]]; do
+    case "${1}" in
+        -b | --base-stacks)
+            PROVISION_BASE_STACKS=true
+            ;;
+        -p | --pipelines)
+            PROVISION_PIPELINES=true
+            ;;
+        -t | --transitional-zone-resources)
+            PROVISION_TRANSITIONAL_HOSTED_ZONE_AND_RECORDS=true
+            ;;
+        -l | --live-zone-resources)
+            PROVISION_LIVE_HOSTED_ZONE_AND_RECORDS=true
+            DEPLOY_CONFIG=${2}
+            shift
+            ;;
+        *)
+            usage
+            exit 1
+            ;;
+    esac
+    shift
+done
+
 # --------------------------------------------
 # extract outputs from stacks in build account
 # --------------------------------------------
@@ -34,47 +83,85 @@ TestImageRepositoryUri=${CFN_acceptance_tests_image_repository_TestRunnerImageEc
 # ------------------------------
 export AWS_ACCOUNT=di-authentication-staging
 export AWS_PROFILE=di-authentication-staging-AWSAdministratorAccess
-# aws sso login --profile "${AWS_PROFILE}"
 
 export AWS_PAGER=
 export SKIP_AWS_AUTHENTICATION="${SKIP_AWS_AUTHENTICATION:-true}"
-export AUTO_APPLY_CHANGESET="${AUTO_APPLY_CHANGESET:-true}"
+export AUTO_APPLY_CHANGESET="${AUTO_APPLY_CHANGESET:-false}"
 
-# provision base stacks
-# ---------------------
-# ./provisioner.sh "${AWS_ACCOUNT}" alerting-integration alerting-integration v1.0.6
-# ./provisioner.sh "${AWS_ACCOUNT}" api-gateway-logs api-gateway-logs v1.0.5
-./provisioner.sh "${AWS_ACCOUNT}" build-notifications build-notifications v2.3.2
-# ./provisioner.sh "${AWS_ACCOUNT}" certificate-expiry certificate-expiry v1.1.1
-# ./provisioner.sh "${AWS_ACCOUNT}" checkov-hook checkov-hook LATEST
-./provisioner.sh "${AWS_ACCOUNT}" infra-audit-hook infrastructure-audit-hook LATEST
-./provisioner.sh "${AWS_ACCOUNT}" lambda-audit-hook lambda-audit-hook LATEST
-
-./provisioner.sh "${AWS_ACCOUNT}" vpc vpc v2.5.2
-
-# provision pipelines
-# -------------------
-PARAMETERS_FILE="configuration/$AWS_ACCOUNT/frontend-pipeline/parameters.json"
-PARAMETERS=$(jq ". += [
-                        {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
-                        {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
-                        {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"},
-                        {\"ParameterKey\":\"ArtifactSourceBucketArn\",\"ParameterValue\":\"${ArtifactSourceBucketArn}\"},
-                        {\"ParameterKey\":\"ArtifactSourceBucketEventTriggerRoleArn\",\"ParameterValue\":\"${ArtifactSourceBucketEventTriggerRoleArn}\"},
-                        {\"ParameterKey\":\"TestImageRepositoryUri\",\"ParameterValue\":\"${TestImageRepositoryUri}\"}
-                    ] | tojson" -r "${PARAMETERS_FILE}")
-
-TMP_PARAM_FILE=$(mktemp)
-echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
-PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" frontend-pipeline sam-deploy-pipeline v2.68.0
-
-# setting up domains
-# ------------------
+# -------------------------------------------------
 # shallow clone templates from authentication repos
+# -------------------------------------------------
 ./sync-dependencies.sh
 
-# deploy signin-sp domain resources
-TEMPLATE_URL=file://authentication-frontend/cloudformation/domains/template.yaml ./provisioner.sh "${AWS_ACCOUNT}" dns-zones-and-records dns LATEST
+# ---------------------
+# provision base stacks
+# ---------------------
+function provision_base_stacks {
+    aws configure set region eu-west-2
+    # ./provisioner.sh "${AWS_ACCOUNT}" alerting-integration alerting-integration v1.0.6
+    # ./provisioner.sh "${AWS_ACCOUNT}" api-gateway-logs api-gateway-logs v1.0.5
+    ./provisioner.sh "${AWS_ACCOUNT}" build-notifications build-notifications v2.3.2
+    # ./provisioner.sh "${AWS_ACCOUNT}" certificate-expiry certificate-expiry v1.1.1
+    # ./provisioner.sh "${AWS_ACCOUNT}" checkov-hook checkov-hook LATEST
+    ./provisioner.sh "${AWS_ACCOUNT}" infra-audit-hook infrastructure-audit-hook LATEST
+    ./provisioner.sh "${AWS_ACCOUNT}" lambda-audit-hook lambda-audit-hook LATEST
 
-# deploy signin domain resources
-TEMPLATE_URL=file://authentication-frontend/cloudformation/domains/template.yaml ./provisioner.sh "${AWS_ACCOUNT}" hosted-zones-and-records dns LATEST
+    ./provisioner.sh "${AWS_ACCOUNT}" vpc vpc v2.5.2
+}
+
+# -------------------
+# provision pipelines
+# -------------------
+function provision_pipeline {
+    PARAMETERS_FILE="configuration/$AWS_ACCOUNT/frontend-pipeline/parameters.json"
+    PARAMETERS=$(jq ". += [
+                            {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
+                            {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
+                            {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"},
+                            {\"ParameterKey\":\"ArtifactSourceBucketArn\",\"ParameterValue\":\"${ArtifactSourceBucketArn}\"},
+                            {\"ParameterKey\":\"ArtifactSourceBucketEventTriggerRoleArn\",\"ParameterValue\":\"${ArtifactSourceBucketEventTriggerRoleArn}\"},
+                            {\"ParameterKey\":\"TestImageRepositoryUri\",\"ParameterValue\":\"${TestImageRepositoryUri}\"}
+                        ] | tojson" -r "${PARAMETERS_FILE}")
+
+    TMP_PARAM_FILE=$(mktemp)
+    echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+    aws configure set region eu-west-2
+    PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" frontend-pipeline sam-deploy-pipeline v2.68.0
+}
+
+# ------------------
+# setting up domains
+# ------------------
+function provision_transitional_hosted_zone_and_records {
+    # deploy signin-sp domain resources
+    aws configure set region eu-west-2
+    TEMPLATE_URL=file://authentication-frontend/cloudformation/domains/template.yaml ./provisioner.sh "${AWS_ACCOUNT}" dns-zones-and-records dns LATEST
+}
+
+function provision_live_hosted_zone_and_records {
+    case "${DEPLOY_CONFIG}" in
+        zone-only)
+            PARAMETERS_FILE="configuration/$AWS_ACCOUNT/hosted-zones-and-records/zone-only-parameters.json"
+            ;;
+        all)
+            PARAMETERS_FILE="configuration/$AWS_ACCOUNT/hosted-zones-and-records/parameters.json"
+            ;;
+        *)
+            echo "Unknown live domain deploy configuration: $DEPLOY_CONFIG"
+            usage
+            exit 1
+            ;;
+    esac
+
+    # deploy signin domain resources
+    aws configure set region eu-west-2
+    PARAMETERS_FILE=$PARAMETERS_FILE TEMPLATE_URL=file://authentication-frontend/cloudformation/domains/template.yaml ./provisioner.sh "${AWS_ACCOUNT}" hosted-zones-and-records dns LATEST
+}
+
+# --------------------
+# Provision components
+# --------------------
+[ "${PROVISION_BASE_STACKS}" == "true" ] && provision_base_stacks
+[ "${PROVISION_PIPELINES}" == "true" ] && provision_pipeline
+[ "${PROVISION_TRANSITIONAL_HOSTED_ZONE_AND_RECORDS}" == "true" ] && provision_transitional_hosted_zone_and_records
+[ "${PROVISION_LIVE_HOSTED_ZONE_AND_RECORDS}" == "true" ] && provision_live_hosted_zone_and_records
