@@ -1,0 +1,18 @@
+{
+    "Comment": "Old records",
+    "Changes": [
+        {
+            "Action": "CREATE",
+            "ResourceRecordSet" : {
+                "ResourceRecords": [
+                    {
+                        "Value": "_ebff5f58d2ed26c9751cfcc5562bbb40.bgpjyrktby.acm-validations.aws."
+                    }
+                ],
+                "Name": "_48db4d437de3805d5078aba1b0c63f5c.signin.account.gov.uk.",
+                "Type": "CNAME",
+                "TTL": 60
+            }
+        }
+    ]
+}
