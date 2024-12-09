@@ -26,7 +26,7 @@ export AUTO_APPLY_CHANGESET="${AUTO_APPLY_CHANGESET:-true}"
 ./provisioner.sh "${AWS_ACCOUNT}" lambda-audit-hook lambda-audit-hook LATEST
 ./provisioner.sh "${AWS_ACCOUNT}" dev-vpc vpc v2.6.2
 ./provisioner.sh "${AWS_ACCOUNT}" authdev1-vpc vpc v2.6.2
-./provisioner.sh "${AWS_ACCOUNT}" authdev2-vpc vpc v2.6.2
+#./provisioner.sh "${AWS_ACCOUNT}" authdev2-vpc vpc v2.6.2
 
 ./provisioner.sh "${AWS_ACCOUNT}" build-notifications build-notifications v2.3.2
 
