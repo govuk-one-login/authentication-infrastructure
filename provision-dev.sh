@@ -24,28 +24,31 @@ export AUTO_APPLY_CHANGESET="${AUTO_APPLY_CHANGESET:-true}"
 
 ./provisioner.sh "${AWS_ACCOUNT}" infra-audit-hook infrastructure-audit-hook LATEST
 ./provisioner.sh "${AWS_ACCOUNT}" lambda-audit-hook lambda-audit-hook LATEST
+
+VPC_TEMPLATE_VERSION="v2.7.0"
 # NOTE:  DEV VPC stack deleted Dev VPC  will be created again when we start building DEV env
 # ./provisioner.sh "${AWS_ACCOUNT}" vpc vpc v2.5.2
-./provisioner.sh "${AWS_ACCOUNT}" authdev1-vpc vpc v2.6.2
-./provisioner.sh "${AWS_ACCOUNT}" authdev2-vpc vpc v2.6.2
+./provisioner.sh "${AWS_ACCOUNT}" authdev1-vpc vpc "${VPC_TEMPLATE_VERSION}"
+./provisioner.sh "${AWS_ACCOUNT}" authdev2-vpc vpc "${VPC_TEMPLATE_VERSION}"
 
-./provisioner.sh "${AWS_ACCOUNT}" build-notifications build-notifications v2.3.2
+./provisioner.sh "${AWS_ACCOUNT}" build-notifications build-notifications v2.3.3
+
+CONTAINER_IMAGE_TEMPLATE_VERSION="v2.0.1"
+# NOTE: tag immutability is manually disabled for these ecr repositories
+./provisioner.sh "${AWS_ACCOUNT}" frontend-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
+./provisioner.sh "${AWS_ACCOUNT}" basic-auth-sidecar-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
+./provisioner.sh "${AWS_ACCOUNT}" service-down-page-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
 
 # NOTE: tag immutability is manually disabled for these ecr repositories
-./provisioner.sh "${AWS_ACCOUNT}" frontend-image-repository container-image-repository v2.0.0
-./provisioner.sh "${AWS_ACCOUNT}" basic-auth-sidecar-image-repository container-image-repository v2.0.0
-./provisioner.sh "${AWS_ACCOUNT}" service-down-page-image-repository container-image-repository v2.0.0
-
-# NOTE: tag immutability is manually disabled for these ecr repositories
-./provisioner.sh "${AWS_ACCOUNT}" authdev1-frontend-image-repository container-image-repository v2.0.0
-./provisioner.sh "${AWS_ACCOUNT}" authdev1-basic-auth-sidecar-image-repository container-image-repository v2.0.0
-./provisioner.sh "${AWS_ACCOUNT}" authdev1-service-down-page-image-repository container-image-repository v2.0.0
+./provisioner.sh "${AWS_ACCOUNT}" authdev1-frontend-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
+./provisioner.sh "${AWS_ACCOUNT}" authdev1-basic-auth-sidecar-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
+./provisioner.sh "${AWS_ACCOUNT}" authdev1-service-down-page-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
 ./provisioner.sh "${AWS_ACCOUNT}" authdev1-acceptance-test-image-repository test-image-repository v1.2.0
 
 # NOTE: tag immutability is manually disabled for these ecr repositories
-./provisioner.sh "${AWS_ACCOUNT}" authdev2-frontend-image-repository container-image-repository v2.0.0
-./provisioner.sh "${AWS_ACCOUNT}" authdev2-basic-auth-sidecar-image-repository container-image-repository v2.0.0
-./provisioner.sh "${AWS_ACCOUNT}" authdev2-service-down-page-image-repository container-image-repository v2.0.0
+./provisioner.sh "${AWS_ACCOUNT}" authdev2-frontend-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
+./provisioner.sh "${AWS_ACCOUNT}" authdev2-basic-auth-sidecar-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
+./provisioner.sh "${AWS_ACCOUNT}" authdev2-service-down-page-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
 ./provisioner.sh "${AWS_ACCOUNT}" authdev2-acceptance-test-image-repository test-image-repository v1.2.0
 
 # shellcheck disable=SC1091
@@ -58,6 +61,8 @@ Authdev2TestImageRepositoryUri=${CFN_authdev2_acceptance_test_image_repository_T
 
 # provision pipelines
 # -------------------
+PIPELINE_TEMPLATE_VERSION="v2.69.13"
+
 # shellcheck disable=SC1091
 source "./scripts/read_cloudformation_stack_outputs.sh" "aws-signer"
 SigningProfileArn=${CFN_aws_signer_SigningProfileArn:-"none"}
@@ -77,7 +82,7 @@ PARAMETERS=$(jq ". += [
 
 TMP_PARAM_FILE=$(mktemp)
 echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
-PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" frontend-pipeline sam-deploy-pipeline v2.68.4
+PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" frontend-pipeline sam-deploy-pipeline "${PIPELINE_TEMPLATE_VERSION}"
 
 # authdev1-frontend
 PARAMETERS_FILE="configuration/$AWS_ACCOUNT/authdev1-frontend-pipeline/parameters.json"
@@ -90,7 +95,7 @@ PARAMETERS=$(jq ". += [
 
 TMP_PARAM_FILE=$(mktemp)
 echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
-PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev1-frontend-pipeline sam-deploy-pipeline v2.68.4
+PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev1-frontend-pipeline sam-deploy-pipeline "${PIPELINE_TEMPLATE_VERSION}"
 
 # authdev2-frontend
 PARAMETERS_FILE="configuration/$AWS_ACCOUNT/authdev2-frontend-pipeline/parameters.json"
@@ -103,14 +108,7 @@ PARAMETERS=$(jq ". += [
 
 TMP_PARAM_FILE=$(mktemp)
 echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
-PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev2-frontend-pipeline sam-deploy-pipeline v2.68.4
-
-# setting up domains
-# ------------------
-# shallow clone templates from authentication repos
-./sync-dependencies.sh
-
-TEMPLATE_URL=file://authentication-frontend/cloudformation/domains/template.yaml ./provisioner.sh "${AWS_ACCOUNT}" dns-zones-and-records dns LATEST
+PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev2-frontend-pipeline sam-deploy-pipeline "${PIPELINE_TEMPLATE_VERSION}"
 
 # dev ipv-stub pipeline
 PARAMETERS_FILE="configuration/$AWS_ACCOUNT/dev-ipv-stub-pipeline/parameters.json"
@@ -122,4 +120,11 @@ PARAMETERS=$(jq ". += [
 
 TMP_PARAM_FILE=$(mktemp)
 echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
-PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" ipv-stub-pipeline sam-deploy-pipeline v2.68.4
+PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" ipv-stub-pipeline sam-deploy-pipeline "${PIPELINE_TEMPLATE_VERSION}"
+
+# setting up domains
+# ------------------
+# shallow clone templates from authentication repos
+./sync-dependencies.sh
+
+TEMPLATE_URL=file://authentication-frontend/cloudformation/domains/template.yaml ./provisioner.sh "${AWS_ACCOUNT}" dns-zones-and-records dns LATEST
