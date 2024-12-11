@@ -39,17 +39,20 @@ export AWS_PROFILE=di-authentication-production-AWSAdministratorAccess
 
 export AWS_PAGER=
 export SKIP_AWS_AUTHENTICATION="${SKIP_AWS_AUTHENTICATION:-true}"
-export AUTO_APPLY_CHANGESET="${AUTO_APPLY_CHANGESET:-true}"
+export AUTO_APPLY_CHANGESET="${AUTO_APPLY_CHANGESET:-false}"
 
 # provision base stacks
 # ---------------------
 ./provisioner.sh "${AWS_ACCOUNT}" infra-audit-hook infrastructure-audit-hook LATEST
 ./provisioner.sh "${AWS_ACCOUNT}" lambda-audit-hook lambda-audit-hook LATEST
-./provisioner.sh "${AWS_ACCOUNT}" build-notifications build-notifications v2.3.2
-./provisioner.sh "${AWS_ACCOUNT}" vpc vpc v2.5.2
+./provisioner.sh "${AWS_ACCOUNT}" build-notifications build-notifications v2.3.3
+
+VPC_TEMPLATE_VERSION="v2.7.0"
+./provisioner.sh "${AWS_ACCOUNT}" vpc vpc "${VPC_TEMPLATE_VERSION}"
 
 # provision pipelines
 # -------------------
+PIPELINE_TEMPLATE_VERSION="v2.69.13"
 PARAMETERS_FILE="configuration/$AWS_ACCOUNT/frontend-pipeline/parameters.json"
 PARAMETERS=$(jq ". += [
                         {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
@@ -61,7 +64,7 @@ PARAMETERS=$(jq ". += [
 
 TMP_PARAM_FILE=$(mktemp)
 echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
-PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" frontend-pipeline sam-deploy-pipeline v2.68.0
+PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" frontend-pipeline sam-deploy-pipeline "${PIPELINE_TEMPLATE_VERSION}"
 
 # setting up domains
 # ------------------

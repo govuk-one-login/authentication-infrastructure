@@ -100,19 +100,21 @@ function provision_base_stacks {
     aws configure set region eu-west-2
     # ./provisioner.sh "${AWS_ACCOUNT}" alerting-integration alerting-integration v1.0.6
     # ./provisioner.sh "${AWS_ACCOUNT}" api-gateway-logs api-gateway-logs v1.0.5
-    ./provisioner.sh "${AWS_ACCOUNT}" build-notifications build-notifications v2.3.2
+    ./provisioner.sh "${AWS_ACCOUNT}" build-notifications build-notifications v2.3.3
     # ./provisioner.sh "${AWS_ACCOUNT}" certificate-expiry certificate-expiry v1.1.1
     # ./provisioner.sh "${AWS_ACCOUNT}" checkov-hook checkov-hook LATEST
     ./provisioner.sh "${AWS_ACCOUNT}" infra-audit-hook infrastructure-audit-hook LATEST
     ./provisioner.sh "${AWS_ACCOUNT}" lambda-audit-hook lambda-audit-hook LATEST
 
-    ./provisioner.sh "${AWS_ACCOUNT}" vpc vpc v2.5.2
+    VPC_TEMPLATE_VERSION="v2.7.0"
+    ./provisioner.sh "${AWS_ACCOUNT}" vpc vpc "${VPC_TEMPLATE_VERSION}"
 }
 
 # -------------------
 # provision pipelines
 # -------------------
 function provision_pipeline {
+    PIPELINE_TEMPLATE_VERSION="v2.69.13"
     PARAMETERS_FILE="configuration/$AWS_ACCOUNT/frontend-pipeline/parameters.json"
     PARAMETERS=$(jq ". += [
                             {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
@@ -126,7 +128,7 @@ function provision_pipeline {
     TMP_PARAM_FILE=$(mktemp)
     echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
     aws configure set region eu-west-2
-    PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" frontend-pipeline sam-deploy-pipeline v2.68.0
+    PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" frontend-pipeline sam-deploy-pipeline "${PIPELINE_TEMPLATE_VERSION}"
 }
 
 # ------------------
