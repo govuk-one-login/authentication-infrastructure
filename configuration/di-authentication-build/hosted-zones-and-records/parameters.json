@@ -1,0 +1,18 @@
+[
+  {
+    "ParameterKey": "Environment",
+    "ParameterValue": "build"
+  },
+  {
+    "ParameterKey": "EndpointSuffix",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "DeployHostedZone",
+    "ParameterValue": "Yes"
+  },
+  {
+    "ParameterKey": "DeployCertificate",
+    "ParameterValue": "Yes"
+  }
+]

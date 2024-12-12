@@ -6,7 +6,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 || exit
 
 function usage {
     cat <<USAGE
-  Script to bootstrap staging account
+  Script to bootstrap di-authentication-staging account
 
   Usage:
     $0 [-b|--base-stacks] [-p|--pipelines] [-t|--transitional-zone-resources] [-l|--live-zone-resources <zone-only|all>]
