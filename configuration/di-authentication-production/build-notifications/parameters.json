@@ -1,7 +1,7 @@
 [
   {
     "ParameterKey": "InitialNotificationStack",
-    "ParameterValue": "No"
+    "ParameterValue": "Yes"
   },
   {
     "ParameterKey": "SlackChannelId",
