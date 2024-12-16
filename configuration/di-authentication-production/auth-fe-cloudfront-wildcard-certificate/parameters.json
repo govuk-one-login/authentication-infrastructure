@@ -1,0 +1,6 @@
+[
+  {
+    "ParameterKey": "DomainName",
+    "ParameterValue": "*.account.gov.uk"
+  }
+]

@@ -256,6 +256,11 @@ function provision_notification {
     SAM_PARAMETERS=$( echo "$PARAMETERS" | jq -r '.[] | "\(.ParameterKey)=\(.ParameterValue)"' )
     TAGS=$(jq -r '.[] | "\(.Key)=\(.Value)" | gsub(" ";"-")' "configuration/${AWS_ACCOUNT}/tags.json")
 
+    CONFIRM_CHANGESET_OPTION="--confirm-changeset"
+    if [ "${AUTO_APPLY_CHANGESET}" == "true" ]; then
+        CONFIRM_CHANGESET_OPTION="--no-confirm-changeset"
+    fi
+
     aws configure set region us-east-1
     pushd alerts
     sam build
@@ -266,7 +271,7 @@ function provision_notification {
         --s3-prefix "${STACK_PREFIX}-cloudfront-notification" \
         --region "us-east-1" \
         --capabilities "CAPABILITY_IAM" \
-        --no-confirm-changeset \
+        $CONFIRM_CHANGESET_OPTION \
         --no-fail-on-empty-changeset \
         --parameter-overrides $SAM_PARAMETERS \
         --tags $TAGS

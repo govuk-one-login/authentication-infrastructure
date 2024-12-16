@@ -1,0 +1,26 @@
+[
+  {
+    "ParameterKey": "AddWWWPrefix",
+    "ParameterValue": "false"
+  },
+  {
+    "ParameterKey": "DistributionAlias",
+    "ParameterValue": "*.account.gov.uk"
+  },
+  {
+    "ParameterKey": "OriginAlias",
+    "ParameterValue": "origin.signin.account.gov.uk"
+  },
+  {
+    "ParameterKey": "FraudHeaderEnabled",
+    "ParameterValue": "true"
+  },
+  {
+    "ParameterKey": "StandardLoggingEnabled",
+    "ParameterValue": "true"
+  },
+  {
+    "ParameterKey": "LogDestination",
+    "ParameterValue": "csls_cw_logs_destination_prodpython-2"
+  }
+]
