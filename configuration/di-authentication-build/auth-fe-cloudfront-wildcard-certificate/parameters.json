@@ -1,0 +1,6 @@
+[
+  {
+    "ParameterKey": "DomainName",
+    "ParameterValue": "*.build.account.gov.uk"
+  }
+]
