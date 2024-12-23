@@ -28,7 +28,6 @@ export AUTO_APPLY_CHANGESET="${AUTO_APPLY_CHANGESET:-true}"
 VPC_TEMPLATE_VERSION="v2.7.0"
 ./provisioner.sh "${AWS_ACCOUNT}" vpc vpc "${VPC_TEMPLATE_VERSION}"
 ./provisioner.sh "${AWS_ACCOUNT}" authdev1-vpc vpc "${VPC_TEMPLATE_VERSION}"
-./provisioner.sh "${AWS_ACCOUNT}" authdev2-vpc vpc "${VPC_TEMPLATE_VERSION}"
 
 ./provisioner.sh "${AWS_ACCOUNT}" build-notifications build-notifications v2.3.3
 
@@ -42,21 +41,11 @@ CONTAINER_IMAGE_TEMPLATE_VERSION="v2.0.1"
 ./provisioner.sh "${AWS_ACCOUNT}" authdev1-frontend-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
 ./provisioner.sh "${AWS_ACCOUNT}" authdev1-basic-auth-sidecar-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
 ./provisioner.sh "${AWS_ACCOUNT}" authdev1-service-down-page-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
-./provisioner.sh "${AWS_ACCOUNT}" authdev1-acceptance-test-image-repository test-image-repository v1.2.0
 
 # NOTE: tag immutability is manually disabled for these ecr repositories
 ./provisioner.sh "${AWS_ACCOUNT}" authdev2-frontend-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
 ./provisioner.sh "${AWS_ACCOUNT}" authdev2-basic-auth-sidecar-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
 ./provisioner.sh "${AWS_ACCOUNT}" authdev2-service-down-page-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
-./provisioner.sh "${AWS_ACCOUNT}" authdev2-acceptance-test-image-repository test-image-repository v1.2.0
-
-# shellcheck disable=SC1091
-source "./scripts/read_cloudformation_stack_outputs.sh" "authdev1-acceptance-test-image-repository"
-Authdev1TestImageRepositoryUri=${CFN_authdev1_acceptance_test_image_repository_TestRunnerImageEcrRepositoryUri:-"none"}
-
-# shellcheck disable=SC1091
-source "./scripts/read_cloudformation_stack_outputs.sh" "authdev2-acceptance-test-image-repository"
-Authdev2TestImageRepositoryUri=${CFN_authdev2_acceptance_test_image_repository_TestRunnerImageEcrRepositoryUri:-"none"}
 
 # provision pipelines
 # -------------------
@@ -88,8 +77,7 @@ PARAMETERS_FILE="configuration/$AWS_ACCOUNT/authdev1-frontend-pipeline/parameter
 PARAMETERS=$(jq ". += [
                         {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
                         {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
-                        {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"},
-                        {\"ParameterKey\":\"TestImageRepositoryUri\",\"ParameterValue\":\"${Authdev1TestImageRepositoryUri}\"}
+                        {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"}
                     ] | tojson" -r "${PARAMETERS_FILE}")
 
 TMP_PARAM_FILE=$(mktemp)
@@ -101,8 +89,7 @@ PARAMETERS_FILE="configuration/$AWS_ACCOUNT/authdev2-frontend-pipeline/parameter
 PARAMETERS=$(jq ". += [
                         {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
                         {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
-                        {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"},
-                        {\"ParameterKey\":\"TestImageRepositoryUri\",\"ParameterValue\":\"${Authdev2TestImageRepositoryUri}\"}
+                        {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"}
                     ] | tojson" -r "${PARAMETERS_FILE}")
 
 TMP_PARAM_FILE=$(mktemp)
