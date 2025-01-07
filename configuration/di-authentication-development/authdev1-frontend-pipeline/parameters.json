@@ -17,7 +17,7 @@
   },
   {
     "ParameterKey": "VpcStackName",
-    "ParameterValue": "authdev1-vpc"
+    "ParameterValue": "vpc"
   },
   {
     "ParameterKey": "OneLoginRepositoryName",

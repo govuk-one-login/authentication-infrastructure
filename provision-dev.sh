@@ -27,7 +27,6 @@ export AUTO_APPLY_CHANGESET="${AUTO_APPLY_CHANGESET:-true}"
 
 VPC_TEMPLATE_VERSION="v2.7.0"
 ./provisioner.sh "${AWS_ACCOUNT}" vpc vpc "${VPC_TEMPLATE_VERSION}"
-./provisioner.sh "${AWS_ACCOUNT}" authdev1-vpc vpc "${VPC_TEMPLATE_VERSION}"
 
 ./provisioner.sh "${AWS_ACCOUNT}" build-notifications build-notifications v2.3.3
 
