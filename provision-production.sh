@@ -106,6 +106,8 @@ function provision_base_stacks {
 
     VPC_TEMPLATE_VERSION="v2.7.0"
     ./provisioner.sh "${AWS_ACCOUNT}" vpc vpc "${VPC_TEMPLATE_VERSION}"
+
+    TEMPLATE_BUCKET="backup-template-storage-templatebucket-747f3bzunrod" ./provisioner.sh "${AWS_ACCOUNT}" backup-monitoring backup-vault-monitoring LATEST
 }
 
 # -------------------

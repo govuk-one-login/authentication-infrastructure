@@ -1,0 +1,22 @@
+[
+  {
+    "ParameterKey": "CreateChatBotRole",
+    "ParameterValue": "No"
+  },
+  {
+    "ParameterKey": "DeployChatBot",
+    "ParameterValue": "Yes"
+  },
+  {
+    "ParameterKey": "Environment",
+    "ParameterValue": "production"
+  },
+  {
+    "ParameterKey": "SlackChannelId",
+    "ParameterValue": "C05NEU8E7KM"
+  },
+  {
+    "ParameterKey": "SlackWorkspaceId",
+    "ParameterValue": "T8GT9416G"
+  }
+]
