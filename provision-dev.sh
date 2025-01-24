@@ -161,6 +161,31 @@ function provision_pipeline {
     TMP_PARAM_FILE=$(mktemp)
     echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
     PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" ipv-stub-pipeline sam-deploy-pipeline "${PIPELINE_TEMPLATE_VERSION}"
+
+    # authdev1 ipv-stub pipeline
+    PARAMETERS_FILE="configuration/$AWS_ACCOUNT/authdev1-ipv-stub-pipeline/parameters.json"
+    PARAMETERS=$(jq ". += [
+                            {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
+                            {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
+                            {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"}
+                        ] | tojson" -r "${PARAMETERS_FILE}")
+
+    TMP_PARAM_FILE=$(mktemp)
+    echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+    PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev1-ipv-stub-pipeline sam-deploy-pipeline "${PIPELINE_TEMPLATE_VERSION}"
+
+    # authdev2 ipv-stub pipeline
+    PARAMETERS_FILE="configuration/$AWS_ACCOUNT/authdev2-ipv-stub-pipeline/parameters.json"
+    PARAMETERS=$(jq ". += [
+                            {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
+                            {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
+                            {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"}
+                        ] | tojson" -r "${PARAMETERS_FILE}")
+
+    TMP_PARAM_FILE=$(mktemp)
+    echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+    PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev2-ipv-stub-pipeline sam-deploy-pipeline "${PIPELINE_TEMPLATE_VERSION}"
+
 }
 
 # ------------------
