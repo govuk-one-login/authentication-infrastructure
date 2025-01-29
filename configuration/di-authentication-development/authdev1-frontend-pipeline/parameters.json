@@ -49,7 +49,7 @@
   },
   {
     "ParameterKey": "ECSCanaryDeployment",
-    "ParameterValue": "CodeDeployDefault.ECSAllAtOnce"
+    "ParameterValue": "None"
   },
   {
     "ParameterKey": "IncludePromotion",
