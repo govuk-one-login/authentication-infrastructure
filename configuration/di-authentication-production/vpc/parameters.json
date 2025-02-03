@@ -1,7 +1,7 @@
 [
   {
     "ParameterKey": "AllowedDomains",
-    "ParameterValue": "*.account.gov.uk"
+    "ParameterValue": "*.account.gov.uk,*.govuk.digital.,*.stubs.account.gov.uk.,account-api.publishing.service.gov.uk.,api.experianaperture.io.,api.notifications.service.gov.uk.,d2kjg78kcam6ku.cloudfront.net.,d2xewdefz31nxh.cloudfront.net.,govuk.zendesk.com.,metadata.google.internal.,noksyhw.x.incapdns.net."
   },
   {
     "ParameterKey": "CidrBlock",
