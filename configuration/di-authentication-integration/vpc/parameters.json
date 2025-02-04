@@ -1,7 +1,11 @@
 [
   {
     "ParameterKey": "AllowedDomains",
-    "ParameterValue": "*.integration.account.gov.uk,*.govuk.digital.,*.stubs.account.gov.uk.,account-api.integration.publishing.service.gov.uk.,api.experianaperture.io.,api.notifications.service.gov.uk.,d2kjg78kcam6ku.cloudfront.net.,de2ghtit0q15h.cloudfront.net.,govuk.zendesk.com.,metadata.google.internal.,noksyhw.x.incapdns.net."
+    "ParameterValue": "*.integration.account.gov.uk,*.govuk.digital.,*.stubs.account.gov.uk.,account-api.integration.publishing.service.gov.uk.,api.experianaperture.io.,api.notifications.service.gov.uk.,d2kjg78kcam6ku.cloudfront.net.,de2ghtit0q15h.cloudfront.net.,metadata.google.internal.,noksyhw.x.incapdns.net."
+  },
+  {
+    "ParameterKey": "AllowRules",
+    "ParameterValue": "pass tls $HOME_NET any -> $EXTERNAL_NET 443 (tls.sni; content:\".govuk.digital\"; startswith; endswith; msg:\"Pass TLS to *.govuk.digital\"; flow:established; sid:2002; rev:1;)\npass tls $HOME_NET any -> $EXTERNAL_NET 443 (tls.sni; content:\"account-api.integration.publishing.service.gov.uk\"; startswith; endswith; msg:\"Pass TLS to account-api.integration.publishing.service.gov.uk\"; flow:established; sid:2004; rev:1;)\npass tls $HOME_NET any -> $EXTERNAL_NET 443 (tls.sni; content:\"api.experianaperture.io\"; startswith; endswith; msg:\"Pass TLS to api.experianaperture.io\"; flow:established; sid:2005; rev:1;)\npass tls $HOME_NET any -> $EXTERNAL_NET 443 (tls.sni; content:\"api.notifications.service.gov.uk\"; startswith; endswith; msg:\"Pass TLS to api.notifications.service.gov.uk\"; flow:established; sid:2006; rev:1;)\npass tls $HOME_NET any -> $EXTERNAL_NET 443 (tls.sni; content:\"d2kjg78kcam6ku.cloudfront.net\"; startswith; endswith; msg:\"Pass TLS to d2kjg78kcam6ku.cloudfront.net\"; flow:established; sid:2007; rev:1;)\npass tls $HOME_NET any -> $EXTERNAL_NET 443 (tls.sni; content:\"de2ghtit0q15h.cloudfront.net\"; startswith; endswith; msg:\"Pass TLS to de2ghtit0q15h.cloudfront.net\"; flow:established; sid:2008; rev:1;)\npass tls $HOME_NET any -> $EXTERNAL_NET 443 (tls.sni; content:\"metadata.google.internal\"; startswith; endswith; msg:\"Pass TLS to metadata.google.internal\"; flow:established; sid:2010; rev:1;)\npass tls $HOME_NET any -> $EXTERNAL_NET 443 (tls.sni; content:\"noksyhw.x.incapdns.net\"; startswith; endswith; msg:\"Pass TLS to noksyhw.x.incapdns.net\"; flow:established; sid:2011; rev:1;)"
   },
   {
     "ParameterKey": "CidrBlock",
