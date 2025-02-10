@@ -1,0 +1,22 @@
+[
+  {
+    "ParameterKey": "SAMStackName",
+    "ParameterValue": "build-orch-stub"
+  },
+  {
+    "ParameterKey": "Environment",
+    "ParameterValue": "build"
+  },
+  {
+    "ParameterKey": "OneLoginRepositoryName",
+    "ParameterValue": "authentication-stubs"
+  },
+  {
+    "ParameterKey": "AllowedAccounts",
+    "ParameterValue": "851725205974"
+  },
+  {
+    "ParameterKey": "IncludePromotion",
+    "ParameterValue": "Yes"
+  }
+]

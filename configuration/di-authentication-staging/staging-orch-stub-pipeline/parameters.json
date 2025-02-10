@@ -1,0 +1,14 @@
+[
+  {
+    "ParameterKey": "SAMStackName",
+    "ParameterValue": "staging-orch-stub"
+  },
+  {
+    "ParameterKey": "Environment",
+    "ParameterValue": "staging"
+  },
+  {
+    "ParameterKey": "IncludePromotion",
+    "ParameterValue": "No"
+  }
+]
