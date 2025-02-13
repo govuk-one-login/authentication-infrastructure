@@ -107,13 +107,22 @@ source "./scripts/read_parameters.sh" "${PARAMS_ENV}"
 # --------------------------------------------------------
 function provision_waf {
     PARAMETERS_FILE="configuration/${AWS_ACCOUNT}/${STACK_PREFIX}-cloudfront-waf/parameters.json"
-    RateLimitedEndpoints=$(echo "${rate_limited_endpoints:-""}" | sed -e 's/\"//g' -e 's/ //g' -e 's/\[//' -e 's/\]//') # trim quotes, spaces and [] brackets
-    RateLimitedEndpointsRateLimitPeriod=${rate_limited_endpoints_rate_limit_period:-120}
-    RateLimitedEndpointsRequestsPerPeriod=${rate_limited_endpoints_requests_per_period:-100000}
+
+    RateLimitByIPEndpoints=$(echo "${ip_endpoint_rate_limiting_configuration:-""}"  | jq -r '.[0].endpoints | flatten[]' | xargs | tr " " ",")    # get the endpoints, flatten the list, single line comma-separated output
+    RateLimitByIPRateLimitPeriod=$(echo "${ip_endpoint_rate_limiting_configuration:-""}" | jq -r '.[0].evaluation_window_sec')
+    RateLimitByIPRequestsPerPeriod=$(echo "${ip_endpoint_rate_limiting_configuration:-""}"  | jq -r '.[0].limit')
+
+    RateLimitByApsSessionEndpoints=$(echo "${aps_session_endpoint_rate_limiting_configuration:-""}"  | jq -r '.[0].endpoints | flatten[]' | xargs | tr " " ",")    # get the endpoints, flatten the list, single line comma-separated output
+    RateLimitByApsSessionRateLimitPeriod=$(echo "${aps_session_endpoint_rate_limiting_configuration:-""}" | jq -r '.[0].evaluation_window_sec')
+    RateLimitByApsSessionRequestsPerPeriod=$(echo "${aps_session_endpoint_rate_limiting_configuration:-""}"  | jq -r '.[0].limit')
+
     PARAMETERS=$(jq ". += [
-                            {\"ParameterKey\":\"RateLimitedEndpoints\",\"ParameterValue\":\"${RateLimitedEndpoints}\"},
-                            {\"ParameterKey\":\"RateLimitedEndpointsRateLimitPeriod\",\"ParameterValue\":\"${RateLimitedEndpointsRateLimitPeriod}\"},
-                            {\"ParameterKey\":\"RateLimitedEndpointsRequestsPerPeriod\",\"ParameterValue\":\"${RateLimitedEndpointsRequestsPerPeriod}\"}
+                            {\"ParameterKey\":\"RateLimitByIPEndpoints\",\"ParameterValue\":\"${RateLimitByIPEndpoints}\"},
+                            {\"ParameterKey\":\"RateLimitByIPRateLimitPeriod\",\"ParameterValue\":\"${RateLimitByIPRateLimitPeriod}\"},
+                            {\"ParameterKey\":\"RateLimitByIPRequestsPerPeriod\",\"ParameterValue\":\"${RateLimitByIPRequestsPerPeriod}\"},
+                            {\"ParameterKey\":\"RateLimitByApsSessionEndpoints\",\"ParameterValue\":\"${RateLimitByApsSessionEndpoints}\"},
+                            {\"ParameterKey\":\"RateLimitByApsSessionRateLimitPeriod\",\"ParameterValue\":\"${RateLimitByApsSessionRateLimitPeriod}\"},
+                            {\"ParameterKey\":\"RateLimitByApsSessionRequestsPerPeriod\",\"ParameterValue\":\"${RateLimitByApsSessionRequestsPerPeriod}\"}
                         ] | tojson" -r "${PARAMETERS_FILE}")
     TMP_PARAM_FILE=$(mktemp)
     echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
