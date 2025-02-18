@@ -31,24 +31,24 @@ PROVISION_LIVE_HOSTED_ZONE_AND_RECORDS=false
 
 while [[ $# -gt 0 ]]; do
     case "${1}" in
-        -b | --base-stacks)
-            PROVISION_BASE_STACKS=true
-            ;;
-        -p | --pipelines)
-            PROVISION_PIPELINES=true
-            ;;
-        -t | --transitional-zone-resources)
-            PROVISION_TRANSITIONAL_HOSTED_ZONE_AND_RECORDS=true
-            ;;
-        -l | --live-zone-resources)
-            PROVISION_LIVE_HOSTED_ZONE_AND_RECORDS=true
-            DEPLOY_CONFIG=${2}
-            shift
-            ;;
-        *)
-            usage
-            exit 1
-            ;;
+    -b | --base-stacks)
+        PROVISION_BASE_STACKS=true
+        ;;
+    -p | --pipelines)
+        PROVISION_PIPELINES=true
+        ;;
+    -t | --transitional-zone-resources)
+        PROVISION_TRANSITIONAL_HOSTED_ZONE_AND_RECORDS=true
+        ;;
+    -l | --live-zone-resources)
+        PROVISION_LIVE_HOSTED_ZONE_AND_RECORDS=true
+        DEPLOY_CONFIG=${2}
+        shift
+        ;;
+    *)
+        usage
+        exit 1
+        ;;
     esac
     shift
 done
@@ -106,7 +106,6 @@ function provision_base_stacks {
 
     CONTAINER_IMAGE_TEMPLATE_VERSION="v2.0.1"
     ./provisioner.sh "${AWS_ACCOUNT}" frontend-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
-    ./provisioner.sh "${AWS_ACCOUNT}" basic-auth-sidecar-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
     ./provisioner.sh "${AWS_ACCOUNT}" service-down-page-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
 
     ./provisioner.sh "${AWS_ACCOUNT}" acceptance-tests-image-repository test-image-repository v1.2.0
@@ -126,7 +125,7 @@ function provision_pipeline {
                         ] | tojson" -r "${PARAMETERS_FILE}")
 
     TMP_PARAM_FILE=$(mktemp)
-    echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+    echo "$PARAMETERS" | jq -r >"$TMP_PARAM_FILE"
     aws configure set region eu-west-2
     PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" frontend-pipeline sam-deploy-pipeline "${PIPELINE_TEMPLATE_VERSION}"
 
@@ -139,7 +138,7 @@ function provision_pipeline {
                         ] | tojson" -r "${PARAMETERS_FILE}")
 
     TMP_PARAM_FILE=$(mktemp)
-    echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+    echo "$PARAMETERS" | jq -r >"$TMP_PARAM_FILE"
     PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" build-ipv-stub-pipeline sam-deploy-pipeline "${PIPELINE_TEMPLATE_VERSION}"
 }
 
@@ -154,17 +153,17 @@ function provision_transitional_hosted_zone_and_records {
 
 function provision_live_hosted_zone_and_records {
     case "${DEPLOY_CONFIG}" in
-        zone-only)
-            PARAMETERS_FILE="configuration/$AWS_ACCOUNT/hosted-zones-and-records/zone-only-parameters.json"
-            ;;
-        all)
-            PARAMETERS_FILE="configuration/$AWS_ACCOUNT/hosted-zones-and-records/parameters.json"
-            ;;
-        *)
-            echo "Unknown live domain deploy configuration: $DEPLOY_CONFIG"
-            usage
-            exit 1
-            ;;
+    zone-only)
+        PARAMETERS_FILE="configuration/$AWS_ACCOUNT/hosted-zones-and-records/zone-only-parameters.json"
+        ;;
+    all)
+        PARAMETERS_FILE="configuration/$AWS_ACCOUNT/hosted-zones-and-records/parameters.json"
+        ;;
+    *)
+        echo "Unknown live domain deploy configuration: $DEPLOY_CONFIG"
+        usage
+        exit 1
+        ;;
     esac
 
     # deploy signin domain resources
