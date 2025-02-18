@@ -141,7 +141,19 @@ function provision_pipeline {
     TMP_PARAM_FILE=$(mktemp)
     echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
     PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" build-ipv-stub-pipeline sam-deploy-pipeline "${PIPELINE_TEMPLATE_VERSION}"
-}
+
+    # orch-stub pipeline
+    PARAMETERS_FILE="configuration/$AWS_ACCOUNT/build-orch-stub-pipeline/parameters.json"
+    PARAMETERS=$(jq ". += [
+                            {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
+                            {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
+                            {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"}
+                        ] | tojson" -r "${PARAMETERS_FILE}")
+
+    TMP_PARAM_FILE=$(mktemp)
+    echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+    PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" build-orch-stub-pipeline sam-deploy-pipeline v2.67.1
+    }
 
 # ------------------
 # setting up domains
