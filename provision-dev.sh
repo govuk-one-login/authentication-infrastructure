@@ -29,19 +29,19 @@ PROVISION_TRANSITIONAL_HOSTED_ZONE_AND_RECORDS=false
 
 while [[ $# -gt 0 ]]; do
     case "${1}" in
-        -b | --base-stacks)
-            PROVISION_BASE_STACKS=true
-            ;;
-        -p | --pipelines)
-            PROVISION_PIPELINES=true
-            ;;
-        -t | --transitional-zone-resources)
-            PROVISION_TRANSITIONAL_HOSTED_ZONE_AND_RECORDS=true
-            ;;
-        *)
-            usage
-            exit 1
-            ;;
+    -b | --base-stacks)
+        PROVISION_BASE_STACKS=true
+        ;;
+    -p | --pipelines)
+        PROVISION_PIPELINES=true
+        ;;
+    -t | --transitional-zone-resources)
+        PROVISION_TRANSITIONAL_HOSTED_ZONE_AND_RECORDS=true
+        ;;
+    *)
+        usage
+        exit 1
+        ;;
     esac
     shift
 done
@@ -84,17 +84,14 @@ function provision_base_stacks {
     CONTAINER_IMAGE_TEMPLATE_VERSION="v2.0.1"
     # NOTE: tag immutability is manually disabled for these ecr repositories
     ./provisioner.sh "${AWS_ACCOUNT}" frontend-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
-    ./provisioner.sh "${AWS_ACCOUNT}" basic-auth-sidecar-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
     ./provisioner.sh "${AWS_ACCOUNT}" service-down-page-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
 
     # NOTE: tag immutability is manually disabled for these ecr repositories
     ./provisioner.sh "${AWS_ACCOUNT}" authdev1-frontend-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
-    ./provisioner.sh "${AWS_ACCOUNT}" authdev1-basic-auth-sidecar-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
     ./provisioner.sh "${AWS_ACCOUNT}" authdev1-service-down-page-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
 
     # NOTE: tag immutability is manually disabled for these ecr repositories
     ./provisioner.sh "${AWS_ACCOUNT}" authdev2-frontend-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
-    ./provisioner.sh "${AWS_ACCOUNT}" authdev2-basic-auth-sidecar-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
     ./provisioner.sh "${AWS_ACCOUNT}" authdev2-service-down-page-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
 }
 
@@ -123,7 +120,7 @@ function provision_pipeline {
                         ] | tojson" -r "${PARAMETERS_FILE}")
 
     TMP_PARAM_FILE=$(mktemp)
-    echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+    echo "$PARAMETERS" | jq -r >"$TMP_PARAM_FILE"
     PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" frontend-pipeline sam-deploy-pipeline "${PIPELINE_TEMPLATE_VERSION}"
 
     # authdev1-frontend
@@ -135,7 +132,7 @@ function provision_pipeline {
                         ] | tojson" -r "${PARAMETERS_FILE}")
 
     TMP_PARAM_FILE=$(mktemp)
-    echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+    echo "$PARAMETERS" | jq -r >"$TMP_PARAM_FILE"
     PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev1-frontend-pipeline sam-deploy-pipeline "${PIPELINE_TEMPLATE_VERSION}"
 
     # authdev2-frontend
@@ -147,7 +144,7 @@ function provision_pipeline {
                         ] | tojson" -r "${PARAMETERS_FILE}")
 
     TMP_PARAM_FILE=$(mktemp)
-    echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+    echo "$PARAMETERS" | jq -r >"$TMP_PARAM_FILE"
     PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev2-frontend-pipeline sam-deploy-pipeline "${PIPELINE_TEMPLATE_VERSION}"
 
     # dev ipv-stub pipeline
@@ -159,7 +156,7 @@ function provision_pipeline {
                         ] | tojson" -r "${PARAMETERS_FILE}")
 
     TMP_PARAM_FILE=$(mktemp)
-    echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+    echo "$PARAMETERS" | jq -r >"$TMP_PARAM_FILE"
     PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" ipv-stub-pipeline sam-deploy-pipeline "${PIPELINE_TEMPLATE_VERSION}"
 
     # authdev1 ipv-stub pipeline
@@ -171,7 +168,7 @@ function provision_pipeline {
                         ] | tojson" -r "${PARAMETERS_FILE}")
 
     TMP_PARAM_FILE=$(mktemp)
-    echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+    echo "$PARAMETERS" | jq -r >"$TMP_PARAM_FILE"
     PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev1-ipv-stub-pipeline sam-deploy-pipeline "${PIPELINE_TEMPLATE_VERSION}"
 
     # authdev2 ipv-stub pipeline
@@ -183,7 +180,7 @@ function provision_pipeline {
                         ] | tojson" -r "${PARAMETERS_FILE}")
 
     TMP_PARAM_FILE=$(mktemp)
-    echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+    echo "$PARAMETERS" | jq -r >"$TMP_PARAM_FILE"
     PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev2-ipv-stub-pipeline sam-deploy-pipeline "${PIPELINE_TEMPLATE_VERSION}"
 
 }
