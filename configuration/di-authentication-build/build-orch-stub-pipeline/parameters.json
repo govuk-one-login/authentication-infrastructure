@@ -1,7 +1,7 @@
 [
   {
     "ParameterKey": "SAMStackName",
-    "ParameterValue": "build-sp-orch-stub"
+    "ParameterValue": "build-orch-stub"
   },
   {
     "ParameterKey": "Environment",
@@ -13,7 +13,7 @@
   },
   {
     "ParameterKey": "AllowedAccounts",
-    "ParameterValue": "758531536632"
+    "ParameterValue": "851725205974"
   },
   {
     "ParameterKey": "IncludePromotion",
