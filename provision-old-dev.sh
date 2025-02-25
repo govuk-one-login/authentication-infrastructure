@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Ensure we are in the directory of the script
-cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 || exit
+cd "$(dirname "${BASH_SOURCE[0]}")" > /dev/null 2>&1 || exit
 
 # --------------------------
 # dev account initialisation

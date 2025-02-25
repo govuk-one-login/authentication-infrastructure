@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v5.0.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
@@ -17,14 +17,15 @@ repos:
       - id: shellcheck
 
   - repo: https://github.com/pecigonzalo/pre-commit-shfmt
-    rev: 178a638f03c8d0e19ce610a1235d46fc6854732e # v2.2.0
+    rev: v2.2.0
     hooks:
       - id: shell-fmt-go
         args:
-          - -i
-          - "2"
+          - -w
+          - -s
+          - -l
 
   - repo: https://github.com/rhysd/actionlint
-    rev: v1.7.1
+    rev: v1.7.7
     hooks:
       - id: actionlint
