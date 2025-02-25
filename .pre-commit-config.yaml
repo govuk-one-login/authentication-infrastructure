@@ -21,8 +21,9 @@ repos:
     hooks:
       - id: shell-fmt-go
         args:
-          - -i
-          - "2"
+          - -w
+          - -s
+          - -l
 
   - repo: https://github.com/rhysd/actionlint
     rev: v1.7.1
