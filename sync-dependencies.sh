@@ -2,7 +2,7 @@
 # set -euo pipefail
 
 # Ensure we are in the directory of the script
-cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 || exit
+cd "$(dirname "${BASH_SOURCE[0]}")" > /dev/null 2>&1 || exit
 
 function pull_with_force_rebase {
   local branch="${1}"
@@ -19,13 +19,13 @@ function pull_with_force_rebase {
 current_branch=$(git rev-parse --abbrev-ref HEAD)
 
 if [ ! -d "authentication-frontend" ]; then
-  git clone --depth=1 -b "$current_branch" git@github.com:govuk-one-login/authentication-frontend.git authentication-frontend ||
-  git clone --depth=1 -b main git@github.com:govuk-one-login/authentication-frontend.git authentication-frontend
+  git clone --depth=1 -b "$current_branch" git@github.com:govuk-one-login/authentication-frontend.git authentication-frontend \
+    || git clone --depth=1 -b main git@github.com:govuk-one-login/authentication-frontend.git authentication-frontend
 else
   pushd authentication-frontend || exit
   retries=3
   echo "Refreshing authentication-frontend subdirectory..."
-  for ((i=0; i<retries; i++)); do
+  for ((i = 0; i < retries; i++)); do
     echo "retry: $i"
     ret=$(pull_with_force_rebase "${current_branch}")
     if [ "$(echo "$ret" | grep -o "error" | wc -l)" -eq 0 ]; then

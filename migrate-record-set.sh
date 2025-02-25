@@ -2,9 +2,12 @@
 set -euo pipefail
 
 # Ensure we are in the directory of the script
-cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 || exit
+cd "$(dirname "${BASH_SOURCE[0]}")" > /dev/null 2>&1 || exit
 
-[ $# = 2 ] || { echo "Usage: $(basename "$0" .sh) newzoneid env(production or integration )" >&2; exit 1; }
+[ $# = 2 ] || {
+  echo "Usage: $(basename "$0" .sh) newzoneid env(production or integration )" >&2
+  exit 1
+}
 
 export AWS_PROFILE=di-authentication-"${2}"-AWSAdministratorAccess
 aws sso login --profile "${AWS_PROFILE}"

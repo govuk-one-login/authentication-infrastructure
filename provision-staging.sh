@@ -2,10 +2,10 @@
 set -euo pipefail
 
 # Ensure we are in the directory of the script
-cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 || exit
+cd "$(dirname "${BASH_SOURCE[0]}")" > /dev/null 2>&1 || exit
 
 function usage {
-    cat <<USAGE
+  cat << USAGE
   Script to bootstrap di-authentication-staging account
 
   Usage:
@@ -20,8 +20,8 @@ USAGE
 }
 
 if [ $# -lt 1 ]; then
-    usage
-    exit 1
+  usage
+  exit 1
 fi
 
 PROVISION_BASE_STACKS=false
@@ -30,27 +30,27 @@ PROVISION_TRANSITIONAL_HOSTED_ZONE_AND_RECORDS=false
 PROVISION_LIVE_HOSTED_ZONE_AND_RECORDS=false
 
 while [[ $# -gt 0 ]]; do
-    case "${1}" in
-        -b | --base-stacks)
-            PROVISION_BASE_STACKS=true
-            ;;
-        -p | --pipelines)
-            PROVISION_PIPELINES=true
-            ;;
-        -t | --transitional-zone-resources)
-            PROVISION_TRANSITIONAL_HOSTED_ZONE_AND_RECORDS=true
-            ;;
-        -l | --live-zone-resources)
-            PROVISION_LIVE_HOSTED_ZONE_AND_RECORDS=true
-            DEPLOY_CONFIG=${2}
-            shift
-            ;;
-        *)
-            usage
-            exit 1
-            ;;
-    esac
-    shift
+  case "${1}" in
+    -b | --base-stacks)
+      PROVISION_BASE_STACKS=true
+      ;;
+    -p | --pipelines)
+      PROVISION_PIPELINES=true
+      ;;
+    -t | --transitional-zone-resources)
+      PROVISION_TRANSITIONAL_HOSTED_ZONE_AND_RECORDS=true
+      ;;
+    -l | --live-zone-resources)
+      PROVISION_LIVE_HOSTED_ZONE_AND_RECORDS=true
+      DEPLOY_CONFIG=${2}
+      shift
+      ;;
+    *)
+      usage
+      exit 1
+      ;;
+  esac
+  shift
 done
 
 # --------------------------------------------
@@ -102,27 +102,27 @@ export AUTO_APPLY_CHANGESET="${AUTO_APPLY_CHANGESET:-false}"
 # provision base stacks
 # ---------------------
 function provision_base_stacks {
-    aws configure set region eu-west-2
-    # ./provisioner.sh "${AWS_ACCOUNT}" alerting-integration alerting-integration v1.0.6
-    # ./provisioner.sh "${AWS_ACCOUNT}" api-gateway-logs api-gateway-logs v1.0.5
-    ./provisioner.sh "${AWS_ACCOUNT}" build-notifications build-notifications v2.3.3
-    # ./provisioner.sh "${AWS_ACCOUNT}" certificate-expiry certificate-expiry v1.1.1
-    # ./provisioner.sh "${AWS_ACCOUNT}" checkov-hook checkov-hook LATEST
-    ./provisioner.sh "${AWS_ACCOUNT}" infra-audit-hook infrastructure-audit-hook LATEST
-    ./provisioner.sh "${AWS_ACCOUNT}" lambda-audit-hook lambda-audit-hook LATEST
+  aws configure set region eu-west-2
+  # ./provisioner.sh "${AWS_ACCOUNT}" alerting-integration alerting-integration v1.0.6
+  # ./provisioner.sh "${AWS_ACCOUNT}" api-gateway-logs api-gateway-logs v1.0.5
+  ./provisioner.sh "${AWS_ACCOUNT}" build-notifications build-notifications v2.3.3
+  # ./provisioner.sh "${AWS_ACCOUNT}" certificate-expiry certificate-expiry v1.1.1
+  # ./provisioner.sh "${AWS_ACCOUNT}" checkov-hook checkov-hook LATEST
+  ./provisioner.sh "${AWS_ACCOUNT}" infra-audit-hook infrastructure-audit-hook LATEST
+  ./provisioner.sh "${AWS_ACCOUNT}" lambda-audit-hook lambda-audit-hook LATEST
 
-    VPC_TEMPLATE_VERSION="v2.7.0"
-    ./provisioner.sh "${AWS_ACCOUNT}" vpc vpc "${VPC_TEMPLATE_VERSION}"
-    TEMPLATE_BUCKET="backup-template-storage-templatebucket-747f3bzunrod" ./provisioner.sh "${AWS_ACCOUNT}" backup-monitoring backup-vault-monitoring LATEST
+  VPC_TEMPLATE_VERSION="v2.7.0"
+  ./provisioner.sh "${AWS_ACCOUNT}" vpc vpc "${VPC_TEMPLATE_VERSION}"
+  TEMPLATE_BUCKET="backup-template-storage-templatebucket-747f3bzunrod" ./provisioner.sh "${AWS_ACCOUNT}" backup-monitoring backup-vault-monitoring LATEST
 }
 
 # -------------------
 # provision pipelines
 # -------------------
 function provision_pipeline {
-    PIPELINE_TEMPLATE_VERSION="v2.69.13"
-    PARAMETERS_FILE="configuration/$AWS_ACCOUNT/frontend-pipeline/parameters.json"
-    PARAMETERS=$(jq ". += [
+  PIPELINE_TEMPLATE_VERSION="v2.69.13"
+  PARAMETERS_FILE="configuration/$AWS_ACCOUNT/frontend-pipeline/parameters.json"
+  PARAMETERS=$(jq ". += [
                             {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
                             {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
                             {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"},
@@ -131,14 +131,14 @@ function provision_pipeline {
                             {\"ParameterKey\":\"TestImageRepositoryUri\",\"ParameterValue\":\"${TestImageRepositoryUri}\"}
                         ] | tojson" -r "${PARAMETERS_FILE}")
 
-    TMP_PARAM_FILE=$(mktemp)
-    echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
-    aws configure set region eu-west-2
-    PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" frontend-pipeline sam-deploy-pipeline "${PIPELINE_TEMPLATE_VERSION}"
+  TMP_PARAM_FILE=$(mktemp)
+  echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+  aws configure set region eu-west-2
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" frontend-pipeline sam-deploy-pipeline "${PIPELINE_TEMPLATE_VERSION}"
 
-    # orch-stub pipeline
-    PARAMETERS_FILE="configuration/$AWS_ACCOUNT/staging-orch-stub-pipeline/parameters.json"
-    PARAMETERS=$(jq ". += [
+  # orch-stub pipeline
+  PARAMETERS_FILE="configuration/$AWS_ACCOUNT/staging-orch-stub-pipeline/parameters.json"
+  PARAMETERS=$(jq ". += [
                             {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
                             {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
                             {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"},
@@ -146,38 +146,38 @@ function provision_pipeline {
                             {\"ParameterKey\":\"ArtifactSourceBucketEventTriggerRoleArn\",\"ParameterValue\":\"${BuildOrchStubArtifactSourceBucketEventTriggerRoleArn}\"}
                         ] | tojson" -r "${PARAMETERS_FILE}")
 
-    TMP_PARAM_FILE=$(mktemp)
-    echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
-    PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" staging-orch-stub-pipeline sam-deploy-pipeline v2.67.1
+  TMP_PARAM_FILE=$(mktemp)
+  echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" staging-orch-stub-pipeline sam-deploy-pipeline v2.67.1
 }
 
 # ------------------
 # setting up domains
 # ------------------
 function provision_transitional_hosted_zone_and_records {
-    # deploy signin-sp domain resources
-    aws configure set region eu-west-2
-    TEMPLATE_URL=file://authentication-frontend/cloudformation/domains/template.yaml ./provisioner.sh "${AWS_ACCOUNT}" dns-zones-and-records dns LATEST
+  # deploy signin-sp domain resources
+  aws configure set region eu-west-2
+  TEMPLATE_URL=file://authentication-frontend/cloudformation/domains/template.yaml ./provisioner.sh "${AWS_ACCOUNT}" dns-zones-and-records dns LATEST
 }
 
 function provision_live_hosted_zone_and_records {
-    case "${DEPLOY_CONFIG}" in
-        zone-only)
-            PARAMETERS_FILE="configuration/$AWS_ACCOUNT/hosted-zones-and-records/zone-only-parameters.json"
-            ;;
-        all)
-            PARAMETERS_FILE="configuration/$AWS_ACCOUNT/hosted-zones-and-records/parameters.json"
-            ;;
-        *)
-            echo "Unknown live domain deploy configuration: $DEPLOY_CONFIG"
-            usage
-            exit 1
-            ;;
-    esac
+  case "${DEPLOY_CONFIG}" in
+    zone-only)
+      PARAMETERS_FILE="configuration/$AWS_ACCOUNT/hosted-zones-and-records/zone-only-parameters.json"
+      ;;
+    all)
+      PARAMETERS_FILE="configuration/$AWS_ACCOUNT/hosted-zones-and-records/parameters.json"
+      ;;
+    *)
+      echo "Unknown live domain deploy configuration: $DEPLOY_CONFIG"
+      usage
+      exit 1
+      ;;
+  esac
 
-    # deploy signin domain resources
-    aws configure set region eu-west-2
-    PARAMETERS_FILE=$PARAMETERS_FILE TEMPLATE_URL=file://authentication-frontend/cloudformation/domains/template.yaml ./provisioner.sh "${AWS_ACCOUNT}" hosted-zones-and-records dns LATEST
+  # deploy signin domain resources
+  aws configure set region eu-west-2
+  PARAMETERS_FILE=$PARAMETERS_FILE TEMPLATE_URL=file://authentication-frontend/cloudformation/domains/template.yaml ./provisioner.sh "${AWS_ACCOUNT}" hosted-zones-and-records dns LATEST
 }
 
 # --------------------

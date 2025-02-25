@@ -1,13 +1,13 @@
 #!/bin/bash
 set -euo pipefail
 
-[[ "${BASH_SOURCE[0]}" != "${0}" ]] || {
+[[ ${BASH_SOURCE[0]} != "${0}" ]] || {
   echo "Error: Script must be sourced, not executed"
   exit 1
 }
 
 ENVIRONMENT="${1}"
-configured_region="$(aws configure get region 2>/dev/null || true)"
+configured_region="$(aws configure get region 2> /dev/null || true)"
 REGION="${configured_region:-eu-west-2}"
 
 if [ "$ENVIRONMENT" = "dev" ]; then
@@ -16,8 +16,8 @@ fi
 
 parameters="$(
   aws ssm get-parameters-by-path \
-    --recursive --path "/deploy/${ENVIRONMENT}" --region "${REGION}" |
-    jq -r '.Parameters[]|[(.Name|split("/")|last), .Value]|@tsv'
+    --recursive --path "/deploy/${ENVIRONMENT}" --region "${REGION}" \
+    | jq -r '.Parameters[]|[(.Name|split("/")|last), .Value]|@tsv'
 )"
 
 if [ -z "${parameters}" ]; then
@@ -30,6 +30,6 @@ while IFS=$'\t' read -r name value; do
   echo -n "."
   name_in_underscore=$(echo "${name}" | tr "-" "_")
   export "${name_in_underscore}"="${value}"
-done <<<"${parameters}"
+done <<< "${parameters}"
 
 echo "Parameters exported"

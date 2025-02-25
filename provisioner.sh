@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Ensure we are in the directory of the script
-cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 || exit
+cd "$(dirname "${BASH_SOURCE[0]}")" > /dev/null 2>&1 || exit
 
 # Fail fast if AWS_PROFILE is not set
 if [ -z "${AWS_PROFILE}" ]; then
@@ -18,11 +18,11 @@ function aws_credentials {
     echo "Please visit https://govukverify.atlassian.net/wiki/x/IgFm5 for instructions."
     exit 1
   fi
-  if ! aws sts get-caller-identity >/dev/null; then
+  if ! aws sts get-caller-identity > /dev/null; then
     aws sso login --sso-session "${sso_session}"
   fi
 
-  configured_region="$(aws configure get region 2>/dev/null || true)"
+  configured_region="$(aws configure get region 2> /dev/null || true)"
   export AWS_REGION="${configured_region:-eu-west-2}"
 }
 
@@ -33,9 +33,9 @@ function stack_exists {
     --stack-name "${stack_name}" \
     --query "Stacks[0].StackStatus" --output text || echo "NO_STACK")
 
-  if [[ "$stack_state" == "NO_STACK" ]]; then
+  if [[ $stack_state == "NO_STACK" ]]; then
     return 1
-  elif [[ "$stack_state" = "ROLLBACK_COMPLETE" ]]; then
+  elif [[ $stack_state == "ROLLBACK_COMPLETE" ]]; then
     echo "Deleting stack ${stack_name} (in ROLLBACK_COMPLETE state) ..."
     aws cloudformation delete-stack --stack-name "${stack_name}"
     aws cloudformation wait stack-delete-complete --stack-name "${stack_name}"
@@ -52,8 +52,8 @@ function get_versionid {
 
   local template_key="${stack_template}/template.yaml"
 
-  for version_id in $(aws s3api list-object-versions --bucket "${TEMPLATE_BUCKET}" --prefix "${template_key}" |
-    jq -r '.Versions[].VersionId'); do
+  for version_id in $(aws s3api list-object-versions --bucket "${TEMPLATE_BUCKET}" --prefix "${template_key}" \
+    | jq -r '.Versions[].VersionId'); do
 
     echo "looking for ${template_version} in VersionId ${version_id}" >&2
     FOUND_VERSION="$(aws s3api head-object --bucket "${TEMPLATE_BUCKET}" --key "${template_key}" \
@@ -149,7 +149,7 @@ function describe_change_set {
     output_format="$3"
   fi
 
-  if [[ "$output_format" != "json" ]]; then
+  if [[ $output_format != "json" ]]; then
     echo "${change_set_name} changes:"
   fi
 
@@ -187,7 +187,7 @@ function get_stack_outputs {
     output_format="$2"
   fi
 
-  if [[ "$output_format" != "json" ]]; then
+  if [[ $output_format != "json" ]]; then
     echo "${stack_name} outputs:"
   fi
 
@@ -249,7 +249,7 @@ function main {
 
   echo -e "Getting ${STACK_TEMPLATE} template VersionId for ${TEMPLATE_VERSION}"
 
-  if [[ "$TEMPLATE_VERSION" != "LATEST" ]]; then
+  if [[ $TEMPLATE_VERSION != "LATEST" ]]; then
     if ! VERSION_ID=$(get_versionid "${STACK_TEMPLATE}" "${TEMPLATE_VERSION}"); then
       echo "Unable to find version ${TEMPLATE_VERSION} for template ${STACK_TEMPLATE}. Exiting."
       exit 1
@@ -267,12 +267,12 @@ function main {
         while true; do
           read -rp "Apply change set ${CHANGE_SET_NAME}? [Y/n] " apply_changeset # Script will abort the update and exit unless user selects Y.
           case $apply_changeset in
-          [nN])
-            echo "Aborting template."
-            exit 0
-            ;;
-          [yY]) break ;;
-          *) echo invalid response, please use Y/y or N/n ;;
+            [nN])
+              echo "Aborting template."
+              exit 0
+              ;;
+            [yY]) break ;;
+            *) echo invalid response, please use Y/y or N/n ;;
           esac
         done
       fi
@@ -284,7 +284,7 @@ function main {
   get_stack_outputs "${STACK_NAME}" # Print the stack outputs
 }
 
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+if [[ ${BASH_SOURCE[0]} == "${0}" ]]; then
   main "$@"
 else
   echo "This script should be executed, not sourced" >&2

@@ -1,13 +1,13 @@
 #!/bin/bash
 set -euo pipefail
 
-[[ "${BASH_SOURCE[0]}" != "${0}" ]] || {
+[[ ${BASH_SOURCE[0]} != "${0}" ]] || {
   echo "Error: Script must be sourced, not executed"
   exit 1
 }
 
 STACK_NAME="${1}"
-configured_region="$(aws configure get region 2>/dev/null || true)"
+configured_region="$(aws configure get region 2> /dev/null || true)"
 REGION="${configured_region:-eu-west-2}"
 
 function get_stack_outputs {
