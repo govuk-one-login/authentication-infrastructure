@@ -2,10 +2,10 @@
 set -euo pipefail
 
 # Ensure we are in the directory of the script
-cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 || exit
+cd "$(dirname "${BASH_SOURCE[0]}")" > /dev/null 2>&1 || exit
 
 function usage {
-    cat <<USAGE
+  cat << USAGE
   Script to bootstrap di-authentication-development account
 
   Usage:
@@ -20,8 +20,8 @@ USAGE
 }
 
 if [ $# -lt 1 ]; then
-    usage
-    exit 1
+  usage
+  exit 1
 fi
 
 PROVISION_BASE_STACKS=false
@@ -59,7 +59,7 @@ done
 export AWS_ACCOUNT=di-authentication-development
 export AWS_PROFILE=di-authentication-development-AWSAdministratorAccess
 aws sso login --profile "${AWS_PROFILE}"
-aws configure set region eu-west-2
+export AWS_REGION="eu-west-2"
 
 export AWS_PAGER=
 export SKIP_AWS_AUTHENTICATION="${SKIP_AWS_AUTHENTICATION:-true}"
@@ -74,124 +74,124 @@ export AUTO_APPLY_CHANGESET="${AUTO_APPLY_CHANGESET:-false}"
 # provision base stacks
 # ---------------------
 function provision_base_stacks {
-    aws configure set region eu-west-2
+  export AWS_REGION="eu-west-2"
 
-    ./provisioner.sh "${AWS_ACCOUNT}" aws-signer signer v1.0.8
-    ./provisioner.sh "${AWS_ACCOUNT}" github-identity github-identity v1.1.1
-    ./provisioner.sh "${AWS_ACCOUNT}" container-signer container-signer v1.1.2
+  ./provisioner.sh "${AWS_ACCOUNT}" aws-signer signer v1.0.8
+  ./provisioner.sh "${AWS_ACCOUNT}" github-identity github-identity v1.1.1
+  ./provisioner.sh "${AWS_ACCOUNT}" container-signer container-signer v1.1.2
 
-    ./provisioner.sh "${AWS_ACCOUNT}" infra-audit-hook infrastructure-audit-hook LATEST
-    ./provisioner.sh "${AWS_ACCOUNT}" lambda-audit-hook lambda-audit-hook LATEST
+  ./provisioner.sh "${AWS_ACCOUNT}" infra-audit-hook infrastructure-audit-hook LATEST
+  ./provisioner.sh "${AWS_ACCOUNT}" lambda-audit-hook lambda-audit-hook LATEST
 
-    VPC_TEMPLATE_VERSION="v2.7.0"
-    ./provisioner.sh "${AWS_ACCOUNT}" vpc vpc "${VPC_TEMPLATE_VERSION}"
+  VPC_TEMPLATE_VERSION="v2.7.0"
+  ./provisioner.sh "${AWS_ACCOUNT}" vpc vpc "${VPC_TEMPLATE_VERSION}"
 
-    ./provisioner.sh "${AWS_ACCOUNT}" build-notifications build-notifications v2.3.3
+  ./provisioner.sh "${AWS_ACCOUNT}" build-notifications build-notifications v2.3.3
 
-    CONTAINER_IMAGE_TEMPLATE_VERSION="v2.0.1"
-    # NOTE: tag immutability is manually disabled for these ecr repositories
-    ./provisioner.sh "${AWS_ACCOUNT}" frontend-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
-    ./provisioner.sh "${AWS_ACCOUNT}" basic-auth-sidecar-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
-    ./provisioner.sh "${AWS_ACCOUNT}" service-down-page-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
+  CONTAINER_IMAGE_TEMPLATE_VERSION="v2.0.1"
+  # NOTE: tag immutability is manually disabled for these ecr repositories
+  ./provisioner.sh "${AWS_ACCOUNT}" frontend-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
+  ./provisioner.sh "${AWS_ACCOUNT}" basic-auth-sidecar-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
+  ./provisioner.sh "${AWS_ACCOUNT}" service-down-page-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
 
-    # NOTE: tag immutability is manually disabled for these ecr repositories
-    ./provisioner.sh "${AWS_ACCOUNT}" authdev1-frontend-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
-    ./provisioner.sh "${AWS_ACCOUNT}" authdev1-basic-auth-sidecar-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
-    ./provisioner.sh "${AWS_ACCOUNT}" authdev1-service-down-page-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
+  # NOTE: tag immutability is manually disabled for these ecr repositories
+  ./provisioner.sh "${AWS_ACCOUNT}" authdev1-frontend-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
+  ./provisioner.sh "${AWS_ACCOUNT}" authdev1-basic-auth-sidecar-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
+  ./provisioner.sh "${AWS_ACCOUNT}" authdev1-service-down-page-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
 
-    # NOTE: tag immutability is manually disabled for these ecr repositories
-    ./provisioner.sh "${AWS_ACCOUNT}" authdev2-frontend-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
-    ./provisioner.sh "${AWS_ACCOUNT}" authdev2-basic-auth-sidecar-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
-    ./provisioner.sh "${AWS_ACCOUNT}" authdev2-service-down-page-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
+  # NOTE: tag immutability is manually disabled for these ecr repositories
+  ./provisioner.sh "${AWS_ACCOUNT}" authdev2-frontend-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
+  ./provisioner.sh "${AWS_ACCOUNT}" authdev2-basic-auth-sidecar-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
+  ./provisioner.sh "${AWS_ACCOUNT}" authdev2-service-down-page-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
 }
 
 # -------------------
 # provision pipelines
 # -------------------
 function provision_pipeline {
-    PIPELINE_TEMPLATE_VERSION="v2.69.13"
-    aws configure set region eu-west-2
+  PIPELINE_TEMPLATE_VERSION="v2.69.13"
+  export AWS_REGION="eu-west-2"
 
-    # shellcheck disable=SC1091
-    source "./scripts/read_cloudformation_stack_outputs.sh" "aws-signer"
-    SigningProfileArn=${CFN_aws_signer_SigningProfileArn:-"none"}
-    SigningProfileVersionArn=${CFN_aws_signer_SigningProfileVersionArn:-"none"}
+  # shellcheck disable=SC1091
+  source "./scripts/read_cloudformation_stack_outputs.sh" "aws-signer"
+  SigningProfileArn=${CFN_aws_signer_SigningProfileArn:-"none"}
+  SigningProfileVersionArn=${CFN_aws_signer_SigningProfileVersionArn:-"none"}
 
-    # shellcheck disable=SC1091
-    source "./scripts/read_cloudformation_stack_outputs.sh" "container-signer"
-    ContainerSignerKmsKeyArn=${CFN_container_signer_ContainerSignerKmsKeyArn:-"none"}
+  # shellcheck disable=SC1091
+  source "./scripts/read_cloudformation_stack_outputs.sh" "container-signer"
+  ContainerSignerKmsKeyArn=${CFN_container_signer_ContainerSignerKmsKeyArn:-"none"}
 
-    # dev-frontend
-    PARAMETERS_FILE="configuration/$AWS_ACCOUNT/frontend-pipeline/parameters.json"
-    PARAMETERS=$(jq ". += [
+  # dev-frontend
+  PARAMETERS_FILE="configuration/$AWS_ACCOUNT/frontend-pipeline/parameters.json"
+  PARAMETERS=$(jq ". += [
                             {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
                             {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
                             {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"}
                         ] | tojson" -r "${PARAMETERS_FILE}")
 
-    TMP_PARAM_FILE=$(mktemp)
-    echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
-    PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" frontend-pipeline sam-deploy-pipeline "${PIPELINE_TEMPLATE_VERSION}"
+  TMP_PARAM_FILE=$(mktemp)
+  echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" frontend-pipeline sam-deploy-pipeline "${PIPELINE_TEMPLATE_VERSION}"
 
-    # authdev1-frontend
-    PARAMETERS_FILE="configuration/$AWS_ACCOUNT/authdev1-frontend-pipeline/parameters.json"
-    PARAMETERS=$(jq ". += [
+  # authdev1-frontend
+  PARAMETERS_FILE="configuration/$AWS_ACCOUNT/authdev1-frontend-pipeline/parameters.json"
+  PARAMETERS=$(jq ". += [
                             {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
                             {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
                             {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"}
                         ] | tojson" -r "${PARAMETERS_FILE}")
 
-    TMP_PARAM_FILE=$(mktemp)
-    echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
-    PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev1-frontend-pipeline sam-deploy-pipeline "${PIPELINE_TEMPLATE_VERSION}"
+  TMP_PARAM_FILE=$(mktemp)
+  echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev1-frontend-pipeline sam-deploy-pipeline "${PIPELINE_TEMPLATE_VERSION}"
 
-    # authdev2-frontend
-    PARAMETERS_FILE="configuration/$AWS_ACCOUNT/authdev2-frontend-pipeline/parameters.json"
-    PARAMETERS=$(jq ". += [
+  # authdev2-frontend
+  PARAMETERS_FILE="configuration/$AWS_ACCOUNT/authdev2-frontend-pipeline/parameters.json"
+  PARAMETERS=$(jq ". += [
                             {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
                             {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
                             {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"}
                         ] | tojson" -r "${PARAMETERS_FILE}")
 
-    TMP_PARAM_FILE=$(mktemp)
-    echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
-    PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev2-frontend-pipeline sam-deploy-pipeline "${PIPELINE_TEMPLATE_VERSION}"
+  TMP_PARAM_FILE=$(mktemp)
+  echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev2-frontend-pipeline sam-deploy-pipeline "${PIPELINE_TEMPLATE_VERSION}"
 
-    # dev ipv-stub pipeline
-    PARAMETERS_FILE="configuration/$AWS_ACCOUNT/dev-ipv-stub-pipeline/parameters.json"
-    PARAMETERS=$(jq ". += [
+  # dev ipv-stub pipeline
+  PARAMETERS_FILE="configuration/$AWS_ACCOUNT/dev-ipv-stub-pipeline/parameters.json"
+  PARAMETERS=$(jq ". += [
                             {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
                             {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
                             {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"}
                         ] | tojson" -r "${PARAMETERS_FILE}")
 
-    TMP_PARAM_FILE=$(mktemp)
-    echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
-    PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" ipv-stub-pipeline sam-deploy-pipeline "${PIPELINE_TEMPLATE_VERSION}"
+  TMP_PARAM_FILE=$(mktemp)
+  echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" ipv-stub-pipeline sam-deploy-pipeline "${PIPELINE_TEMPLATE_VERSION}"
 
-    # authdev1 ipv-stub pipeline
-    PARAMETERS_FILE="configuration/$AWS_ACCOUNT/authdev1-ipv-stub-pipeline/parameters.json"
-    PARAMETERS=$(jq ". += [
+  # authdev1 ipv-stub pipeline
+  PARAMETERS_FILE="configuration/$AWS_ACCOUNT/authdev1-ipv-stub-pipeline/parameters.json"
+  PARAMETERS=$(jq ". += [
                             {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
                             {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
                             {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"}
                         ] | tojson" -r "${PARAMETERS_FILE}")
 
-    TMP_PARAM_FILE=$(mktemp)
-    echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
-    PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev1-ipv-stub-pipeline sam-deploy-pipeline "${PIPELINE_TEMPLATE_VERSION}"
+  TMP_PARAM_FILE=$(mktemp)
+  echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev1-ipv-stub-pipeline sam-deploy-pipeline "${PIPELINE_TEMPLATE_VERSION}"
 
-    # authdev2 ipv-stub pipeline
-    PARAMETERS_FILE="configuration/$AWS_ACCOUNT/authdev2-ipv-stub-pipeline/parameters.json"
-    PARAMETERS=$(jq ". += [
+  # authdev2 ipv-stub pipeline
+  PARAMETERS_FILE="configuration/$AWS_ACCOUNT/authdev2-ipv-stub-pipeline/parameters.json"
+  PARAMETERS=$(jq ". += [
                             {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
                             {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
                             {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"}
                         ] | tojson" -r "${PARAMETERS_FILE}")
 
-    TMP_PARAM_FILE=$(mktemp)
-    echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
-    PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev2-ipv-stub-pipeline sam-deploy-pipeline "${PIPELINE_TEMPLATE_VERSION}"
+  TMP_PARAM_FILE=$(mktemp)
+  echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev2-ipv-stub-pipeline sam-deploy-pipeline "${PIPELINE_TEMPLATE_VERSION}"
 
 }
 
