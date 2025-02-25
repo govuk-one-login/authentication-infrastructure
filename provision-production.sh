@@ -58,7 +58,7 @@ done
 # --------------------------------------------
 export AWS_PROFILE=di-authentication-build-AWSAdministratorAccess
 aws sso login --profile "${AWS_PROFILE}"
-aws configure set region eu-west-2
+export AWS_REGION="eu-west-2"
 
 # shellcheck disable=SC1091
 source "./scripts/read_cloudformation_stack_outputs.sh" "aws-signer"
@@ -99,7 +99,7 @@ export AUTO_APPLY_CHANGESET="${AUTO_APPLY_CHANGESET:-false}"
 # provision base stacks
 # ---------------------
 function provision_base_stacks {
-  aws configure set region eu-west-2
+  export AWS_REGION="eu-west-2"
   ./provisioner.sh "${AWS_ACCOUNT}" infra-audit-hook infrastructure-audit-hook LATEST
   ./provisioner.sh "${AWS_ACCOUNT}" lambda-audit-hook lambda-audit-hook LATEST
   ./provisioner.sh "${AWS_ACCOUNT}" build-notifications build-notifications v2.3.3
@@ -126,7 +126,7 @@ function provision_pipeline {
 
   TMP_PARAM_FILE=$(mktemp)
   echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
-  aws configure set region eu-west-2
+  export AWS_REGION="eu-west-2"
   PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" frontend-pipeline sam-deploy-pipeline "${PIPELINE_TEMPLATE_VERSION}"
 }
 
@@ -135,7 +135,7 @@ function provision_pipeline {
 # ------------------
 function provision_transitional_hosted_zone_and_records {
   # deploy signin-sp domain resources
-  aws configure set region eu-west-2
+  export AWS_REGION="eu-west-2"
   TEMPLATE_URL=file://authentication-frontend/cloudformation/domains/template.yaml ./provisioner.sh "${AWS_ACCOUNT}" dns-zones-and-records dns LATEST
 }
 
@@ -155,7 +155,7 @@ function provision_live_hosted_zone_and_records {
   esac
 
   # deploy signin domain resources
-  aws configure set region eu-west-2
+  export AWS_REGION="eu-west-2"
   PARAMETERS_FILE=$PARAMETERS_FILE TEMPLATE_URL=file://authentication-frontend/cloudformation/domains/template.yaml ./provisioner.sh "${AWS_ACCOUNT}" hosted-zones-and-records dns LATEST
 }
 

@@ -52,7 +52,7 @@ done
 export AWS_ACCOUNT=di-authentication-development
 export AWS_PROFILE=di-authentication-development-AWSAdministratorAccess
 aws sso login --profile "${AWS_PROFILE}"
-aws configure set region eu-west-2
+export AWS_REGION="eu-west-2"
 
 export AWS_PAGER=
 export SKIP_AWS_AUTHENTICATION="${SKIP_AWS_AUTHENTICATION:-true}"
@@ -67,7 +67,7 @@ export AUTO_APPLY_CHANGESET="${AUTO_APPLY_CHANGESET:-false}"
 # provision base stacks
 # ---------------------
 function provision_base_stacks {
-  aws configure set region eu-west-2
+  export AWS_REGION="eu-west-2"
 
   ./provisioner.sh "${AWS_ACCOUNT}" aws-signer signer v1.0.8
   ./provisioner.sh "${AWS_ACCOUNT}" github-identity github-identity v1.1.1
@@ -103,7 +103,7 @@ function provision_base_stacks {
 # -------------------
 function provision_pipeline {
   PIPELINE_TEMPLATE_VERSION="v2.69.13"
-  aws configure set region eu-west-2
+  export AWS_REGION="eu-west-2"
 
   # shellcheck disable=SC1091
   source "./scripts/read_cloudformation_stack_outputs.sh" "aws-signer"
@@ -192,7 +192,7 @@ function provision_pipeline {
 # setting up domains
 # ------------------
 function provision_transitional_hosted_zone_and_records {
-  aws configure set region eu-west-2
+  export AWS_REGION="eu-west-2"
   TEMPLATE_URL=file://authentication-frontend/cloudformation/domains/template.yaml ./provisioner.sh "${AWS_ACCOUNT}" dns-zones-and-records dns LATEST
 }
 

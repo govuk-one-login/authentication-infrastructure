@@ -87,7 +87,7 @@ aws sso login --profile "${AWS_PROFILE}"
 # ----------------------------------
 # export secrets and params in shell
 # ----------------------------------
-aws configure set region eu-west-2
+export AWS_REGION="eu-west-2"
 
 # shellcheck disable=SC1091
 source "./scripts/read_secrets.sh" "${PARAMS_ENV}"
@@ -127,7 +127,7 @@ function provision_waf {
   TMP_PARAM_FILE=$(mktemp)
   echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
 
-  aws configure set region us-east-1
+  export AWS_REGION="us-east-1"
   TEMPLATE_URL=file://authentication-frontend/cloudformation/cloudfront-waf/template.yaml PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" "${STACK_PREFIX}-cloudfront-waf" waf LATEST
 }
 
@@ -145,7 +145,7 @@ function create_certificate {
   TMP_PARAM_FILE=$(mktemp)
   echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
 
-  aws configure set region us-east-1
+  export AWS_REGION="us-east-1"
   PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" "${STACK_PREFIX}-cloudfront-certificate" certificate v1.1.1
 }
 
@@ -163,7 +163,7 @@ function create_live_certificate {
   TMP_PARAM_FILE=$(mktemp)
   echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
 
-  aws configure set region us-east-1
+  export AWS_REGION="us-east-1"
   PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" "${STACK_PREFIX}-cloudfront-live-certificate" certificate v1.1.1
 }
 
@@ -175,7 +175,7 @@ function create_live_certificate {
 function create_wildcard_certificate {
   PARAMETERS_FILE="configuration/${AWS_ACCOUNT}/${STACK_PREFIX}-cloudfront-wildcard-certificate/parameters.json"
 
-  aws configure set region us-east-1
+  export AWS_REGION="us-east-1"
   TEMPLATE_URL=file://certificate/template.yaml PARAMETERS_FILE=$PARAMETERS_FILE ./provisioner.sh "${AWS_ACCOUNT}" "${STACK_PREFIX}-cloudfront-wildcard-certificate" certificate LATEST
 }
 
@@ -185,7 +185,7 @@ function create_wildcard_certificate {
 #   depends on: auth-fe-cloudfront-waf, auth-fe-cloudfront-*certificate
 # ---------------------------------------------------------------------
 function provision_distribution {
-  aws configure set region us-east-1
+  export AWS_REGION="us-east-1"
 
   # Feed output to the next stack
   # shellcheck disable=SC1091
@@ -243,7 +243,7 @@ function provision_distribution {
   TMP_PARAM_FILE=$(mktemp)
   echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
 
-  aws configure set region eu-west-2
+  export AWS_REGION="eu-west-2"
   if [ "${CONFIGURATION}" == "wildcard" ]; then
     TEMPLATE_URL=file://cloudfront-distribution/template.yaml PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" "${STACK_PREFIX}-cloudfront" cloudfront-distribution LATEST
   else
@@ -270,7 +270,7 @@ function provision_notification {
     CONFIRM_CHANGESET_OPTION="--no-confirm-changeset"
   fi
 
-  aws configure set region us-east-1
+  export AWS_REGION="us-east-1"
   pushd alerts
   sam build
   # shellcheck disable=SC2086
@@ -294,14 +294,14 @@ function provision_notification {
 # -----------------------------------------------------------------
 function provision_monitoring {
   # Feed output to the next stack
-  aws configure set region eu-west-2
+  export AWS_REGION="eu-west-2"
   # shellcheck disable=SC1091
   source "./scripts/read_cloudformation_stack_outputs.sh" "${STACK_PREFIX}-cloudfront"
   cfdisId="CFN_${STACK_PREFIX_UNDERSCORE}_cloudfront_DistributionId"
   CloudFrontDistributionID=${!cfdisId:-""}
 
   # Feed output to the next stack
-  aws configure set region us-east-1
+  export AWS_REGION="us-east-1"
   # shellcheck disable=SC1091
   source "./scripts/read_cloudformation_stack_outputs.sh" "auth-fe-cloudfront-notification"
   CacheHitAlarmSNSTopicARN=${CFN_auth_fe_cloudfront_notification_NotificationTopicArn:-"none"}
@@ -314,7 +314,7 @@ function provision_monitoring {
   TMP_PARAM_FILE=$(mktemp)
   echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
 
-  aws configure set region us-east-1
+  export AWS_REGION="us-east-1"
   PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" "${STACK_PREFIX}-cloudfront-monitoring" cloudfront-monitoring-alarm v2.0.0
 }
 
@@ -334,4 +334,4 @@ function provision_monitoring {
 # -----
 # reset
 # -----
-aws configure set region eu-west-2
+export AWS_REGION="eu-west-2"
