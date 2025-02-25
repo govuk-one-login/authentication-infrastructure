@@ -30,32 +30,32 @@ PROVISION_TRANSITIONAL_HOSTED_ZONE_AND_RECORDS=false
 PROVISION_LIVE_HOSTED_ZONE_AND_RECORDS=false
 
 while [[ $# -gt 0 ]]; do
-    case "${1}" in
-        -b | --base-stacks)
-            PROVISION_BASE_STACKS=true
-            ;;
-        -p | --pipelines)
-            PROVISION_PIPELINES=true
-            ;;
-        -t | --transitional-zone-resources)
-            PROVISION_TRANSITIONAL_HOSTED_ZONE_AND_RECORDS=true
-            ;;
-        -l | --live-zone-resources)
-            PROVISION_LIVE_HOSTED_ZONE_AND_RECORDS=true
-            DEPLOY_CONFIG=${2}
-            shift
-            ;;
-        *)
-            usage
-            exit 1
-            ;;
-    esac
-    shift
+  case "${1}" in
+    -b | --base-stacks)
+      PROVISION_BASE_STACKS=true
+      ;;
+    -p | --pipelines)
+      PROVISION_PIPELINES=true
+      ;;
+    -t | --transitional-zone-resources)
+      PROVISION_TRANSITIONAL_HOSTED_ZONE_AND_RECORDS=true
+      ;;
+    -l | --live-zone-resources)
+      PROVISION_LIVE_HOSTED_ZONE_AND_RECORDS=true
+      DEPLOY_CONFIG=${2}
+      shift
+      ;;
+    *)
+      usage
+      exit 1
+      ;;
+  esac
+  shift
 done
 
-# ----------------------------
-# build account initialisation
-# ----------------------------
+# -----------------------------
+# Dev account initialisation
+# -----------------------------
 export AWS_ACCOUNT=di-authentication-development
 export AWS_PROFILE=di-authentication-development-AWSAdministratorAccess
 aws sso login --profile "${AWS_PROFILE}"
@@ -199,28 +199,28 @@ function provision_pipeline {
 # setting up domains
 # ------------------
 function provision_transitional_hosted_zone_and_records {
-    aws configure set region eu-west-2
-    TEMPLATE_URL=file://authentication-frontend/cloudformation/domains/template.yaml ./provisioner.sh "${AWS_ACCOUNT}" dns-zones-and-records dns LATEST
+  aws configure set region eu-west-2
+  TEMPLATE_URL=file://authentication-frontend/cloudformation/domains/template.yaml ./provisioner.sh "${AWS_ACCOUNT}" dns-zones-and-records dns LATEST
 }
 
 function provision_live_hosted_zone_and_records {
-    case "${DEPLOY_CONFIG}" in
-        zone-only)
-            PARAMETERS_FILE="configuration/$AWS_ACCOUNT/hosted-zones-and-records/zone-only-parameters.json"
-            ;;
-        all)
-            PARAMETERS_FILE="configuration/$AWS_ACCOUNT/hosted-zones-and-records/parameters.json"
-            ;;
-        *)
-            echo "Unknown live domain deploy configuration: $DEPLOY_CONFIG"
-            usage
-            exit 1
-            ;;
-    esac
+  case "${DEPLOY_CONFIG}" in
+    zone-only)
+      PARAMETERS_FILE="configuration/$AWS_ACCOUNT/hosted-zones-and-records/zone-only-parameters.json"
+      ;;
+    all)
+      PARAMETERS_FILE="configuration/$AWS_ACCOUNT/hosted-zones-and-records/parameters.json"
+      ;;
+    *)
+      echo "Unknown live domain deploy configuration: $DEPLOY_CONFIG"
+      usage
+      exit 1
+      ;;
+  esac
 
-    # deploy signin domain resources
-    aws configure set region eu-west-2
-    PARAMETERS_FILE=$PARAMETERS_FILE TEMPLATE_URL=file://authentication-frontend/cloudformation/domains/template.yaml ./provisioner.sh "${AWS_ACCOUNT}" hosted-zones-and-records dns LATEST
+  # deploy signin domain resources
+  aws configure set region eu-west-2
+  PARAMETERS_FILE=$PARAMETERS_FILE TEMPLATE_URL=file://authentication-frontend/cloudformation/domains/template.yaml ./provisioner.sh "${AWS_ACCOUNT}" hosted-zones-and-records dns LATEST
 }
 
 # --------------------
