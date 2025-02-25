@@ -1,7 +1,7 @@
 [
   {
     "ParameterKey": "Environment",
-    "ParameterValue": "dev"
+    "ParameterValue": "authdevs"
   },
   {
     "ParameterKey": "EndpointSuffix",
@@ -14,9 +14,5 @@
   {
     "ParameterKey": "DeployCertificate",
     "ParameterValue": "Yes"
-  },
-  {
-    "ParameterKey": "SubEnvironment",
-    "ParameterValue": "authdevs"
   }
 ]
