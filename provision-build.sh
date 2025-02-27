@@ -106,7 +106,6 @@ function provision_base_stacks {
 
   CONTAINER_IMAGE_TEMPLATE_VERSION="v2.0.1"
   ./provisioner.sh "${AWS_ACCOUNT}" frontend-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
-  ./provisioner.sh "${AWS_ACCOUNT}" basic-auth-sidecar-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
   ./provisioner.sh "${AWS_ACCOUNT}" service-down-page-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
 
   ./provisioner.sh "${AWS_ACCOUNT}" acceptance-tests-image-repository test-image-repository v1.2.0
