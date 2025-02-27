@@ -1,11 +1,11 @@
 [
   {
     "ParameterKey": "Environment",
-    "ParameterValue": "authdevs"
+    "ParameterValue": "dev"
   },
   {
     "ParameterKey": "EndpointSuffix",
-    "ParameterValue": "-sp"
+    "ParameterValue": ""
   },
   {
     "ParameterKey": "DeployHostedZone",
