@@ -81,6 +81,7 @@ STACK_PREFIX_UNDERSCORE=$(echo "${STACK_PREFIX}" | tr "-" "_")
 
 export AWS_ACCOUNT="di-authentication-${ENVIRONMENT}"
 export AWS_PROFILE="di-authentication-${ENVIRONMENT}-AWSAdministratorAccess"
+export SKIP_AWS_AUTHENTICATION="${SKIP_AWS_AUTHENTICATION:-true}"
 export AUTO_APPLY_CHANGESET="${AUTO_APPLY_CHANGESET:-false}"
 aws sso login --profile "${AWS_PROFILE}"
 
