@@ -7,8 +7,7 @@ set -euo pipefail
 }
 
 STACK_NAME="${1}"
-configured_region="$(aws configure get region 2> /dev/null || true)"
-REGION="${configured_region:-eu-west-2}"
+REGION="${AWS_REGION:-eu-west-2}"
 
 function get_stack_outputs {
 
