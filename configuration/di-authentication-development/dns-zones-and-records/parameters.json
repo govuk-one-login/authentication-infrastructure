@@ -5,7 +5,7 @@
   },
   {
     "ParameterKey": "EndpointSuffix",
-    "ParameterValue": "-sp"
+    "ParameterValue": ""
   },
   {
     "ParameterKey": "DeployHostedZone",
