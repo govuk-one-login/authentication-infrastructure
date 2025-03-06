@@ -35,7 +35,7 @@ while [[ $# -gt 0 ]]; do
     -p | --pipelines)
       PROVISION_PIPELINES=true
       ;;
-    -t | --hosted-zone-resources)
+    -z | --hosted-zone-resources)
       PROVISION_HOSTED_ZONE_AND_RECORDS=true
       ;;
     *)

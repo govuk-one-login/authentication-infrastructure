@@ -1,0 +1,10 @@
+[
+  {
+    "ParameterKey": "CloudFrontAdditionaldMetricsEnabled",
+    "ParameterValue": "true"
+  },
+  {
+    "ParameterKey": "Environment",
+    "ParameterValue": "dev"
+  }
+]

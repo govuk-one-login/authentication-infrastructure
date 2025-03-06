@@ -9,8 +9,8 @@ set -euo pipefail
 ENVIRONMENT="${1}"
 REGION="${AWS_REGION:-eu-west-2}"
 
-if [ "$ENVIRONMENT" = "dev" ]; then
-  ENVIRONMENT="build"
+if [ "$ENVIRONMENT" = "development" ]; then
+  ENVIRONMENT="dev"
 fi
 
 parameters="$(
