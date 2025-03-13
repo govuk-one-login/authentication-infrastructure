@@ -9,7 +9,9 @@ cd "$(dirname "${BASH_SOURCE[0]}")" > /dev/null 2>&1 || exit
 # --------------------------
 export AWS_ACCOUNT=di-auth-development
 export AWS_PROFILE=di-auth-development-admin
-aws sso login --profile "${AWS_PROFILE}"
+if ! aws sts get-caller-identity &> /dev/null; then
+  aws sso login --profile "${AWS_PROFILE}"
+fi
 
 export AWS_PAGER=
 export SKIP_AWS_AUTHENTICATION="${SKIP_AWS_AUTHENTICATION:-true}"

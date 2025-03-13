@@ -53,7 +53,9 @@ done
 # extract outputs from stacks in build account
 # --------------------------------------------
 export AWS_PROFILE=di-authentication-build-AWSAdministratorAccess
-aws sso login --profile "${AWS_PROFILE}"
+if ! aws sts get-caller-identity &> /dev/null; then
+  aws sso login --profile "${AWS_PROFILE}"
+fi
 export AWS_REGION="eu-west-2"
 
 # shellcheck disable=SC1091

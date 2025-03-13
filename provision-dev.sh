@@ -51,7 +51,9 @@ done
 # ----------------------------
 export AWS_ACCOUNT=di-authentication-development
 export AWS_PROFILE=di-authentication-development-AWSAdministratorAccess
-aws sso login --profile "${AWS_PROFILE}"
+if ! aws sts get-caller-identity &> /dev/null; then
+  aws sso login --profile "${AWS_PROFILE}"
+fi
 export AWS_REGION="eu-west-2"
 
 export AWS_PAGER=

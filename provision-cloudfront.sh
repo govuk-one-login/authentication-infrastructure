@@ -81,7 +81,9 @@ export AWS_ACCOUNT="di-authentication-${ENVIRONMENT}"
 export AWS_PROFILE="di-authentication-${ENVIRONMENT}-AWSAdministratorAccess"
 export SKIP_AWS_AUTHENTICATION="${SKIP_AWS_AUTHENTICATION:-true}"
 export AUTO_APPLY_CHANGESET="${AUTO_APPLY_CHANGESET:-false}"
-aws sso login --profile "${AWS_PROFILE}"
+if ! aws sts get-caller-identity &> /dev/null; then
+  aws sso login --profile "${AWS_PROFILE}"
+fi
 
 # ----------------------------------
 # export secrets and params in shell
