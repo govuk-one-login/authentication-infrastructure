@@ -231,6 +231,7 @@ function main {
   TEMPLATE_URL="${TEMPLATE_URL:=https://${TEMPLATE_BUCKET}.s3.amazonaws.com/${STACK_TEMPLATE}/template.yaml}"
   PARAMETERS_FILE="${PARAMETERS_FILE:=./configuration/${AWS_ACCOUNT}/${STACK_NAME}/parameters.json}"
   TAGS_FILE="${TAGS_FILE:=./configuration/${AWS_ACCOUNT}/tags.json}"
+  STACK_TAGS_FILE="${STACK_TAGS_FILE:=./configuration/${AWS_ACCOUNT}/${STACK_NAME}/tags.json}"
 
   if [ ! -f "${PARAMETERS_FILE}" ]; then
     echo "Configuration file not found. Please see README.md"
@@ -240,6 +241,12 @@ function main {
   if [ ! -f "${TAGS_FILE}" ]; then
     echo "Tags file not found. Please see README.md"
     exit 1
+  fi
+
+  if [ -f "${STACK_TAGS_FILE}" ]; then
+    tmp_tags_file="$(mktemp)"
+    jq -s 'add | group_by(.Key) | map(last)' "${TAGS_FILE}" "${STACK_TAGS_FILE}" > "${tmp_tags_file}"
+    TAGS_FILE="${tmp_tags_file}"
   fi
 
   # Skip authentication if terminal is already authenticated
