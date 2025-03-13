@@ -50,7 +50,7 @@ TMP_PARAM_FILE=$(mktemp)
 echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
 PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev1-sp-orch-stub-pipeline sam-deploy-pipeline v2.68.4
 
-# authdev1 orch-stub pipeline
+# authdev2 orch-stub pipeline
 PARAMETERS_FILE="configuration/$AWS_ACCOUNT/authdev2-sp-orch-stub-pipeline/parameters.json"
 PARAMETERS=$(jq ". += [
                         {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
