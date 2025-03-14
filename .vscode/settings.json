@@ -1,0 +1,49 @@
+{
+  "[yaml]": {
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2,
+    "editor.quickSuggestions": {
+      "other": true,
+      "comments": false,
+      "strings": true
+    },
+    "editor.autoIndent": "keep"
+  },
+  "yaml.format.enable": true,
+  "yaml.trace.server": "verbose",
+  "yaml.customTags": [
+    "!Base64 scalar",
+    "!Cidr scalar",
+    "!And sequence",
+    "!Equals sequence",
+    "!If sequence",
+    "!Not sequence",
+    "!Or sequence",
+    "!Condition scalar",
+    "!FindInMap sequence",
+    "!GetAtt scalar",
+    "!GetAtt sequence",
+    "!GetAZs scalar",
+    "!ImportValue scalar",
+    "!Join sequence",
+    "!Select sequence",
+    "!Split sequence",
+    "!Sub scalar",
+    "!Sub sequence",
+    "!Transform mapping",
+    "!Ref scalar",
+    "!Ref mapping"
+  ],
+  "json.schemas": [
+    {
+      "fileMatch": ["*-template.json"],
+      "url": "https://raw.githubusercontent.com/whi-tw/cfn-schema/main/schema/base.schema.json"
+    }
+  ],
+  "yaml.schemas": {
+    "https://raw.githubusercontent.com/whi-tw/cfn-schema/main/schema/base.schema.json": [
+      "template.yaml",
+      "*-template.yaml"
+    ]
+  }
+}
