@@ -9,7 +9,7 @@ function usage {
   Script to deploy CloudFront distribution and additional dependencies described in the the CloudFront header trust initiative
 
   Usage:
-    $0 [-e|--environment <env name>] [-s|--sub-environment <sub-env name>] [-c|--certificates] [-d|--distribution <transitional|wildcard|live>] [-m|--monitoring] [-n|--notification] [-w|--waf]
+    $0 [-e|--environment <env name>] [-s|--sub-environment <sub-env name>] [-c|--certificates] [-d|--distribution] [-m|--monitoring] [-n|--notification] [-w|--waf]
 
   Options:
     -e, --environment        The environment you wish to deploy to i.e. build, staging, integration, or production
@@ -49,8 +49,6 @@ while [[ $# -gt 0 ]]; do
       ;;
     -d | --distribution)
       PROVISION_CLOUDFRONT_DISTRIBUTION=true
-      CONFIGURATION="${2}"
-      shift
       ;;
     -m | --monitoring)
       PROVISION_MONITORING_STACK=true
@@ -132,24 +130,6 @@ function provision_waf {
   TEMPLATE_URL=file://authentication-frontend/cloudformation/cloudfront-waf/template.yaml PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" "${STACK_PREFIX}-cloudfront-waf" waf LATEST
 }
 
-# --------------------------------------------------------------
-# auth-fe-cloudfront-certificate
-#   Provisions signin-sp certificate for Cloudfront Distribution
-#   no dependency
-# --------------------------------------------------------------
-function create_certificate {
-  PARAMETERS_FILE="configuration/${AWS_ACCOUNT}/${STACK_PREFIX}-cloudfront-certificate/parameters.json"
-  HostedZoneID=${signin_sp_route53_hostedzone_id:-""}
-  PARAMETERS=$(jq ". += [
-                            {\"ParameterKey\":\"HostedZoneID\",\"ParameterValue\":\"${HostedZoneID}\"}
-                        ] | tojson" -r "${PARAMETERS_FILE}")
-  TMP_PARAM_FILE=$(mktemp)
-  echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
-
-  export AWS_REGION="us-east-1"
-  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" "${STACK_PREFIX}-cloudfront-certificate" certificate v1.1.1
-}
-
 # -----------------------------------------------------------
 # auth-fe-cloudfront-live-certificate
 #   Provisions signin certificate for Cloudfront Distribution
@@ -168,18 +148,6 @@ function create_live_certificate {
   PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" "${STACK_PREFIX}-cloudfront-live-certificate" certificate v1.1.1
 }
 
-# -------------------------------------------------------------------------
-# auth-fe-cloudfront-wildcard-certificate
-#   Provisions wildcard certificate that would be used ony during migration
-#   no dependency
-# -------------------------------------------------------------------------
-function create_wildcard_certificate {
-  PARAMETERS_FILE="configuration/${AWS_ACCOUNT}/${STACK_PREFIX}-cloudfront-wildcard-certificate/parameters.json"
-
-  export AWS_REGION="us-east-1"
-  TEMPLATE_URL=file://certificate/template.yaml PARAMETERS_FILE=$PARAMETERS_FILE ./provisioner.sh "${AWS_ACCOUNT}" "${STACK_PREFIX}-cloudfront-wildcard-certificate" certificate LATEST
-}
-
 # ---------------------------------------------------------------------
 # auth-fe-cloudfront
 #   Creates the CloudFront distribution
@@ -196,48 +164,16 @@ function provision_distribution {
 
   # Feed output to the next stack
   # shellcheck disable=SC1091
-  source "./scripts/read_cloudformation_stack_outputs.sh" "${STACK_PREFIX}-cloudfront-certificate"
-  certarn="CFN_${STACK_PREFIX_UNDERSCORE}_cloudfront_certificate_CertificateARN"
-  CertificateARN=${!certarn:-""}
-
-  # Feed output to the next stack
-  # shellcheck disable=SC1091
   source "./scripts/read_cloudformation_stack_outputs.sh" "${STACK_PREFIX}-cloudfront-live-certificate"
   certarn="CFN_${STACK_PREFIX_UNDERSCORE}_cloudfront_live_certificate_CertificateARN"
   LiveCertificateARN=${!certarn:-""}
 
-  # Feed output to the next stack
-  # shellcheck disable=SC1091
-  source "./scripts/read_cloudformation_stack_outputs.sh" "${STACK_PREFIX}-cloudfront-wildcard-certificate"
-  certarn="CFN_${STACK_PREFIX_UNDERSCORE}_cloudfront_wildcard_certificate_CertificateARN"
-  WildcardCertificateARN=${!certarn:-""}
-
-  echo -e "CertificateARN=$CertificateARN\nLiveCertificateARN=$LiveCertificateARN\nWildcardCertificateARN=$WildcardCertificateARN"
-
-  case "${CONFIGURATION}" in
-    transitional)
-      UseCertificateARN="${CertificateARN}"
-      PARAMETERS_FILE="configuration/${AWS_ACCOUNT}/${STACK_PREFIX}-cloudfront/parameters.json"
-      ;;
-    wildcard)
-      UseCertificateARN="${WildcardCertificateARN}"
-      PARAMETERS_FILE="configuration/${AWS_ACCOUNT}/${STACK_PREFIX}-cloudfront/wildcard-parameters.json"
-      ;;
-    live)
-      UseCertificateARN="${LiveCertificateARN}"
-      PARAMETERS_FILE="configuration/${AWS_ACCOUNT}/${STACK_PREFIX}-cloudfront/live-parameters.json"
-      ;;
-    *)
-      echo "Unknown distribution configuration: ${CONFIGURATION}"
-      exit 1
-      ;;
-  esac
-
+  PARAMETERS_FILE="configuration/${AWS_ACCOUNT}/${STACK_PREFIX}-cloudfront/live-parameters.json"
   OriginCloakingHeader=${signin_origin_cloaking_header:-""}
   PreviousOriginCloakingHeader=${previous_signin_origin_cloaking_header:-""}
   PARAMETERS=$(jq ". += [
                             {\"ParameterKey\":\"CloudFrontWafACL\",\"ParameterValue\":\"${WAFv2WebACL}\"},
-                            {\"ParameterKey\":\"CloudFrontCertArn\",\"ParameterValue\":\"${UseCertificateARN}\"},
+                            {\"ParameterKey\":\"CloudFrontCertArn\",\"ParameterValue\":\"${LiveCertificateARN}\"},
                             {\"ParameterKey\":\"OriginCloakingHeader\",\"ParameterValue\":\"${OriginCloakingHeader}\"},
                             {\"ParameterKey\":\"PreviousOriginCloakingHeader\",\"ParameterValue\":\"${PreviousOriginCloakingHeader}\"}
                         ] | tojson" -r "${PARAMETERS_FILE}")
@@ -245,11 +181,7 @@ function provision_distribution {
   echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
 
   export AWS_REGION="eu-west-2"
-  if [ "${CONFIGURATION}" == "wildcard" ]; then
-    TEMPLATE_URL=file://cloudfront-distribution/template.yaml PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" "${STACK_PREFIX}-cloudfront" cloudfront-distribution LATEST
-  else
-    PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" "${STACK_PREFIX}-cloudfront" cloudfront-distribution v1.6.0
-  fi
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" "${STACK_PREFIX}-cloudfront" cloudfront-distribution v1.6.0
 }
 
 # -----------------------------------------------------------------------------------
@@ -323,11 +255,7 @@ function provision_monitoring {
 # Provision components
 # --------------------
 [ "$PROVISION_WAF" == "true" ] && provision_waf
-[ "$PROVISION_CERTIFICATES" == "true" ] && {
-  create_certificate
-  create_live_certificate
-  create_wildcard_certificate
-}
+[ "$PROVISION_CERTIFICATES" == "true" ] && create_live_certificate
 [ "$PROVISION_CLOUDFRONT_DISTRIBUTION" == "true" ] && provision_distribution
 [ "$PROVISION_NOTIFICATION_STACK" == "true" ] && provision_notification
 [ "$PROVISION_MONITORING_STACK" == "true" ] && provision_monitoring
