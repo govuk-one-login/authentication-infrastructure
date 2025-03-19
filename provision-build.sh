@@ -9,12 +9,11 @@ function usage {
   Script to bootstrap di-authentication-build account
 
   Usage:
-    $0 [-b|--base-stacks] [-p|--pipelines] [-t|--transitional-zone-resources] [-l|--live-zone-resources <zone-only|all>]
+    $0 [-b|--base-stacks] [-p|--pipelines] [-l|--live-zone-resources <zone-only|all>]
 
   Options:
     -b, --base-stacks                      Provision base stacks
     -p, --pipelines                        Provision secure pipelines
-    -t, --transitional-zone-resources      Provision transitional hosted zone, certificates and SSM params
     -l, --live-zone-resources              Provision live hosted zone, certificates and SSM params
 USAGE
 }
@@ -26,7 +25,6 @@ fi
 
 PROVISION_BASE_STACKS=false
 PROVISION_PIPELINES=false
-PROVISION_TRANSITIONAL_HOSTED_ZONE_AND_RECORDS=false
 PROVISION_LIVE_HOSTED_ZONE_AND_RECORDS=false
 
 while [[ $# -gt 0 ]]; do
@@ -36,9 +34,6 @@ while [[ $# -gt 0 ]]; do
       ;;
     -p | --pipelines)
       PROVISION_PIPELINES=true
-      ;;
-    -t | --transitional-zone-resources)
-      PROVISION_TRANSITIONAL_HOSTED_ZONE_AND_RECORDS=true
       ;;
     -l | --live-zone-resources)
       PROVISION_LIVE_HOSTED_ZONE_AND_RECORDS=true
@@ -157,12 +152,6 @@ function provision_pipeline {
 # ------------------
 # setting up domains
 # ------------------
-function provision_transitional_hosted_zone_and_records {
-  # deploy signin-sp domain resources
-  export AWS_REGION="eu-west-2"
-  TEMPLATE_URL=file://authentication-frontend/cloudformation/domains/template.yaml ./provisioner.sh "${AWS_ACCOUNT}" dns-zones-and-records dns LATEST
-}
-
 function provision_live_hosted_zone_and_records {
   case "${DEPLOY_CONFIG}" in
     zone-only)
@@ -188,5 +177,4 @@ function provision_live_hosted_zone_and_records {
 # --------------------
 [ "${PROVISION_BASE_STACKS}" == "true" ] && provision_base_stacks
 [ "${PROVISION_PIPELINES}" == "true" ] && provision_pipeline
-[ "${PROVISION_TRANSITIONAL_HOSTED_ZONE_AND_RECORDS}" == "true" ] && provision_transitional_hosted_zone_and_records
 [ "${PROVISION_LIVE_HOSTED_ZONE_AND_RECORDS}" == "true" ] && provision_live_hosted_zone_and_records
