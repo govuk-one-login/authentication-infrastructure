@@ -1,0 +1,7 @@
+{
+  "recommendations": [
+    "kddejong.vscode-cfn-lint",
+    "aws-scripting-guy.cform",
+    "redhat.vscode-yaml"
+  ]
+}

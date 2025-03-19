@@ -10,7 +10,9 @@ cd "$(dirname "${BASH_SOURCE[0]}")" > /dev/null 2>&1 || exit
 }
 
 export AWS_PROFILE=di-authentication-"${2}"-AWSAdministratorAccess
-aws sso login --profile "${AWS_PROFILE}"
+if ! aws sts get-caller-identity &> /dev/null; then
+  aws sso login --profile "${AWS_PROFILE}"
+fi
 export AWS_REGION="eu-west-2"
 
 # Create the DNS record in new Zone id

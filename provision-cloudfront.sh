@@ -81,7 +81,9 @@ export AWS_ACCOUNT="di-authentication-${ENVIRONMENT}"
 export AWS_PROFILE="di-authentication-${ENVIRONMENT}-AWSAdministratorAccess"
 export SKIP_AWS_AUTHENTICATION="${SKIP_AWS_AUTHENTICATION:-true}"
 export AUTO_APPLY_CHANGESET="${AUTO_APPLY_CHANGESET:-false}"
-aws sso login --profile "${AWS_PROFILE}"
+if ! aws sts get-caller-identity &> /dev/null; then
+  aws sso login --profile "${AWS_PROFILE}"
+fi
 
 # ----------------------------------
 # export secrets and params in shell
@@ -99,12 +101,23 @@ source "./scripts/read_parameters.sh" "${PARAMS_ENV}"
 # -------------------------------------------------
 ./sync-dependencies.sh
 
+function _environment_has_fms {
+  local stack_prefix="${1}"
+  local tags_file="configuration/${AWS_ACCOUNT}/${stack_prefix}-cloudfront/tags.json"
+  jq -e 'any(.[]; .Key == "FMSGlobalCustomPolicy")' "${tags_file}" &> /dev/null
+}
+
 # --------------------------------------------------------
 # auth-fe-cloudfront-waf
 #   Creates a WAF to attach to the Cloudfront distribution
 #   no dependency
 # --------------------------------------------------------
 function provision_waf {
+  if _environment_has_fms "${STACK_PREFIX}"; then
+    echo "Skipping WAF creation as the environment has FMS enabled"
+    return
+  fi
+
   PARAMETERS_FILE="configuration/${AWS_ACCOUNT}/${STACK_PREFIX}-cloudfront-waf/parameters.json"
 
   RateLimitByIPEndpoints=$(echo "${ip_endpoint_rate_limiting_configuration:-""}" | jq -r '.[0].endpoints | flatten[]' | xargs | tr " " ",") # get the endpoints, flatten the list, single line comma-separated output
@@ -156,11 +169,14 @@ function create_live_certificate {
 function provision_distribution {
   export AWS_REGION="us-east-1"
 
-  # Feed output to the next stack
-  # shellcheck disable=SC1091
-  source "./scripts/read_cloudformation_stack_outputs.sh" "${STACK_PREFIX}-cloudfront-waf"
-  webacl="CFN_${STACK_PREFIX_UNDERSCORE}_cloudfront_waf_WAFv2WebACL"
-  WAFv2WebACL=${!webacl:-"none"}
+  # If the stack uses FMS, then the WAFv2WebACL is always "none". Otherwise, Feed output to the next stack
+  WAFv2WebACL="none"
+  if ! _environment_has_fms "${STACK_PREFIX}"; then
+    # shellcheck disable=SC1091
+    source "./scripts/read_cloudformation_stack_outputs.sh" "${STACK_PREFIX}-cloudfront-waf"
+    webacl="CFN_${STACK_PREFIX_UNDERSCORE}_cloudfront_waf_WAFv2WebACL"
+    WAFv2WebACL=${!webacl:-"none"}
+  fi
 
   # Feed output to the next stack
   # shellcheck disable=SC1091
