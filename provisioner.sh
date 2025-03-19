@@ -272,7 +272,7 @@ function main {
       if [ "${AUTO_APPLY_CHANGESET:=false}" = "false" ]; then                                                             # This defaults to false if not set.
         describe_change_set "${STACK_NAME}" "${CHANGE_SET_NAME}"
         while true; do
-          read -rp "Apply change set ${CHANGE_SET_NAME}? [Y/n] " apply_changeset # Script will abort the update and exit unless user selects Y.
+          read -rp "Apply change set ${CHANGE_SET_NAME}? [y/n] " apply_changeset # Script will abort the update and exit unless user selects Y.
           case $apply_changeset in
             [nN])
               echo "Aborting template."
