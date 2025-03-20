@@ -9,11 +9,12 @@ function usage {
   Script to bootstrap di-authentication-integration account
 
   Usage:
-    $0 [-b|--base-stacks] [-p|--pipelines] [-l|--live-zone-resources <zone-only|all>]
+    $0 [-b|--base-stacks] [-p|--pipelines] [-v|--vpc] [-l|--live-zone-resources <zone-only|all>]
 
   Options:
     -b, --base-stacks                      Provision base stacks
     -p, --pipelines                        Provision secure pipelines
+    -v, --vpc                              Provision VPC stack
     -t, --transitional-zone-resources      Provision transitional hosted zone, certificates and SSM params
     -l, --live-zone-resources              Provision live hosted zone, certificates and SSM params
 USAGE
@@ -27,6 +28,7 @@ fi
 PROVISION_BASE_STACKS=false
 PROVISION_PIPELINES=false
 PROVISION_LIVE_HOSTED_ZONE_AND_RECORDS=false
+PROVISION_VPC=false
 
 while [[ $# -gt 0 ]]; do
   case "${1}" in
@@ -35,6 +37,9 @@ while [[ $# -gt 0 ]]; do
       ;;
     -p | --pipelines)
       PROVISION_PIPELINES=true
+      ;;
+    -v | --vpc)
+      PROVISION_VPC=true
       ;;
     -l | --live-zone-resources)
       PROVISION_LIVE_HOSTED_ZONE_AND_RECORDS=true
@@ -102,9 +107,17 @@ function provision_base_stacks {
   ./provisioner.sh "${AWS_ACCOUNT}" lambda-audit-hook lambda-audit-hook LATEST
   ./provisioner.sh "${AWS_ACCOUNT}" build-notifications build-notifications v2.3.3
 
+  TEMPLATE_BUCKET="backup-template-storage-templatebucket-747f3bzunrod" ./provisioner.sh "${AWS_ACCOUNT}" backup-monitoring backup-vault-monitoring LATEST
+}
+
+# -------------------
+# provision vpc stack
+# -------------------
+function provision_vpc {
+  export AWS_REGION="eu-west-2"
+
   VPC_TEMPLATE_VERSION="v2.7.0"
   ./provisioner.sh "${AWS_ACCOUNT}" vpc vpc "${VPC_TEMPLATE_VERSION}"
-  TEMPLATE_BUCKET="backup-template-storage-templatebucket-747f3bzunrod" ./provisioner.sh "${AWS_ACCOUNT}" backup-monitoring backup-vault-monitoring LATEST
 }
 
 # -------------------
@@ -156,3 +169,4 @@ function provision_live_hosted_zone_and_records {
 [ "${PROVISION_BASE_STACKS}" == "true" ] && provision_base_stacks
 [ "${PROVISION_PIPELINES}" == "true" ] && provision_pipeline
 [ "${PROVISION_LIVE_HOSTED_ZONE_AND_RECORDS}" == "true" ] && provision_live_hosted_zone_and_records
+[ "${PROVISION_VPC}" == "true" ] && provision_vpc
