@@ -41,7 +41,7 @@
   },
   {
     "ParameterKey": "ECSCanaryDeployment",
-    "ParameterValue": "None"
+    "ParameterValue": "CodeDeployDefault.ECSAllAtOnce"
   },
   {
     "ParameterKey": "TestContainerAllowCrossAccountAssumeRole",
