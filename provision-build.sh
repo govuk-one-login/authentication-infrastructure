@@ -116,7 +116,7 @@ function provision_base_stacks {
 function provision_vpc {
   export AWS_REGION="eu-west-2"
 
-  VPC_TEMPLATE_VERSION="v2.7.0"
+  VPC_TEMPLATE_VERSION="v2.9.0"
   ./provisioner.sh "${AWS_ACCOUNT}" vpc vpc "${VPC_TEMPLATE_VERSION}"
 }
 
