@@ -9,11 +9,12 @@ function usage {
   Script to bootstrap di-authentication-development account
 
   Usage:
-    $0 [-b|--base-stacks] [-p|--pipelines] [-z|--hosted-zone-resources]
+    $0 [-b|--base-stacks] [-p|--pipelines] [-v|--vpc] [-z|--hosted-zone-resources]
 
   Options:
     -b, --base-stacks                      Provision base stacks
     -p, --pipelines                        Provision secure pipelines
+    -v, --vpc                              Provision VPC stack
     -z, --hosted-zone-resources            Provision hosted zone, certificates and SSM params
 USAGE
 }
@@ -26,6 +27,7 @@ fi
 PROVISION_BASE_STACKS=false
 PROVISION_PIPELINES=false
 PROVISION_HOSTED_ZONE_AND_RECORDS=false
+PROVISION_VPC=false
 
 while [[ $# -gt 0 ]]; do
   case "${1}" in
@@ -34,6 +36,9 @@ while [[ $# -gt 0 ]]; do
       ;;
     -p | --pipelines)
       PROVISION_PIPELINES=true
+      ;;
+    -v | --vpc)
+      PROVISION_VPC=true
       ;;
     -z | --hosted-zone-resources)
       PROVISION_HOSTED_ZONE_AND_RECORDS=true
@@ -78,9 +83,6 @@ function provision_base_stacks {
   ./provisioner.sh "${AWS_ACCOUNT}" infra-audit-hook infrastructure-audit-hook LATEST
   ./provisioner.sh "${AWS_ACCOUNT}" lambda-audit-hook lambda-audit-hook LATEST
 
-  VPC_TEMPLATE_VERSION="v2.7.0"
-  ./provisioner.sh "${AWS_ACCOUNT}" vpc vpc "${VPC_TEMPLATE_VERSION}"
-
   ./provisioner.sh "${AWS_ACCOUNT}" build-notifications build-notifications v2.3.3
 
   CONTAINER_IMAGE_TEMPLATE_VERSION="v2.0.1"
@@ -95,6 +97,16 @@ function provision_base_stacks {
   # NOTE: tag immutability is manually disabled for these ecr repositories
   ./provisioner.sh "${AWS_ACCOUNT}" authdev2-frontend-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
   ./provisioner.sh "${AWS_ACCOUNT}" authdev2-service-down-page-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
+}
+
+# -------------------
+# provision vpc stack
+# -------------------
+function provision_vpc {
+  export AWS_REGION="eu-west-2"
+
+  VPC_TEMPLATE_VERSION="v2.9.0"
+  ./provisioner.sh "${AWS_ACCOUNT}" vpc vpc "${VPC_TEMPLATE_VERSION}"
 }
 
 # -------------------
@@ -213,3 +225,4 @@ function provision_hosted_zone_and_records {
 [ "${PROVISION_BASE_STACKS}" == "true" ] && provision_base_stacks
 [ "${PROVISION_PIPELINES}" == "true" ] && provision_pipeline
 [ "${PROVISION_HOSTED_ZONE_AND_RECORDS}" == "true" ] && provision_hosted_zone_and_records
+[ "${PROVISION_VPC}" == "true" ] && provision_vpc

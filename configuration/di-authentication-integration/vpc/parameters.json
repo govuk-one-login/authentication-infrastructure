@@ -70,5 +70,13 @@
   {
     "ParameterKey": "SecretsManagerApiEnabled",
     "ParameterValue": "Yes"
+  },
+  {
+    "ParameterKey": "VpcPeeringConnectionId",
+    "ParameterValue": "pcx-03e4d197dd7f63a9e"
+  },
+  {
+    "ParameterKey": "VpcPeeringRequesterCidr",
+    "ParameterValue": "10.0.0.0/15"
   }
 ]

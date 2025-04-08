@@ -9,11 +9,12 @@ function usage {
   Script to bootstrap di-authentication-build account
 
   Usage:
-    $0 [-b|--base-stacks] [-p|--pipelines] [-l|--live-zone-resources <zone-only|all>]
+    $0 [-b|--base-stacks] [-p|--pipelines] [-v|--vpc] [-l|--live-zone-resources <zone-only|all>]
 
   Options:
     -b, --base-stacks                      Provision base stacks
     -p, --pipelines                        Provision secure pipelines
+    -v, --vpc                              Provision VPC stack
     -l, --live-zone-resources              Provision live hosted zone, certificates and SSM params
 USAGE
 }
@@ -26,6 +27,7 @@ fi
 PROVISION_BASE_STACKS=false
 PROVISION_PIPELINES=false
 PROVISION_LIVE_HOSTED_ZONE_AND_RECORDS=false
+PROVISION_VPC=false
 
 while [[ $# -gt 0 ]]; do
   case "${1}" in
@@ -34,6 +36,9 @@ while [[ $# -gt 0 ]]; do
       ;;
     -p | --pipelines)
       PROVISION_PIPELINES=true
+      ;;
+    -v | --vpc)
+      PROVISION_VPC=true
       ;;
     -l | --live-zone-resources)
       PROVISION_LIVE_HOSTED_ZONE_AND_RECORDS=true
@@ -98,14 +103,21 @@ function provision_base_stacks {
   ./provisioner.sh "${AWS_ACCOUNT}" infra-audit-hook infrastructure-audit-hook LATEST
   ./provisioner.sh "${AWS_ACCOUNT}" lambda-audit-hook lambda-audit-hook LATEST
 
-  VPC_TEMPLATE_VERSION="v2.7.0"
-  ./provisioner.sh "${AWS_ACCOUNT}" vpc vpc "${VPC_TEMPLATE_VERSION}"
-
   CONTAINER_IMAGE_TEMPLATE_VERSION="v2.0.1"
   ./provisioner.sh "${AWS_ACCOUNT}" frontend-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
   ./provisioner.sh "${AWS_ACCOUNT}" service-down-page-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
 
   ./provisioner.sh "${AWS_ACCOUNT}" acceptance-tests-image-repository test-image-repository v1.2.0
+}
+
+# -------------------
+# provision vpc stack
+# -------------------
+function provision_vpc {
+  export AWS_REGION="eu-west-2"
+
+  VPC_TEMPLATE_VERSION="v2.9.0"
+  ./provisioner.sh "${AWS_ACCOUNT}" vpc vpc "${VPC_TEMPLATE_VERSION}"
 }
 
 # -------------------
@@ -180,3 +192,4 @@ function provision_live_hosted_zone_and_records {
 [ "${PROVISION_BASE_STACKS}" == "true" ] && provision_base_stacks
 [ "${PROVISION_PIPELINES}" == "true" ] && provision_pipeline
 [ "${PROVISION_LIVE_HOSTED_ZONE_AND_RECORDS}" == "true" ] && provision_live_hosted_zone_and_records
+[ "${PROVISION_VPC}" == "true" ] && provision_vpc
