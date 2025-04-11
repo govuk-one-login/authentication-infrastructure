@@ -1,5 +1,9 @@
 [
   {
+    "ParameterKey": "Environment",
+    "ParameterValue": "build"
+  },
+  {
     "ParameterKey": "SlackWorkspaceId",
     "ParameterValue": "T8GT9416G"
   },
