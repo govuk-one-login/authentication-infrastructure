@@ -9,10 +9,11 @@ function usage {
   Script to bootstrap di-authentication-development account
 
   Usage:
-    $0 [-b|--base-stacks] [-p|--pipelines] [-v|--vpc] [-z|--hosted-zone-resources]
+    $0 [-b|--base-stacks] [-n|--notification] [-p|--pipelines] [-v|--vpc] [-z|--hosted-zone-resources]
 
   Options:
     -b, --base-stacks                      Provision base stacks
+    -n, --notification                     Creates a SNS topic with Slack integration
     -p, --pipelines                        Provision secure pipelines
     -v, --vpc                              Provision VPC stack
     -z, --hosted-zone-resources            Provision hosted zone, certificates and SSM params
@@ -25,14 +26,18 @@ if [ $# -lt 1 ]; then
 fi
 
 PROVISION_BASE_STACKS=false
-PROVISION_PIPELINES=false
 PROVISION_HOSTED_ZONE_AND_RECORDS=false
+PROVISION_NOTIFICATION_STACK=false
+PROVISION_PIPELINES=false
 PROVISION_VPC=false
 
 while [[ $# -gt 0 ]]; do
   case "${1}" in
     -b | --base-stacks)
       PROVISION_BASE_STACKS=true
+      ;;
+    -n | --notification)
+      PROVISION_NOTIFICATION_STACK=true
       ;;
     -p | --pipelines)
       PROVISION_PIPELINES=true
@@ -231,10 +236,40 @@ function provision_hosted_zone_and_records {
   TEMPLATE_URL=file://authentication-frontend/cloudformation/domains/template.yaml ./provisioner.sh "${AWS_ACCOUNT}" dns-zones-and-records dns LATEST
 }
 
+# --------------------------------------------
+#   Creates a SNS topic with slack integration
+# --------------------------------------------
+function provision_notification {
+  SAM_PARAMETERS=$(jq -r '.[] | "\(.ParameterKey)=\(.ParameterValue)"' "configuration/${AWS_ACCOUNT}/cloudwatch-alarm-notification/parameters.json")
+  TAGS=$(jq -r '.[] | "\(.Key)=\(.Value)" | gsub(" ";"-")' "configuration/${AWS_ACCOUNT}/tags.json")
+
+  CONFIRM_CHANGESET_OPTION="--confirm-changeset"
+  if [ "${AUTO_APPLY_CHANGESET}" == "true" ]; then
+    CONFIRM_CHANGESET_OPTION="--no-confirm-changeset"
+  fi
+
+  export AWS_REGION="eu-west-2"
+  pushd alerts
+  sam build
+  # shellcheck disable=SC2086
+  sam deploy \
+    --stack-name "cloudwatch-alarm-notification" \
+    --resolve-s3 true \
+    --s3-prefix "cloudwatch-alarm-notification" \
+    --region "eu-west-2" \
+    --capabilities "CAPABILITY_IAM" \
+    $CONFIRM_CHANGESET_OPTION \
+    --no-fail-on-empty-changeset \
+    --parameter-overrides $SAM_PARAMETERS \
+    --tags $TAGS
+  popd
+}
+
 # --------------------
 # Provision components
 # --------------------
 [ "${PROVISION_BASE_STACKS}" == "true" ] && provision_base_stacks
-[ "${PROVISION_PIPELINES}" == "true" ] && provision_pipeline
 [ "${PROVISION_HOSTED_ZONE_AND_RECORDS}" == "true" ] && provision_hosted_zone_and_records
+[ "${PROVISION_NOTIFICATION_STACK}" == "true" ] && provision_notification
+[ "${PROVISION_PIPELINES}" == "true" ] && provision_pipeline
 [ "${PROVISION_VPC}" == "true" ] && provision_vpc
