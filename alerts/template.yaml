@@ -5,12 +5,15 @@ Description: >
   Authentication alerts SNS topic, enricher function and slack integration
 
 Parameters:
-  AccountAlias:
-    Description: >
-      Account alias of the AWS account where this stack is deployed. This
-      information is passed onto slack notification
+  Environment:
     Type: String
-    Default: ""
+    Description: The name of the environment to deploy to
+    AllowedValues:
+      - build
+      - staging
+      - production
+      - integration
+      - dev
 
   SlackWorkspaceId:
     Description: >
@@ -35,6 +38,19 @@ Outputs:
     Value: !Ref NotificationTopic
     Export:
       Name: !Sub "${AWS::StackName}-NotificationTopicArn"
+
+Mappings:
+  EnvironmentConfiguration:
+    dev:
+      AccountAlias: "di-authentication-development"
+    build:
+      AccountAlias: "di-authentication-build"
+    staging:
+      AccountAlias: "di-authentication-staging"
+    integration:
+      AccountAlias: "di-authentication-integration"
+    production:
+      AccountAlias: "di-authentication-production"
 
 Resources:
   NotificationTopic:
@@ -68,6 +84,17 @@ Resources:
             Principal:
               Service:
                 - cloudwatch.amazonaws.com
+
+  NotificationTopicSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "The ARN of the SNS topic that receives CloudWatch notifications"
+      Name: !Sub "/deploy/${Environment}/notification_topic_arn"
+      Type: String
+      Value: !Ref NotificationTopic
+      Tags:
+        Application: "Authentication"
+        Source: govuk-one-login/authentication-infrastructure/alerts/template.yaml
 
   LambdaExecutionRole:
     Type: AWS::IAM::Role
@@ -113,7 +140,12 @@ Resources:
       CodeUri: src
       Environment:
         Variables:
-          ACCOUNT_ALIAS: !Ref AccountAlias
+          ACCOUNT_ALIAS:
+            !FindInMap [
+              EnvironmentConfiguration,
+              !Ref Environment,
+              AccountAlias,
+            ]
           NOTIFICATION_DETAILED_TOPIC_ARN: !Ref NotificationDetailedTopic
 
   NotificationEnricherFunctionInvokePermission:

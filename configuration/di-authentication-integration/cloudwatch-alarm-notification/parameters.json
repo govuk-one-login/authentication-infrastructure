@@ -1,7 +1,7 @@
 [
   {
     "ParameterKey": "Environment",
-    "ParameterValue": "build"
+    "ParameterValue": "integration"
   },
   {
     "ParameterKey": "SlackWorkspaceId",
@@ -9,6 +9,6 @@
   },
   {
     "ParameterKey": "SlackChannelId",
-    "ParameterValue": "C07VBLHANTU"
+    "ParameterValue": "C08MW7X7HEY"
   }
 ]

@@ -207,11 +207,7 @@ function provision_distribution {
 #   no dependency
 # -----------------------------------------------------------------------------------
 function provision_notification {
-  PARAMETERS_FILE="configuration/${AWS_ACCOUNT}/${STACK_PREFIX}-cloudfront-notification/parameters.json"
-  PARAMETERS=$(jq ". += [
-                            {\"ParameterKey\":\"AccountAlias\",\"ParameterValue\":\"${AWS_ACCOUNT}\"}
-                        ] | tojson" -r "${PARAMETERS_FILE}")
-  SAM_PARAMETERS=$(echo "$PARAMETERS" | jq -r '.[] | "\(.ParameterKey)=\(.ParameterValue)"')
+  SAM_PARAMETERS=$(jq -r '.[] | "\(.ParameterKey)=\(.ParameterValue)"' "configuration/${AWS_ACCOUNT}/${STACK_PREFIX}-cloudfront-notification/parameters.json")
   TAGS=$(jq -r '.[] | "\(.Key)=\(.Value)" | gsub(" ";"-")' "configuration/${AWS_ACCOUNT}/tags.json")
 
   CONFIRM_CHANGESET_OPTION="--confirm-changeset"
