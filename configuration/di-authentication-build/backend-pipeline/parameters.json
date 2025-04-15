@@ -30,5 +30,9 @@
   {
     "ParameterKey": "IncludePromotion",
     "ParameterValue": "No"
+  },
+  {
+    "ParameterKey": "LambdaCanaryDeployment",
+    "ParameterValue": "AllAtOnce"
   }
 ]
