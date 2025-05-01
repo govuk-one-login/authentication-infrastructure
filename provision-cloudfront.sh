@@ -9,7 +9,7 @@ function usage {
   Script to deploy CloudFront distribution and additional dependencies described in the the CloudFront header trust initiative
 
   Usage:
-    $0 [-e|--environment <env name>] [-s|--sub-environment <sub-env name>] [-c|--certificates] [-d|--distribution] [-m|--monitoring] [-n|--notification] [-w|--waf]
+    $0 [-e|--environment <env name>] [-s|--sub-environment <sub-env name>] [-c|--certificates] [-d|--distribution] [-m|--monitoring] [-n|--notification]
 
   Options:
     -e, --environment        The environment you wish to deploy to i.e. build, staging, integration, or production
@@ -18,7 +18,6 @@ function usage {
     -d, --distribution       Creates the CloudFront distribution
     -m, --monitoring         Deploys CloudFront Extended Monitoring configuration
     -n, --notification       Creates an SNS topic with Slack integration
-    -w, --waf                Creates a WAF to attach to the CloudFront distribution
 USAGE
 }
 
@@ -27,7 +26,6 @@ if [ $# -lt 1 ]; then
   exit 1
 fi
 
-PROVISION_WAF=false
 PROVISION_CERTIFICATES=false
 PROVISION_CLOUDFRONT_DISTRIBUTION=false
 PROVISION_NOTIFICATION_STACK=false
@@ -55,9 +53,6 @@ while [[ $# -gt 0 ]]; do
       ;;
     -n | --notification)
       PROVISION_NOTIFICATION_STACK=true
-      ;;
-    -w | --waf)
-      PROVISION_WAF=true
       ;;
     *)
       usage
@@ -107,42 +102,6 @@ function _environment_has_fms {
   jq -e 'any(.[]; .Key == "FMSGlobalCustomPolicy")' "${tags_file}" &> /dev/null
 }
 
-# --------------------------------------------------------
-# auth-fe-cloudfront-waf
-#   Creates a WAF to attach to the Cloudfront distribution
-#   no dependency
-# --------------------------------------------------------
-function provision_waf {
-  if _environment_has_fms "${STACK_PREFIX}"; then
-    echo "Skipping WAF creation as the environment has FMS enabled"
-    return
-  fi
-
-  PARAMETERS_FILE="configuration/${AWS_ACCOUNT}/${STACK_PREFIX}-cloudfront-waf/parameters.json"
-
-  RateLimitByIPEndpoints=$(echo "${ip_endpoint_rate_limiting_configuration:-""}" | jq -r '.[0].endpoints | flatten[]' | xargs | tr " " ",") # get the endpoints, flatten the list, single line comma-separated output
-  RateLimitByIPRateLimitPeriod=$(echo "${ip_endpoint_rate_limiting_configuration:-""}" | jq -r '.[0].evaluation_window_sec')
-  RateLimitByIPRequestsPerPeriod=$(echo "${ip_endpoint_rate_limiting_configuration:-""}" | jq -r '.[0].limit')
-
-  RateLimitByApsSessionEndpoints=$(echo "${aps_session_endpoint_rate_limiting_configuration:-""}" | jq -r '.[0].endpoints | flatten[]' | xargs | tr " " ",") # get the endpoints, flatten the list, single line comma-separated output
-  RateLimitByApsSessionRateLimitPeriod=$(echo "${aps_session_endpoint_rate_limiting_configuration:-""}" | jq -r '.[0].evaluation_window_sec')
-  RateLimitByApsSessionRequestsPerPeriod=$(echo "${aps_session_endpoint_rate_limiting_configuration:-""}" | jq -r '.[0].limit')
-
-  PARAMETERS=$(jq ". += [
-                            {\"ParameterKey\":\"RateLimitByIPEndpoints\",\"ParameterValue\":\"${RateLimitByIPEndpoints}\"},
-                            {\"ParameterKey\":\"RateLimitByIPRateLimitPeriod\",\"ParameterValue\":\"${RateLimitByIPRateLimitPeriod}\"},
-                            {\"ParameterKey\":\"RateLimitByIPRequestsPerPeriod\",\"ParameterValue\":\"${RateLimitByIPRequestsPerPeriod}\"},
-                            {\"ParameterKey\":\"RateLimitByApsSessionEndpoints\",\"ParameterValue\":\"${RateLimitByApsSessionEndpoints}\"},
-                            {\"ParameterKey\":\"RateLimitByApsSessionRateLimitPeriod\",\"ParameterValue\":\"${RateLimitByApsSessionRateLimitPeriod}\"},
-                            {\"ParameterKey\":\"RateLimitByApsSessionRequestsPerPeriod\",\"ParameterValue\":\"${RateLimitByApsSessionRequestsPerPeriod}\"}
-                        ] | tojson" -r "${PARAMETERS_FILE}")
-  TMP_PARAM_FILE=$(mktemp)
-  echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
-
-  export AWS_REGION="us-east-1"
-  TEMPLATE_URL=file://authentication-frontend/cloudformation/cloudfront-waf/template.yaml PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" "${STACK_PREFIX}-cloudfront-waf" waf LATEST
-}
-
 # -----------------------------------------------------------
 # auth-fe-cloudfront-live-certificate
 #   Provisions signin certificate for Cloudfront Distribution
@@ -164,19 +123,12 @@ function create_live_certificate {
 # ---------------------------------------------------------------------
 # auth-fe-cloudfront
 #   Creates the CloudFront distribution
-#   depends on: auth-fe-cloudfront-waf, auth-fe-cloudfront-*certificate
+#   depends on: auth-fe-cloudfront-*certificate
 # ---------------------------------------------------------------------
 function provision_distribution {
   export AWS_REGION="us-east-1"
 
-  # If the stack uses FMS, then the WAFv2WebACL is always "none". Otherwise, Feed output to the next stack
   WAFv2WebACL="none"
-  if ! _environment_has_fms "${STACK_PREFIX}"; then
-    # shellcheck disable=SC1091
-    source "./scripts/read_cloudformation_stack_outputs.sh" "${STACK_PREFIX}-cloudfront-waf"
-    webacl="CFN_${STACK_PREFIX_UNDERSCORE}_cloudfront_waf_WAFv2WebACL"
-    WAFv2WebACL=${!webacl:-"none"}
-  fi
 
   # Feed output to the next stack
   # shellcheck disable=SC1091
@@ -266,7 +218,6 @@ function provision_monitoring {
 # --------------------
 # Provision components
 # --------------------
-[ "$PROVISION_WAF" == "true" ] && provision_waf
 [ "$PROVISION_CERTIFICATES" == "true" ] && create_live_certificate
 [ "$PROVISION_CLOUDFRONT_DISTRIBUTION" == "true" ] && provision_distribution
 [ "$PROVISION_NOTIFICATION_STACK" == "true" ] && provision_notification
