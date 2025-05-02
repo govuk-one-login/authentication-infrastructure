@@ -101,7 +101,7 @@ function provision_base_stacks {
   ./provisioner.sh "${AWS_ACCOUNT}" github-identity github-identity v1.1.1
 
   # ./provisioner.sh "${AWS_ACCOUNT}" alerting-integration alerting-integration v1.0.6
-  # ./provisioner.sh "${AWS_ACCOUNT}" api-gateway-logs api-gateway-logs v1.0.5
+  ./provisioner.sh "${AWS_ACCOUNT}" api-gateway-logs api-gateway-logs v1.0.5
   ./provisioner.sh "${AWS_ACCOUNT}" build-notifications build-notifications v2.3.3
   # ./provisioner.sh "${AWS_ACCOUNT}" certificate-expiry certificate-expiry v1.1.1
   # ./provisioner.sh "${AWS_ACCOUNT}" checkov-hook checkov-hook LATEST
@@ -153,7 +153,7 @@ function provision_pipeline {
 
   TMP_PARAM_FILE=$(mktemp)
   echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
-  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" backend-pipeline sam-deploy-pipeline "${PIPELINE_TEMPLATE_VERSION}"
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" backend-pipeline sam-deploy-pipeline v2.76.0
 
   # Build ipv-stub pipeline
   PARAMETERS_FILE="configuration/$AWS_ACCOUNT/build-ipv-stub-pipeline/parameters.json"

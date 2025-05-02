@@ -154,7 +154,7 @@ function provision_pipeline {
 
   TMP_PARAM_FILE=$(mktemp)
   echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
-  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" backend-pipeline sam-deploy-pipeline "${PIPELINE_TEMPLATE_VERSION}"
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" backend-pipeline sam-deploy-pipeline v2.76.0
 
   # authdev1-frontend
   PARAMETERS_FILE="configuration/$AWS_ACCOUNT/authdev1-frontend-pipeline/parameters.json"
