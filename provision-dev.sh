@@ -94,6 +94,7 @@ function provision_base_stacks {
   # NOTE: tag immutability is manually disabled for these ecr repositories
   ./provisioner.sh "${AWS_ACCOUNT}" frontend-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
   ./provisioner.sh "${AWS_ACCOUNT}" service-down-page-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
+  ./provisioner.sh "${AWS_ACCOUNT}" acceptance-tests-image-repository test-image-repository v1.2.0
 
   # NOTE: tag immutability is manually disabled for these ecr repositories
   ./provisioner.sh "${AWS_ACCOUNT}" authdev1-frontend-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
