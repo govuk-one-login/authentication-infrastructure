@@ -9,7 +9,27 @@
   },
   {
     "ParameterKey": "ProgrammaticPermissionsBoundary",
-    "ParameterValue": "False"
+    "ParameterValue": "True"
+  },
+  {
+    "ParameterKey": "AllowedServiceOne",
+    "ParameterValue": "Lambda"
+  },
+  {
+    "ParameterKey": "AllowedServiceTwo",
+    "ParameterValue": "EC2"
+  },
+  {
+    "ParameterKey": "AllowedServiceThree",
+    "ParameterValue": "DynamoDB"
+  },
+  {
+    "ParameterKey": "AllowedServiceFour",
+    "ParameterValue": "SQS"
+  },
+  {
+    "ParameterKey": "AllowedServiceFive",
+    "ParameterValue": "SSM"
   },
   {
     "ParameterKey": "VpcStackName",
@@ -30,5 +50,13 @@
   {
     "ParameterKey": "IncludePromotion",
     "ParameterValue": "No"
+  },
+  {
+    "ParameterKey": "LambdaCanaryDeployment",
+    "ParameterValue": "AllAtOnce"
+  },
+  {
+    "ParameterKey": "AccessDynamoDBAccounts",
+    "ParameterValue": "653994557586"
   }
 ]
