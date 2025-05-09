@@ -113,8 +113,9 @@ function provision_base_stacks {
 function provision_vpc {
   export AWS_REGION="eu-west-2"
 
-  VPC_TEMPLATE_VERSION="v2.9.0"
-  ./provisioner.sh "${AWS_ACCOUNT}" vpc vpc "${VPC_TEMPLATE_VERSION}"
+  # VPC_TEMPLATE_VERSION="v2.9.0"
+  # ./provisioner.sh "${AWS_ACCOUNT}" vpc vpc "${VPC_TEMPLATE_VERSION}"
+  TEMPLATE_URL="https://template-bucket-templatebucket-civakigopbg2.s3.amazonaws.com/vpc/template.yaml?versionId=l6YNF_tSFnmMdfl2cLiT5ngTT.BEWCEw" ./provisioner.sh "${AWS_ACCOUNT}" vpc vpc LATEST
 }
 
 # -------------------
