@@ -82,6 +82,11 @@ ArtifactSourceBucketArn=${CFN_frontend_pipeline_ArtifactPromotionBucketArn:-"non
 ArtifactSourceBucketEventTriggerRoleArn=${CFN_frontend_pipeline_ArtifactPromotionBucketEventTriggerRoleArn:-"none"}
 
 # shellcheck disable=SC1091
+source "./scripts/read_cloudformation_stack_outputs.sh" "backend-pipeline"
+BackendArtifactSourceBucketArn=${CFN_backend_pipeline_ArtifactPromotionBucketArn:-"none"}
+BackendArtifactSourceBucketEventTriggerRoleArn=${CFN_backend_pipeline_ArtifactPromotionBucketEventTriggerRoleArn:-"none"}
+
+# shellcheck disable=SC1091
 source "./scripts/read_cloudformation_stack_outputs.sh" "build-orch-stub-pipeline"
 BuildOrchStubArtifactSourceBucketorArn=${CFN_build_orch_stub_pipeline_ArtifactPromotionBucketArn:-"none"}
 BuildOrchStubArtifactSourceBucketEventTriggerRoleArn=${CFN_build_orch_stub_pipeline_ArtifactPromotionBucketEventTriggerRoleArn:-"none"}
@@ -111,7 +116,7 @@ export AUTO_APPLY_CHANGESET="${AUTO_APPLY_CHANGESET:-false}"
 function provision_base_stacks {
   export AWS_REGION="eu-west-2"
   # ./provisioner.sh "${AWS_ACCOUNT}" alerting-integration alerting-integration v1.0.6
-  # ./provisioner.sh "${AWS_ACCOUNT}" api-gateway-logs api-gateway-logs v1.0.5
+  ./provisioner.sh "${AWS_ACCOUNT}" api-gateway-logs api-gateway-logs v1.0.5
   ./provisioner.sh "${AWS_ACCOUNT}" build-notifications build-notifications v2.3.3
   # ./provisioner.sh "${AWS_ACCOUNT}" certificate-expiry certificate-expiry v1.1.1
   # ./provisioner.sh "${AWS_ACCOUNT}" checkov-hook checkov-hook LATEST
@@ -136,6 +141,8 @@ function provision_vpc {
 # -------------------
 function provision_pipeline {
   PIPELINE_TEMPLATE_VERSION="v2.69.13"
+
+  # frontend pipeline
   PARAMETERS_FILE="configuration/$AWS_ACCOUNT/frontend-pipeline/parameters.json"
   PARAMETERS=$(jq ". += [
                             {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
@@ -150,6 +157,22 @@ function provision_pipeline {
   echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
   export AWS_REGION="eu-west-2"
   PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" frontend-pipeline sam-deploy-pipeline "${PIPELINE_TEMPLATE_VERSION}"
+
+  # backend pipeline
+  PARAMETERS_FILE="configuration/$AWS_ACCOUNT/backend-pipeline/parameters.json"
+  PARAMETERS=$(jq ". += [
+                            {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
+                            {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
+                            {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"},
+                            {\"ParameterKey\":\"ArtifactSourceBucketArn\",\"ParameterValue\":\"${BackendArtifactSourceBucketArn}\"},
+                            {\"ParameterKey\":\"ArtifactSourceBucketEventTriggerRoleArn\",\"ParameterValue\":\"${BackendArtifactSourceBucketEventTriggerRoleArn}\"},
+                            {\"ParameterKey\":\"TestImageRepositoryUri\",\"ParameterValue\":\"${TestImageRepositoryUri}\"}
+                        ] | tojson" -r "${PARAMETERS_FILE}")
+
+  TMP_PARAM_FILE=$(mktemp)
+  echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+  export AWS_REGION="eu-west-2"
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" backend-pipeline sam-deploy-pipeline v2.76.0
 
   # orch-stub pipeline
   PARAMETERS_FILE="configuration/$AWS_ACCOUNT/staging-orch-stub-pipeline/parameters.json"

@@ -5,7 +5,7 @@
   },
   {
     "ParameterKey": "Environment",
-    "ParameterValue": "build"
+    "ParameterValue": "staging"
   },
   {
     "ParameterKey": "ProgrammaticPermissionsBoundary",
@@ -36,14 +36,6 @@
     "ParameterValue": "vpc"
   },
   {
-    "ParameterKey": "OneLoginRepositoryName",
-    "ParameterValue": "authentication-api"
-  },
-  {
-    "ParameterKey": "OneLoginTestImageRepositoryNames",
-    "ParameterValue": "authentication-acceptance-tests"
-  },
-  {
     "ParameterKey": "AdditionalCodeSigningVersionArns",
     "ParameterValue": "arn:aws:signer:eu-west-2:216552277552:/signing-profiles/DynatraceSigner/5uwzCCGTPq,arn:aws:signer:eu-west-2:354770603991:/signing-profiles/SigningProfile_SxeU7YX0F6Pb/HyVGO9gC7b"
   },
@@ -53,7 +45,7 @@
   },
   {
     "ParameterKey": "AllowedAccounts",
-    "ParameterValue": "851725205974"
+    "ParameterValue": "211125303002,211125600642"
   },
   {
     "ParameterKey": "LambdaCanaryDeployment",
@@ -61,7 +53,7 @@
   },
   {
     "ParameterKey": "AccessDynamoDBAccounts",
-    "ParameterValue": "761723964695"
+    "ParameterValue": "758531536632"
   },
   {
     "ParameterKey": "TestContainerAllowCrossAccountAssumeRole",
