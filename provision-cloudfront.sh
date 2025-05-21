@@ -131,9 +131,15 @@ function provision_distribution {
   WAFv2WebACL="none"
 
   # Feed output to the next stack
-  # shellcheck disable=SC1091
-  source "./scripts/read_cloudformation_stack_outputs.sh" "${STACK_PREFIX}-cloudfront-live-certificate"
-  certarn="CFN_${STACK_PREFIX_UNDERSCORE}_cloudfront_live_certificate_CertificateARN"
+  if [ "${SUB_ENVIRONMENT}" != "" ]; then
+    # shellcheck disable=SC1091
+    source "./scripts/read_cloudformation_stack_outputs.sh" "${STACK_PREFIX}-cloudfront-certificate"
+    certarn="CFN_${STACK_PREFIX_UNDERSCORE}_cloudfront_certificate_CertificateARN"
+  else
+    # shellcheck disable=SC1091
+    source "./scripts/read_cloudformation_stack_outputs.sh" "${STACK_PREFIX}-cloudfront-live-certificate"
+    certarn="CFN_${STACK_PREFIX_UNDERSCORE}_cloudfront_live_certificate_CertificateARN"
+  fi
   LiveCertificateARN=${!certarn:-""}
 
   PARAMETERS_FILE="configuration/${AWS_ACCOUNT}/${STACK_PREFIX}-cloudfront/live-parameters.json"
