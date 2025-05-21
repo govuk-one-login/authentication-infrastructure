@@ -131,9 +131,15 @@ function provision_distribution {
   WAFv2WebACL="none"
 
   # Feed output to the next stack
-  # shellcheck disable=SC1091
-  source "./scripts/read_cloudformation_stack_outputs.sh" "${STACK_PREFIX}-cloudfront-live-certificate"
-  certarn="CFN_${STACK_PREFIX_UNDERSCORE}_cloudfront_live_certificate_CertificateARN"
+  if [ "${SUB_ENVIRONMENT}" != "" ]; then
+    # shellcheck disable=SC1091
+    source "./scripts/read_cloudformation_stack_outputs.sh" "${STACK_PREFIX}-cloudfront-certificate"
+    certarn="CFN_${STACK_PREFIX_UNDERSCORE}_cloudfront_certificate_CertificateARN"
+  else
+    # shellcheck disable=SC1091
+    source "./scripts/read_cloudformation_stack_outputs.sh" "${STACK_PREFIX}-cloudfront-live-certificate"
+    certarn="CFN_${STACK_PREFIX_UNDERSCORE}_cloudfront_live_certificate_CertificateARN"
+  fi
   LiveCertificateARN=${!certarn:-""}
 
   PARAMETERS_FILE="configuration/${AWS_ACCOUNT}/${STACK_PREFIX}-cloudfront/live-parameters.json"
@@ -149,7 +155,7 @@ function provision_distribution {
   echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
 
   export AWS_REGION="eu-west-2"
-  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" "${STACK_PREFIX}-cloudfront" cloudfront-distribution v1.6.0
+  PARAMETERS_FILE=$TMP_PARAM_FILE TEMPLATE_URL=https://template-storage-templatebucket-1upzyw6v9cs42.s3.eu-west-2.amazonaws.com/cloudfront-distribution/v1.6/template-v1.6.2.yaml ./provisioner.sh "${AWS_ACCOUNT}" "${STACK_PREFIX}-cloudfront" cloudfront-distribution LATEST
 }
 
 # -----------------------------------------------------------------------------------
