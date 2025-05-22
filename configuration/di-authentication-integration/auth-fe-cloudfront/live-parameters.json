@@ -12,6 +12,10 @@
     "ParameterValue": "true"
   },
   {
+    "ParameterKey": "FraudHeadersFunctionName",
+    "ParameterValue": "TICFFraudHeadersCloudFrontFunction"
+  },
+  {
     "ParameterKey": "StandardLoggingEnabled",
     "ParameterValue": "true"
   },
