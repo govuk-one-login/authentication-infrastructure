@@ -2,5 +2,9 @@
   {
     "ParameterKey": "PipelineStackName",
     "ParameterValue": "frontend-pipeline"
+  },
+  {
+    "ParameterKey": "RetainedImageCount",
+    "ParameterValue": "100"
   }
 ]

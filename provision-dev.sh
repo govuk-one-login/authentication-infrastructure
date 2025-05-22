@@ -92,7 +92,7 @@ function provision_base_stacks {
 
   ./provisioner.sh "${AWS_ACCOUNT}" api-gateway-logs api-gateway-logs v1.0.5
 
-  CONTAINER_IMAGE_TEMPLATE_VERSION="v2.0.1"
+  CONTAINER_IMAGE_TEMPLATE_VERSION="v3.0.0"
   # NOTE: tag immutability is manually disabled for these ecr repositories
   ./provisioner.sh "${AWS_ACCOUNT}" frontend-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
   ./provisioner.sh "${AWS_ACCOUNT}" service-down-page-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"

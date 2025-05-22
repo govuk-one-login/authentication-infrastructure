@@ -108,7 +108,7 @@ function provision_base_stacks {
   ./provisioner.sh "${AWS_ACCOUNT}" infra-audit-hook infrastructure-audit-hook LATEST
   ./provisioner.sh "${AWS_ACCOUNT}" lambda-audit-hook lambda-audit-hook LATEST
 
-  CONTAINER_IMAGE_TEMPLATE_VERSION="v2.0.1"
+  CONTAINER_IMAGE_TEMPLATE_VERSION="v3.0.0"
   ./provisioner.sh "${AWS_ACCOUNT}" frontend-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
   ./provisioner.sh "${AWS_ACCOUNT}" service-down-page-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
 
