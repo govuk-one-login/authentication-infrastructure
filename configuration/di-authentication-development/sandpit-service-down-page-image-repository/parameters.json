@@ -1,0 +1,10 @@
+[
+  {
+    "ParameterKey": "PipelineStackName",
+    "ParameterValue": "sandpit-frontend-pipeline"
+  },
+  {
+    "ParameterKey": "RetainedImageCount",
+    "ParameterValue": "100"
+  }
+]
