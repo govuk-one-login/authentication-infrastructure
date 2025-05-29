@@ -1,7 +1,7 @@
 [
   {
     "ParameterKey": "SAMStackName",
-    "ParameterValue": "sandpit-frontend"
+    "ParameterValue": "authdev3-frontend"
   },
   {
     "ParameterKey": "Environment",
@@ -9,7 +9,7 @@
   },
   {
     "ParameterKey": "SubEnvironment",
-    "ParameterValue": "sandpit"
+    "ParameterValue": "authdev3"
   },
   {
     "ParameterKey": "ProgrammaticPermissionsBoundary",

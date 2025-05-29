@@ -5,7 +5,7 @@
   },
   {
     "ParameterKey": "DistributionAlias",
-    "ParameterValue": "signin.sandpit.dev.account.gov.uk"
+    "ParameterValue": "signin.authdev3.dev.account.gov.uk"
   },
   {
     "ParameterKey": "FraudHeaderEnabled",

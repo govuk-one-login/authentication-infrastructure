@@ -1,7 +1,7 @@
 [
   {
     "ParameterKey": "PipelineStackName",
-    "ParameterValue": "sandpit-frontend-pipeline"
+    "ParameterValue": "authdev3-frontend-pipeline"
   },
   {
     "ParameterKey": "RetainedImageCount",
