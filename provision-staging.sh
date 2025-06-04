@@ -82,9 +82,9 @@ ArtifactSourceBucketArn=${CFN_frontend_pipeline_ArtifactPromotionBucketArn:-"non
 ArtifactSourceBucketEventTriggerRoleArn=${CFN_frontend_pipeline_ArtifactPromotionBucketEventTriggerRoleArn:-"none"}
 
 # shellcheck disable=SC1091
-source "./scripts/read_cloudformation_stack_outputs.sh" "backend-pipeline"
-BackendArtifactSourceBucketArn=${CFN_backend_pipeline_ArtifactPromotionBucketArn:-"none"}
-BackendArtifactSourceBucketEventTriggerRoleArn=${CFN_backend_pipeline_ArtifactPromotionBucketEventTriggerRoleArn:-"none"}
+source "./scripts/read_cloudformation_stack_outputs.sh" "authentication-api-pipeline"
+AuthenticationApiArtifactSourceBucketArn=${CFN_authentication_api_pipeline_ArtifactPromotionBucketArn:-"none"}
+AuthenticationApiArtifactSourceBucketEventTriggerRoleArn=${CFN_authentication_api_pipeline_ArtifactPromotionBucketEventTriggerRoleArn:-"none"}
 
 # shellcheck disable=SC1091
 source "./scripts/read_cloudformation_stack_outputs.sh" "build-orch-stub-pipeline"
@@ -159,20 +159,20 @@ function provision_pipeline {
   PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" frontend-pipeline sam-deploy-pipeline "${PIPELINE_TEMPLATE_VERSION}"
 
   # backend pipeline
-  PARAMETERS_FILE="configuration/$AWS_ACCOUNT/backend-pipeline/parameters.json"
+  PARAMETERS_FILE="configuration/$AWS_ACCOUNT/authentication-api-pipeline/parameters.json"
   PARAMETERS=$(jq ". += [
                             {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
                             {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
                             {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"},
-                            {\"ParameterKey\":\"ArtifactSourceBucketArn\",\"ParameterValue\":\"${BackendArtifactSourceBucketArn}\"},
-                            {\"ParameterKey\":\"ArtifactSourceBucketEventTriggerRoleArn\",\"ParameterValue\":\"${BackendArtifactSourceBucketEventTriggerRoleArn}\"},
+                            {\"ParameterKey\":\"ArtifactSourceBucketArn\",\"ParameterValue\":\"${AuthenticationApiArtifactSourceBucketArn}\"},
+                            {\"ParameterKey\":\"ArtifactSourceBucketEventTriggerRoleArn\",\"ParameterValue\":\"${AuthenticationApiArtifactSourceBucketEventTriggerRoleArn}\"},
                             {\"ParameterKey\":\"TestImageRepositoryUri\",\"ParameterValue\":\"${TestImageRepositoryUri}\"}
                         ] | tojson" -r "${PARAMETERS_FILE}")
 
   TMP_PARAM_FILE=$(mktemp)
   echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
   export AWS_REGION="eu-west-2"
-  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" backend-pipeline sam-deploy-pipeline v2.76.0
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authentication-api-pipeline sam-deploy-pipeline v2.76.0
 
   # orch-stub pipeline
   PARAMETERS_FILE="configuration/$AWS_ACCOUNT/staging-orch-stub-pipeline/parameters.json"
