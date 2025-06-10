@@ -15,6 +15,13 @@ if [ "${ENVIRONMENT}" = "development" ]; then
 fi
 
 data="
+    reduced_lockout_duration                          300 |
+    support_account_creation_count_ttl                false |
+    account_creation_lockout_count_ttl                3600 |
+    reauth_enter_sms_code_count_ttl                   120 |
+    code_max_retries_increased                        999999 |
+    phone_checker_with_retry                          true |
+    reauth_enter_auth_app_code_count_ttl              120 |
     terms_conditions_version                          1.13 |
     lockout_duration                                  600 |
     lockout_count_ttl                                 600 |
@@ -23,16 +30,16 @@ data="
     authentication_attempts_service_enabled           true |
     reauth_enter_password_count_ttl                   120 |
     use_strongly_consistent_reads                     true |
-    otp_code_ttl_duration                      600 |
-    email_acct_creation_otp_code_ttl_duration  600 |
-    test_clients_enabled                       true |
-    account_intervention_service_abort_on_error            true |
-    account_intervention_service_call_timeout              3000 |
-    account_intervention_service_action_enabled            true |
-    account_intervention_service_call_enabled              true |
-    call_ticf_cri                                          true |
-    invoke_ticf_cri_lambda                                 true |
-    ticf_cri_service_call_timeout                          2000 |
+    otp_code_ttl_duration                             600 |
+    email_acct_creation_otp_code_ttl_duration         600 |
+    test_clients_enabled                              true |
+    account_intervention_service_abort_on_error       true |
+    account_intervention_service_call_timeout         3000 |
+    account_intervention_service_action_enabled       true |
+    account_intervention_service_call_enabled         true |
+    call_ticf_cri                                     true |
+    invoke_ticf_cri_lambda                            true |
+    ticf_cri_service_call_timeout                     2000 |
     verify_email_template_id                               b7dbb02f-941b-4d72-ad64-84cbe5d77c2e |
     verify_phone_number_template_id                        7dd388f1-e029-4fe7-92ff-18496dcb53e9 |
     mfa_sms_template_id                                    97b956c8-9a12-451a-994b-5d51741b63d4 |
