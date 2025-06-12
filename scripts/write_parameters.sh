@@ -1,9 +1,29 @@
 #!/bin/bash
 set -euo pipefail
 
-ENVIRONMENT="${1}"
+ENVIRONMENT="${1:-}"
+if [ -z "${ENVIRONMENT}" ]; then
+  cat << USAGE
+  Usage:
+    $0 <ENVIRONMENT> <AWS_PROFILE> <INPUT_DIR> <Optional: "readonly">
+
+  This script bootstraps an environment by populating SSM parameter store with /deploy/<ENVIRONMENT>/* configurations.
+  The default values mentioned in variables.tf have previously been extracted and hardcoded in "data".
+  The script queries the INPUT_DIR and concatenates all the tfvar overrides into a single temporary file.
+  If an override is found in the temporary file, it is used instead of the default.
+
+  Example run:
+    $0 development di-authentication-development-admin ../authentication-api/ci/terraform/oidc
+
+    Readonly mode (prints the commands rather than executing them):
+      $0 development di-authentication-development-admin ../authentication-api/ci/terraform/oidc readonly
+USAGE
+  exit 1
+fi
+
 PROFILE="${2}"
 INPUT_DIR="${3}"
+READONLY="${4:-}"
 
 export AWS_PROFILE=${PROFILE}
 if ! aws sts get-caller-identity &> /dev/null; then
@@ -13,6 +33,10 @@ export AWS_REGION="eu-west-2"
 
 if [ "${ENVIRONMENT}" = "development" ]; then
   ENVIRONMENT="dev"
+fi
+
+if [ "${READONLY}" = "readonly" ]; then
+  CMD_PREFIX="echo"
 fi
 
 data="
@@ -59,6 +83,6 @@ echo "Writing SSM parameters"
 # shellcheck disable=SC2162,SC2086
 while read -d"|" name value; do
   export "${name}"="$(grep "^\<${name}\> *=" $TMP_PARAM_FILE | awk '{print $NF}' || echo "${value}")"
-  aws ssm put-parameter --type "String" --name "/deploy/${ENVIRONMENT}/${name}" --value "${!name}" --region "${AWS_REGION}"
+  ${CMD_PREFIX:-} aws ssm put-parameter --type "String" --name "/deploy/${ENVIRONMENT}/${name}" --value "${!name}" --region "${AWS_REGION}"
 done <<< $data
 echo "Parameters imported"
