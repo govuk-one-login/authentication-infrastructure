@@ -1,12 +1,34 @@
 #!/bin/bash
 set -euo pipefail
 
-ENVIRONMENT="${1}"
+ENVIRONMENT="${1:-}"
+if [ -z "${ENVIRONMENT}" ]; then
+  cat << USAGE
+  Usage:
+    $0 <ENVIRONMENT> <OLD_ACCOUNT AWS_PROFILE> <NEW_ACCOUNT AWS_PROFILE> <Optional: "readonly">
+
+  This script bootstraps an environment by populating Secrets Manager with /deploy/<ENVIRONMENT>/* secrets.
+  Secrets are fetched from the OLD_ACCOUNT and then written in the NEW_ACCOUNT.
+
+  Example run:
+    $0 development di-auth-development-admin di-authentication-development-admin
+
+    Readonly mode (prints the commands rather than executing them):
+      $0 development di-auth-development-admin di-authentication-development-admin readonly
+USAGE
+  exit 1
+fi
+
 OLD_ACCOUNT_PROFILE="${2}"
 NEW_ACCOUNT_PROFILE="${3}"
+READONLY="${4:-}"
 
 if [ "$ENVIRONMENT" = "development" ]; then
   ENVIRONMENT="dev"
+fi
+
+if [ "${READONLY}" = "readonly" ]; then
+  CMD_PREFIX="echo"
 fi
 
 export AWS_PROFILE=${OLD_ACCOUNT_PROFILE}
@@ -54,8 +76,10 @@ case "${ENVIRONMENT}" in
     ;;
 esac
 
+echo -e "\nWriting secrets"
 # shellcheck disable=SC2162,SC2086
 while read -d"|" name; do
   echo -n "."
-  aws secretsmanager create-secret --name "/deploy/${ENVIRONMENT}/${name}" --secret-string "${!name:- }" --region "${AWS_REGION}"
+  ${CMD_PREFIX:-} aws secretsmanager create-secret --name "/deploy/${ENVIRONMENT}/${name}" --secret-string "${!name:- }" --region "${AWS_REGION}"
 done <<< ${secrets}
+echo "Secrets imported"
