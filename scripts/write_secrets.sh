@@ -37,6 +37,18 @@ if ! aws sts get-caller-identity &> /dev/null; then
 fi
 export AWS_REGION="eu-west-2"
 
+old_account_id=$(aws sts get-caller-identity --query Account --output text)
+
+kms_keys="
+  ipv_reverification_request_signing_key ipv_reverification_request_signing_key |
+  mfa-reset-token-signing-key-ecc-alias mfa_reset_token_signing_key_ecc |
+"
+
+# shellcheck disable=SC2162,SC2086
+while read -d"|" alias secretname; do
+  export "${secretname}"="$(aws kms list-aliases --query "Aliases[?AliasName=='alias/${ENVIRONMENT}-${alias}'].[TargetKeyId]" --output text)"
+done <<< ${kms_keys}
+
 secrets="
   account_intervention_service_uri |
   ticf_cri_service_uri |
@@ -77,6 +89,12 @@ case "${ENVIRONMENT}" in
 esac
 
 echo -e "\nWriting secrets"
+# shellcheck disable=SC2162,SC2086
+while read -d"|" alias secretname; do
+  echo -n "."
+  ${CMD_PREFIX:-} aws secretsmanager create-secret --name "/deploy/${ENVIRONMENT}/${secretname}" --secret-string "arn:aws:kms:${AWS_REGION}:${old_account_id}:key/${!secretname}" --region "${AWS_REGION}"
+done <<< ${kms_keys}
+
 # shellcheck disable=SC2162,SC2086
 while read -d"|" name; do
   echo -n "."

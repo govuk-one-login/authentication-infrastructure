@@ -40,6 +40,15 @@ if [ "${READONLY}" = "readonly" ]; then
 fi
 
 data="
+  ipv_audience                      undefined |
+  ipv_auth_authorize_client_id      undefined |
+  ipv_authorisation_uri             undefined |
+  ipv_auth_authorize_callback_uri   undefined |
+  evcs_audience                     undefined |
+  auth_issuer_claim_for_evcs        undefined |
+  ipv_jwks_url                       |
+  ipv_auth_public_encryption_key_id  |
+  ipv_jwks_call_enabled             false |
   reduced_lockout_duration                               900 |
   support_account_creation_count_ttl                     false |
   account_creation_lockout_count_ttl                     3600 |
@@ -82,7 +91,7 @@ find "${INPUT_DIR}" -name "${ENVIRONMENT}.tfvars" -type f -exec cat '{}' \; > "$
 echo "Writing SSM parameters"
 # shellcheck disable=SC2162,SC2086
 while read -d"|" name value; do
-  export "${name}"="$(grep "^\<${name}\> *=" $TMP_PARAM_FILE | awk '{print $NF}' || echo "${value}")"
-  ${CMD_PREFIX:-} aws ssm put-parameter --type "String" --name "/deploy/${ENVIRONMENT}/${name}" --value "${!name}" --region "${AWS_REGION}"
+  export "${name}"="$(grep "^\<${name}\> *=" $TMP_PARAM_FILE | awk '{print $NF}' | tr -d '"' || echo "${value}")"
+  ${CMD_PREFIX:-} aws ssm put-parameter --type "String" --name "/deploy/${ENVIRONMENT}/${name}" --value "${!name:- }" --region "${AWS_REGION}"
 done <<< $data
 echo "Parameters imported"
