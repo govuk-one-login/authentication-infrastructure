@@ -159,7 +159,8 @@ function provision_pipeline {
   PARAMETERS=$(jq ". += [
                             {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
                             {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
-                            {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"}
+                            {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"},
+                            {\"ParameterKey\":\"TestImageRepositoryUri\",\"ParameterValue\":\"${TestImageRepositoryUri}\"}
                         ] | tojson" -r "${PARAMETERS_FILE}")
 
   TMP_PARAM_FILE=$(mktemp)
