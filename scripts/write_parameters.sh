@@ -40,6 +40,7 @@ if [ "${READONLY}" = "readonly" ]; then
 fi
 
 data="
+  ipv_backend_uri                   undefined |
   ipv_audience                      undefined |
   ipv_auth_authorize_client_id      undefined |
   ipv_authorisation_uri             undefined |
