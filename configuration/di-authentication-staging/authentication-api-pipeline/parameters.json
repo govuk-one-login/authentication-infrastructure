@@ -52,6 +52,10 @@
     "ParameterValue": "AllAtOnce"
   },
   {
+    "ParameterKey": "AccessCrossAccountSQS",
+    "ParameterValue": "758531536632"
+  },
+  {
     "ParameterKey": "AccessDynamoDBAccounts",
     "ParameterValue": "758531536632"
   },
