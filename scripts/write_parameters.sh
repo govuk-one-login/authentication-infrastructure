@@ -44,30 +44,18 @@ data="
   ipv_audience                      undefined |
   ipv_auth_authorize_client_id      undefined |
   ipv_authorisation_uri             undefined |
-  ipv_auth_authorize_callback_uri   undefined |
   evcs_audience                     undefined |
-  auth_issuer_claim_for_evcs        undefined |
   ipv_jwks_url                       |
   ipv_auth_public_encryption_key_id  |
   ipv_jwks_call_enabled             false |
-  reduced_lockout_duration                               900 |
   support_account_creation_count_ttl                     false |
   account_creation_lockout_count_ttl                     3600 |
   reauth_enter_sms_code_count_ttl                        3600 |
   code_max_retries_increased                             999999 |
   phone_checker_with_retry                               true |
   reauth_enter_auth_app_code_count_ttl                   3600 |
-  terms_conditions_version                               1.13 |
-  lockout_duration                                       900 |
-  lockout_count_ttl                                      900 |
   incorrect_password_lockout_count_ttl                   7200 |
-  support_reauth_signout_enabled                         false |
-  authentication_attempts_service_enabled                false |
   reauth_enter_password_count_ttl                        3600 |
-  use_strongly_consistent_reads                          false |
-  otp_code_ttl_duration                                  900 |
-  email_acct_creation_otp_code_ttl_duration              3600 |
-  test_clients_enabled                                   false |
   account_intervention_service_abort_on_error            false |
   account_intervention_service_call_timeout              3000 |
   account_intervention_service_action_enabled            false |
@@ -92,6 +80,7 @@ find "${INPUT_DIR}" -name "${ENVIRONMENT}.tfvars" -type f -exec cat '{}' \; > "$
 echo "Writing SSM parameters"
 # shellcheck disable=SC2162,SC2086
 while read -d"|" name value; do
+  # echo "$(echo ${name} |  gsed 's/\_\([a-z]\)/\U\1/g'): $(grep "^\<${name}\> *=" $TMP_PARAM_FILE | awk '{print $NF}' | tr -d '"' || echo "${value}")"
   export "${name}"="$(grep "^\<${name}\> *=" $TMP_PARAM_FILE | awk '{print $NF}' | tr -d '"' || echo "${value}")"
   ${CMD_PREFIX:-} aws ssm put-parameter --type "String" --name "/deploy/${ENVIRONMENT}/${name}" --value "${!name:- }" --region "${AWS_REGION}"
 done <<< $data
