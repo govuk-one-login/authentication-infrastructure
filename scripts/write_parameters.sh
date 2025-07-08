@@ -80,7 +80,6 @@ find "${INPUT_DIR}" -name "${ENVIRONMENT}.tfvars" -type f -exec cat '{}' \; > "$
 echo "Writing SSM parameters"
 # shellcheck disable=SC2162,SC2086
 while read -d"|" name value; do
-  # echo "$(echo ${name} |  gsed 's/\_\([a-z]\)/\U\1/g'): $(grep "^\<${name}\> *=" $TMP_PARAM_FILE | awk '{print $NF}' | tr -d '"' || echo "${value}")"
   export "${name}"="$(grep "^\<${name}\> *=" $TMP_PARAM_FILE | awk '{print $NF}' | tr -d '"' || echo "${value}")"
   ${CMD_PREFIX:-} aws ssm put-parameter --type "String" --name "/deploy/${ENVIRONMENT}/${name}" --value "${!name:- }" --region "${AWS_REGION}"
 done <<< $data
