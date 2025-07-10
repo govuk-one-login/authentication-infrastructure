@@ -57,7 +57,7 @@
   },
   {
     "ParameterKey": "LambdaCanaryDeployment",
-    "ParameterValue": "AllAtOnce"
+    "ParameterValue": "CodeDeployDefault.LambdaCanary10Percent5Minutes"
   },
   {
     "ParameterKey": "AccessCrossAccountSQS",
