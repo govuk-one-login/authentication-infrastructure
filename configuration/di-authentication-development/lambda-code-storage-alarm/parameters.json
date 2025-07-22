@@ -1,0 +1,10 @@
+[
+  {
+    "ParameterKey": "CodeStorageThreshold",
+    "ParameterValue": "75"
+  },
+  {
+    "ParameterKey": "LambdaCodeStorageAlarmDescription",
+    "ParameterValue": "Lambda code storage is running out. Runbook: https://govukverify.atlassian.net/wiki/x/pADYSAE"
+  }
+]
