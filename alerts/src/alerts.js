@@ -8,7 +8,7 @@ const buildMessageRequest = (snsMessage, accountAlias, snsMessageFooter) => {
     content: {
       textType: "client-markdown",
       title: snsMessage.AlarmName,
-      description: `${snsMessage.NewStateReason}\n*Status*\n${snsMessage.NewStateValue}\n*Account*\n${snsMessage.AWSAccountId} ${accountAlias}\n${snsMessageFooter}`
+      description: `*Description*\n${snsMessage.AlarmDescription}\n*Reason*\n${snsMessage.NewStateReason}\n*Status*\n${snsMessage.NewStateValue}\n*Account*\n${snsMessage.AWSAccountId} ${accountAlias}\n${snsMessageFooter}`
     },
   };
 };

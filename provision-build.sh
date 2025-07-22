@@ -207,6 +207,7 @@ function provision_live_hosted_zone_and_records {
 
 # --------------------------------------------
 #   Creates a SNS topic with slack integration
+#   Sets up an alarm for lambda code storage
 # --------------------------------------------
 function provision_notification {
   SAM_PARAMETERS=$(jq -r '.[] | "\(.ParameterKey)=\(.ParameterValue)"' "configuration/${AWS_ACCOUNT}/cloudwatch-alarm-notification/parameters.json")
@@ -232,6 +233,19 @@ function provision_notification {
     --parameter-overrides $SAM_PARAMETERS \
     --tags $TAGS
   popd
+
+  # shellcheck disable=SC1091
+  source "./scripts/read_cloudformation_stack_outputs.sh" "cloudwatch-alarm-notification"
+  NotificationTopicArn=${CFN_cloudwatch_alarm_notification_NotificationTopicArn:-"none"}
+
+  PARAMETERS_FILE="configuration/$AWS_ACCOUNT/lambda-code-storage-alarm/parameters.json"
+  PARAMETERS=$(jq ". += [
+                          {\"ParameterKey\":\"CodeStorageSNSTopicARN\",\"ParameterValue\":\"${NotificationTopicArn}\"}
+                      ] | tojson" -r "${PARAMETERS_FILE}")
+
+  TMP_PARAM_FILE=$(mktemp)
+  echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" lambda-code-storage-alarm cloudwatch-alarm-stack v0.0.6
 }
 
 # --------------------
