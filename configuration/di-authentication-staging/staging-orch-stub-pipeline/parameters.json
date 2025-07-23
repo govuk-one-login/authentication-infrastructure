@@ -8,7 +8,11 @@
     "ParameterValue": "staging"
   },
   {
+    "ParameterKey": "AllowedAccounts",
+    "ParameterValue": "211125303002,211125600642"
+  },
+  {
     "ParameterKey": "IncludePromotion",
-    "ParameterValue": "No"
+    "ParameterValue": "Yes"
   }
 ]

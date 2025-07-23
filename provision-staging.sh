@@ -186,7 +186,7 @@ function provision_pipeline {
 
   TMP_PARAM_FILE=$(mktemp)
   echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
-  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" staging-orch-stub-pipeline sam-deploy-pipeline v2.67.1
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" staging-orch-stub-pipeline sam-deploy-pipeline v2.76.0
 }
 
 # ------------------
