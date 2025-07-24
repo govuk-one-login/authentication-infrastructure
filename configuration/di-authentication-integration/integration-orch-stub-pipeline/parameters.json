@@ -1,0 +1,14 @@
+[
+  {
+    "ParameterKey": "SAMStackName",
+    "ParameterValue": "integration-orch-stub"
+  },
+  {
+    "ParameterKey": "Environment",
+    "ParameterValue": "integration"
+  },
+  {
+    "ParameterKey": "IncludePromotion",
+    "ParameterValue": "No"
+  }
+]
