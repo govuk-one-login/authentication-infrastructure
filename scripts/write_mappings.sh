@@ -5,12 +5,12 @@ ENVIRONMENT="${1:-}"
 if [ -z "${ENVIRONMENT}" ]; then
   cat << USAGE
   Usage:
-    $0 <ENVIRONMENT> <AWS_PROFILE> <INPUT_DIR>
+    $0 <ENVIRONMENT> <OLD_AWS_PROFILE> <INPUT_DIR>
 
   This is a helper script to populate Environment mappings.
   Sources of data:
-    terraform <ENV>.tfvars from INPUT_DIR, or use the defaults hardcoded to this script
-    aws cli various resources describe* command outputs
+    1. terraform <ENV>.tfvars from INPUT_DIR, or use the defaults hardcoded to this script
+    2. aws cli various resources describe* command outputs, running against the old environment
 
   Example run:
     $0 development di-auth-development-admin ../authentication-api/ci/terraform/oidc
