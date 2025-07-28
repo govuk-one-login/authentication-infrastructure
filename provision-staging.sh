@@ -95,6 +95,11 @@ BuildOrchStubArtifactSourceBucketEventTriggerRoleArn=${CFN_build_orch_stub_pipel
 source "./scripts/read_cloudformation_stack_outputs.sh" "acceptance-tests-image-repository"
 TestImageRepositoryUri=${CFN_acceptance_tests_image_repository_TestRunnerImageEcrRepositoryUri:-"none"}
 
+# shellcheck disable=SC1091
+source "./scripts/read_cloudformation_stack_outputs.sh" "smoke-test-pipeline"
+SmoketestArtifactSourceBucketArn=${CFN_smoke_test_pipeline_ArtifactPromotionBucketArn:-"none"}
+SmoketestArtifactSourceBucketEventTriggerRoleArn=${CFN_smoke_test_pipeline_ArtifactPromotionBucketEventTriggerRoleArn:-"none"}
+
 # ------------------------------
 # Staging account initialisation
 # ------------------------------
@@ -173,6 +178,21 @@ function provision_pipeline {
   echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
   export AWS_REGION="eu-west-2"
   PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authentication-api-pipeline sam-deploy-pipeline v2.76.0
+
+  # Smoke test pipeline
+  PARAMETERS_FILE="configuration/$AWS_ACCOUNT/smoke-test-pipeline/parameters.json"
+  PARAMETERS=$(jq ". += [
+                            {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
+                            {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
+                            {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"},
+                            {\"ParameterKey\":\"ArtifactSourceBucketArn\",\"ParameterValue\":\"${SmoketestArtifactSourceBucketArn}\"},
+                            {\"ParameterKey\":\"ArtifactSourceBucketEventTriggerRoleArn\",\"ParameterValue\":\"${SmoketestArtifactSourceBucketEventTriggerRoleArn}\"}
+                        ] | tojson" -r "${PARAMETERS_FILE}")
+
+  TMP_PARAM_FILE=$(mktemp)
+  echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+  export AWS_REGION="eu-west-2"
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" smoke-test-pipeline sam-deploy-pipeline v2.76.0
 
   # orch-stub pipeline
   PARAMETERS_FILE="configuration/$AWS_ACCOUNT/staging-orch-stub-pipeline/parameters.json"
