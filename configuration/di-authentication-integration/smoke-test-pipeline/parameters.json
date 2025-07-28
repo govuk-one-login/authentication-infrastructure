@@ -5,7 +5,7 @@
   },
   {
     "ParameterKey": "Environment",
-    "ParameterValue": "staging"
+    "ParameterValue": "integration"
   },
   {
     "ParameterKey": "ProgrammaticPermissionsBoundary",
@@ -45,7 +45,7 @@
   },
   {
     "ParameterKey": "AllowedAccounts",
-    "ParameterValue": "211125600642"
+    "ParameterValue": "211125303002"
   },
   {
     "ParameterKey": "LambdaCanaryDeployment",
@@ -53,7 +53,7 @@
   },
   {
     "ParameterKey": "AccessDynamoDBAccounts",
-    "ParameterValue": "758531536632"
+    "ParameterValue": "761723964695"
   },
   {
     "ParameterKey": "TestContainerAllowCrossAccountAssumeRole",
