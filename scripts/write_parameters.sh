@@ -5,7 +5,7 @@ ENVIRONMENT="${1:-}"
 if [ -z "${ENVIRONMENT}" ]; then
   cat << USAGE
   Usage:
-    $0 <ENVIRONMENT> <AWS_PROFILE> <INPUT_DIR> <Optional: "readonly">
+    $0 <ENVIRONMENT> <OLD_ACCOUNT AWS_PROFILE> <NEW_ACCOUNT AWS_PROFILE> <INPUT_DIR> <Optional: "readonly">
 
   This script bootstraps an environment by populating SSM parameter store with /deploy/<ENVIRONMENT>/* configurations.
   The default values mentioned in variables.tf have previously been extracted and hardcoded in "data".
@@ -13,19 +13,20 @@ if [ -z "${ENVIRONMENT}" ]; then
   If an override is found in the temporary file, it is used instead of the default.
 
   Example run:
-    $0 development di-authentication-development-admin ../authentication-api/ci/terraform/oidc
+    $0 development di-auth-development-admin di-authentication-development-admin ../authentication-api/ci/terraform/oidc
 
     Readonly mode (prints the commands rather than executing them):
-      $0 development di-authentication-development-admin ../authentication-api/ci/terraform/oidc readonly
+      $0 development di-auth-development-admin di-authentication-development-admin ../authentication-api/ci/terraform/oidc readonly
 USAGE
   exit 1
 fi
 
-PROFILE="${2}"
-INPUT_DIR="${3}"
-READONLY="${4:-}"
+OLD_ACCOUNT_PROFILE="${2}"
+NEW_ACCOUNT_PROFILE="${3}"
+INPUT_DIR="${4}"
+READONLY="${5:-}"
 
-export AWS_PROFILE=${PROFILE}
+export AWS_PROFILE=${OLD_ACCOUNT_PROFILE}
 if ! aws sts get-caller-identity &> /dev/null; then
   aws sso login --profile "${AWS_PROFILE}"
 fi
@@ -38,6 +39,18 @@ fi
 if [ "${READONLY}" = "readonly" ]; then
   CMD_PREFIX="echo"
 fi
+
+params="
+  ${ENVIRONMENT}-session-redis-master-host |
+  ${ENVIRONMENT}-session-redis-password |
+  ${ENVIRONMENT}-session-redis-port |
+  ${ENVIRONMENT}-session-redis-tls |
+"
+
+# shellcheck disable=SC2162,SC2086
+while read -d"|" param; do
+  export "${param//-/_}"="$(aws ssm get-parameter --name ${param} --with-decryption --query 'Parameter.Value' --output text)"
+done <<< ${params}
 
 data="
   ipv_backend_uri                   undefined |
@@ -77,10 +90,19 @@ data="
 TMP_PARAM_FILE=$(mktemp)
 find "${INPUT_DIR}" -name "${ENVIRONMENT}.tfvars" -type f -exec cat '{}' \; > "$TMP_PARAM_FILE"
 
+export AWS_PROFILE=${NEW_ACCOUNT_PROFILE}
 echo "Writing SSM parameters"
+
 # shellcheck disable=SC2162,SC2086
 while read -d"|" name value; do
   export "${name}"="$(grep "^\<${name}\> *=" $TMP_PARAM_FILE | awk '{print $NF}' | tr -d '"' || echo "${value}")"
   ${CMD_PREFIX:-} aws ssm put-parameter --type "String" --name "/deploy/${ENVIRONMENT}/${name}" --value "${!name:- }" --region "${AWS_REGION}"
 done <<< $data
+
+# shellcheck disable=SC2162,SC2086
+while read -d"|" param; do
+  exported_param="${param//-/_}"
+  ${CMD_PREFIX:-} aws ssm put-parameter --type "SecureString" --name "${param}" --value "${!exported_param}" --region "${AWS_REGION}"
+done <<< ${params}
+
 echo "Parameters imported"

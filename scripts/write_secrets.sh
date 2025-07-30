@@ -56,6 +56,7 @@ secrets="
   notify_test_destinations |
   test_client_verify_email_otp |
   test_client_verify_phone_number_otp |
+  txma_account_id |
 "
 
 # shellcheck disable=SC2162,SC2086
@@ -70,7 +71,7 @@ case "${ENVIRONMENT}" in
     ticf_cri_api=$(aws apigateway get-rest-apis --query "items[?name=='${ENVIRONMENT}-di-ticf-cri-stub'].[id]" --output text)
     ;;
   *)
-    old_vpc_endpoint=$(aws ec2 describe-vpc-endpoints --filters 'Name=service-name,Values=com.amazonaws.eu-west-2.execute-api' --query 'VpcEndpoints[].VpcEndpointId' --output text)
+    old_vpc_endpoint=$(aws ec2 describe-vpc-endpoints --filters 'Name=service-name,Values=com.amazonaws.eu-west-2.execute-api' "Name=tag:Environment,Values=${ENVIRONMENT}" --query 'VpcEndpoints[].VpcEndpointId' --output text)
     ;;
 esac
 
