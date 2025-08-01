@@ -1,0 +1,38 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: >
+  Authentication backend custom canary deployment configurations
+
+Resources:
+  LambdaCanary50Percent2Minutes:
+    Type: AWS::CodeDeploy::DeploymentConfig
+    Properties:
+      DeploymentConfigName: LambdaCanary50Percent2Minutes
+      ComputePlatform: Lambda
+      TrafficRoutingConfig:
+        Type: TimeBasedCanary
+        TimeBasedCanary:
+          CanaryInterval: 2
+          CanaryPercentage: 50
+
+  LambdaCanary50Percent1Minute:
+    Type: AWS::CodeDeploy::DeploymentConfig
+    Properties:
+      DeploymentConfigName: LambdaCanary50Percent1Minute
+      ComputePlatform: Lambda
+      TrafficRoutingConfig:
+        Type: TimeBasedCanary
+        TimeBasedCanary:
+          CanaryInterval: 1
+          CanaryPercentage: 50
+
+  LambdaCanary10Percent2Minutes:
+    Type: AWS::CodeDeploy::DeploymentConfig
+    Properties:
+      DeploymentConfigName: LambdaCanary10Percent2Minutes
+      ComputePlatform: Lambda
+      TrafficRoutingConfig:
+        Type: TimeBasedCanary
+        TimeBasedCanary:
+          CanaryInterval: 2
+          CanaryPercentage: 10
