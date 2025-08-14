@@ -110,6 +110,8 @@ function provision_base_stacks {
   # NOTE: tag immutability is manually disabled for these ecr repositories
   ./provisioner.sh "${AWS_ACCOUNT}" authdev3-frontend-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
   ./provisioner.sh "${AWS_ACCOUNT}" authdev3-service-down-page-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
+
+  TEMPLATE_URL=file://deployment-configs/template.yaml ./provisioner.sh "${AWS_ACCOUNT}" deployment-configs deployment-configs LATEST
 }
 
 # -------------------

@@ -129,6 +129,8 @@ function provision_base_stacks {
   ./provisioner.sh "${AWS_ACCOUNT}" lambda-audit-hook lambda-audit-hook LATEST
 
   TEMPLATE_BUCKET="backup-template-storage-templatebucket-747f3bzunrod" ./provisioner.sh "${AWS_ACCOUNT}" backup-monitoring backup-vault-monitoring LATEST
+
+  TEMPLATE_URL=file://deployment-configs/template.yaml ./provisioner.sh "${AWS_ACCOUNT}" deployment-configs deployment-configs LATEST
 }
 
 # -------------------
