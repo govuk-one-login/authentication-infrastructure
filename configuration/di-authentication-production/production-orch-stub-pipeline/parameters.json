@@ -1,0 +1,14 @@
+[
+  {
+    "ParameterKey": "SAMStackName",
+    "ParameterValue": "production-orch-stub"
+  },
+  {
+    "ParameterKey": "Environment",
+    "ParameterValue": "production"
+  },
+  {
+    "ParameterKey": "IncludePromotion",
+    "ParameterValue": "No"
+  }
+]

@@ -5,7 +5,7 @@
   },
   {
     "ParameterKey": "Environment",
-    "ParameterValue": "integration"
+    "ParameterValue": "production"
   },
   {
     "ParameterKey": "ProgrammaticPermissionsBoundary",
@@ -49,11 +49,11 @@
   },
   {
     "ParameterKey": "AccessCrossAccountSQS",
-    "ParameterValue": "761723964695"
+    "ParameterValue": "172348255554"
   },
   {
     "ParameterKey": "AccessDynamoDBAccounts",
-    "ParameterValue": "761723964695"
+    "ParameterValue": "172348255554"
   },
   {
     "ParameterKey": "TestContainerAllowCrossAccountAssumeRole",
