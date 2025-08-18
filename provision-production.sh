@@ -87,6 +87,16 @@ source "./scripts/read_cloudformation_stack_outputs.sh" "frontend-pipeline"
 ArtifactSourceBucketArn=${CFN_frontend_pipeline_ArtifactPromotionBucketArn:-"none"}
 ArtifactSourceBucketEventTriggerRoleArn=${CFN_frontend_pipeline_ArtifactPromotionBucketEventTriggerRoleArn:-"none"}
 
+# shellcheck disable=SC1091
+source "./scripts/read_cloudformation_stack_outputs.sh" "authentication-api-pipeline"
+AuthenticationApiArtifactSourceBucketArn=${CFN_authentication_api_pipeline_ArtifactPromotionBucketArn:-"none"}
+AuthenticationApiArtifactSourceBucketEventTriggerRoleArn=${CFN_authentication_api_pipeline_ArtifactPromotionBucketEventTriggerRoleArn:-"none"}
+
+# shellcheck disable=SC1091
+source "./scripts/read_cloudformation_stack_outputs.sh" "staging-orch-stub-pipeline"
+OrchStubArtifactSourceBucketArn=${CFN_staging_orch_stub_pipeline_ArtifactPromotionBucketArn:-"none"}
+OrchStubArtifactSourceBucketEventTriggerRoleArn=${CFN_staging_orch_stub_pipeline_ArtifactPromotionBucketEventTriggerRoleArn:-"none"}
+
 # ---------------------------------
 # production account initialisation
 # ---------------------------------
@@ -107,6 +117,7 @@ export AUTO_APPLY_CHANGESET="${AUTO_APPLY_CHANGESET:-false}"
 # ---------------------
 function provision_base_stacks {
   export AWS_REGION="eu-west-2"
+  ./provisioner.sh "${AWS_ACCOUNT}" api-gateway-logs api-gateway-logs v1.0.5
   ./provisioner.sh "${AWS_ACCOUNT}" infra-audit-hook infrastructure-audit-hook LATEST
   ./provisioner.sh "${AWS_ACCOUNT}" lambda-audit-hook lambda-audit-hook LATEST
   ./provisioner.sh "${AWS_ACCOUNT}" build-notifications build-notifications v2.3.3
@@ -120,7 +131,7 @@ function provision_base_stacks {
 function provision_vpc {
   export AWS_REGION="eu-west-2"
 
-  VPC_TEMPLATE_VERSION="v2.9.0"
+  VPC_TEMPLATE_VERSION="v2.9.2"
   ./provisioner.sh "${AWS_ACCOUNT}" vpc vpc "${VPC_TEMPLATE_VERSION}"
 }
 
@@ -129,6 +140,8 @@ function provision_vpc {
 # -------------------
 function provision_pipeline {
   PIPELINE_TEMPLATE_VERSION="v2.69.13"
+
+  # frontend pipeline
   PARAMETERS_FILE="configuration/$AWS_ACCOUNT/frontend-pipeline/parameters.json"
   PARAMETERS=$(jq ". += [
                             {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
@@ -142,6 +155,36 @@ function provision_pipeline {
   echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
   export AWS_REGION="eu-west-2"
   PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" frontend-pipeline sam-deploy-pipeline "${PIPELINE_TEMPLATE_VERSION}"
+
+  # backend pipeline
+  PARAMETERS_FILE="configuration/$AWS_ACCOUNT/authentication-api-pipeline/parameters.json"
+  PARAMETERS=$(jq ". += [
+                            {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
+                            {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
+                            {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"},
+                            {\"ParameterKey\":\"ArtifactSourceBucketArn\",\"ParameterValue\":\"${AuthenticationApiArtifactSourceBucketArn}\"},
+                            {\"ParameterKey\":\"ArtifactSourceBucketEventTriggerRoleArn\",\"ParameterValue\":\"${AuthenticationApiArtifactSourceBucketEventTriggerRoleArn}\"}
+                        ] | tojson" -r "${PARAMETERS_FILE}")
+
+  TMP_PARAM_FILE=$(mktemp)
+  echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+  export AWS_REGION="eu-west-2"
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authentication-api-pipeline sam-deploy-pipeline v2.76.0
+
+  # orch-stub pipeline
+  PARAMETERS_FILE="configuration/$AWS_ACCOUNT/production-orch-stub-pipeline/parameters.json"
+  PARAMETERS=$(jq ". += [
+                            {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
+                            {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
+                            {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"},
+                            {\"ParameterKey\":\"ArtifactSourceBucketArn\",\"ParameterValue\":\"${OrchStubArtifactSourceBucketArn}\"},
+                            {\"ParameterKey\":\"ArtifactSourceBucketEventTriggerRoleArn\",\"ParameterValue\":\"${OrchStubArtifactSourceBucketEventTriggerRoleArn}\"}
+                        ] | tojson" -r "${PARAMETERS_FILE}")
+
+  TMP_PARAM_FILE=$(mktemp)
+  echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+  export AWS_REGION="eu-west-2"
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" production-orch-stub-pipeline sam-deploy-pipeline v2.76.0
 }
 
 # ------------------
@@ -169,6 +212,7 @@ function provision_live_hosted_zone_and_records {
 
 # --------------------------------------------
 #   Creates a SNS topic with slack integration
+#   Sets up an alarm for lambda code storage
 # --------------------------------------------
 function provision_notification {
   SAM_PARAMETERS=$(jq -r '.[] | "\(.ParameterKey)=\(.ParameterValue)"' "configuration/${AWS_ACCOUNT}/cloudwatch-alarm-notification/parameters.json")
@@ -194,6 +238,19 @@ function provision_notification {
     --parameter-overrides $SAM_PARAMETERS \
     --tags $TAGS
   popd
+
+  # shellcheck disable=SC1091
+  source "./scripts/read_cloudformation_stack_outputs.sh" "cloudwatch-alarm-notification"
+  NotificationTopicArn=${CFN_cloudwatch_alarm_notification_NotificationTopicArn:-"none"}
+
+  PARAMETERS_FILE="configuration/$AWS_ACCOUNT/lambda-code-storage-alarm/parameters.json"
+  PARAMETERS=$(jq ". += [
+                          {\"ParameterKey\":\"CodeStorageSNSTopicARN\",\"ParameterValue\":\"${NotificationTopicArn}\"}
+                      ] | tojson" -r "${PARAMETERS_FILE}")
+
+  TMP_PARAM_FILE=$(mktemp)
+  echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" lambda-code-storage-alarm cloudwatch-alarm-stack v0.0.7
 }
 
 # --------------------
