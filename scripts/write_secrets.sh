@@ -40,7 +40,7 @@ export AWS_REGION="eu-west-2"
 old_account_id=$(aws sts get-caller-identity --query Account --output text)
 
 kms_keys="
-  ipv_reverification_request_signing_key ipv_reverification_request_signing_key |
+  ipv_reverification_request_signing_key ipv_reverification_request_signing_key_v2 |
   mfa-reset-token-signing-key-ecc-alias mfa_reset_token_signing_key_ecc |
 "
 
