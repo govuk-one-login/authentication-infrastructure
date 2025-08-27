@@ -147,6 +147,8 @@ Resources:
               AccountAlias,
             ]
           NOTIFICATION_DETAILED_TOPIC_ARN: !Ref NotificationDetailedTopic
+      KmsKeyArn: !Ref NotificationTopicKey
+      ReservedConcurrentExecutions: 100
 
   NotificationEnricherFunctionInvokePermission:
     Type: "AWS::Lambda::Permission"
