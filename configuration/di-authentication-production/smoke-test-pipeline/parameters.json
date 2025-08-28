@@ -5,7 +5,7 @@
   },
   {
     "ParameterKey": "Environment",
-    "ParameterValue": "integration"
+    "ParameterValue": "production"
   },
   {
     "ParameterKey": "ProgrammaticPermissionsBoundary",
@@ -44,6 +44,10 @@
     "ParameterValue": "No"
   },
   {
+    "ParameterKey": "LambdaCanaryDeployment",
+    "ParameterValue": "AllAtOnce"
+  },
+  {
     "ParameterKey": "SlackNotificationType",
     "ParameterValue": "Failures"
   },
@@ -52,12 +56,8 @@
     "ParameterValue": "build-notifications"
   },
   {
-    "ParameterKey": "LambdaCanaryDeployment",
-    "ParameterValue": "AllAtOnce"
-  },
-  {
     "ParameterKey": "AccessDynamoDBAccounts",
-    "ParameterValue": "761723964695"
+    "ParameterValue": "172348255554"
   },
   {
     "ParameterKey": "TestContainerAllowCrossAccountAssumeRole",
