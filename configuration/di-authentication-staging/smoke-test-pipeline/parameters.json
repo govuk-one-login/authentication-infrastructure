@@ -45,7 +45,7 @@
   },
   {
     "ParameterKey": "AllowedAccounts",
-    "ParameterValue": "211125600642"
+    "ParameterValue": "211125303002,211125600642"
   },
   {
     "ParameterKey": "LambdaCanaryDeployment",
