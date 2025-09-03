@@ -52,6 +52,14 @@
     "ParameterValue": "851725205974"
   },
   {
+    "ParameterKey": "SlackNotificationType",
+    "ParameterValue": "Failures"
+  },
+  {
+    "ParameterKey": "BuildNotificationStackName",
+    "ParameterValue": "build-notifications"
+  },
+  {
     "ParameterKey": "LambdaCanaryDeployment",
     "ParameterValue": "AllAtOnce"
   },
