@@ -170,6 +170,30 @@ function provision_pipeline {
   echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
   PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authentication-api-pipeline sam-deploy-pipeline v2.76.0
 
+  # Dev Smoke test pipeline
+  PARAMETERS_FILE="configuration/$AWS_ACCOUNT/dev-smoke-test-pipeline/parameters.json"
+  PARAMETERS=$(jq ". += [
+                            {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
+                            {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
+                            {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"}
+                        ] | tojson" -r "${PARAMETERS_FILE}")
+
+  TMP_PARAM_FILE=$(mktemp)
+  echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" dev-smoke-test-pipeline sam-deploy-pipeline v2.76.0
+
+  # dev Stubs api pipeline (ticf-cri-stub & interventions-api-stub)
+  PARAMETERS_FILE="configuration/$AWS_ACCOUNT/dev-stubs-api-pipeline/parameters.json"
+  PARAMETERS=$(jq ". += [
+                          {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
+                          {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
+                          {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"}
+                      ] | tojson" -r "${PARAMETERS_FILE}")
+
+  TMP_PARAM_FILE=$(mktemp)
+  echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" dev-stubs-api-pipeline sam-deploy-pipeline v2.76.0
+
   # authdev1-frontend
   PARAMETERS_FILE="configuration/$AWS_ACCOUNT/authdev1-frontend-pipeline/parameters.json"
   PARAMETERS=$(jq ". += [
@@ -193,6 +217,18 @@ function provision_pipeline {
   TMP_PARAM_FILE=$(mktemp)
   echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
   PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev1-api-pipeline sam-deploy-pipeline v2.76.0
+
+  # authdev1 Stubs api pipeline (ticf-cri-stub & interventions-api-stub)
+  PARAMETERS_FILE="configuration/$AWS_ACCOUNT/authdev1-stubs-api-pipeline/parameters.json"
+  PARAMETERS=$(jq ". += [
+                            {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
+                            {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
+                            {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"}
+                        ] | tojson" -r "${PARAMETERS_FILE}")
+
+  TMP_PARAM_FILE=$(mktemp)
+  echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev1-stubs-api-pipeline sam-deploy-pipeline v2.76.0
 
   # authdev2-frontend
   PARAMETERS_FILE="configuration/$AWS_ACCOUNT/authdev2-frontend-pipeline/parameters.json"
@@ -218,6 +254,18 @@ function provision_pipeline {
   echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
   PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev2-api-pipeline sam-deploy-pipeline v2.76.0
 
+  # authdev2 Stubs api pipeline (ticf-cri-stub & interventions-api-stub)
+  PARAMETERS_FILE="configuration/$AWS_ACCOUNT/authdev2-stubs-api-pipeline/parameters.json"
+  PARAMETERS=$(jq ". += [
+                            {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
+                            {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
+                            {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"}
+                        ] | tojson" -r "${PARAMETERS_FILE}")
+
+  TMP_PARAM_FILE=$(mktemp)
+  echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev2-stubs-api-pipeline sam-deploy-pipeline v2.76.0
+
   # authdev3-frontend
   PARAMETERS_FILE="configuration/$AWS_ACCOUNT/authdev3-frontend-pipeline/parameters.json"
   PARAMETERS=$(jq ". += [
@@ -229,6 +277,30 @@ function provision_pipeline {
   TMP_PARAM_FILE=$(mktemp)
   echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
   PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev3-frontend-pipeline sam-deploy-pipeline "${PIPELINE_TEMPLATE_VERSION}"
+
+  # authdev3-backend
+  PARAMETERS_FILE="configuration/$AWS_ACCOUNT/authdev3-api-pipeline/parameters.json"
+  PARAMETERS=$(jq ". += [
+                            {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
+                            {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
+                            {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"}
+                        ] | tojson" -r "${PARAMETERS_FILE}")
+
+  TMP_PARAM_FILE=$(mktemp)
+  echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev3-api-pipeline sam-deploy-pipeline v2.76.0
+
+  # authdev3 Stubs api pipeline (ticf-cri-stub & interventions-api-stub)
+  PARAMETERS_FILE="configuration/$AWS_ACCOUNT/authdev3-stubs-api-pipeline/parameters.json"
+  PARAMETERS=$(jq ". += [
+                            {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
+                            {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
+                            {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"}
+                        ] | tojson" -r "${PARAMETERS_FILE}")
+
+  TMP_PARAM_FILE=$(mktemp)
+  echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev3-stubs-api-pipeline sam-deploy-pipeline v2.76.0
 
   # dev ipv-stub pipeline
   PARAMETERS_FILE="configuration/$AWS_ACCOUNT/dev-ipv-stub-pipeline/parameters.json"
@@ -314,30 +386,6 @@ function provision_pipeline {
   echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
   PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" dev-smoke-test-pipeline sam-deploy-pipeline v2.87.0
 
-
-  # Dev Smoke test pipeline
-  PARAMETERS_FILE="configuration/$AWS_ACCOUNT/dev-smoke-test-pipeline/parameters.json"
-  PARAMETERS=$(jq ". += [
-                            {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
-                            {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
-                            {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"}
-                        ] | tojson" -r "${PARAMETERS_FILE}")
-
-  TMP_PARAM_FILE=$(mktemp)
-  echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
-  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" dev-smoke-test-pipeline sam-deploy-pipeline v2.76.0
-
-  # dev Stubs api pipeline (ticf-cri-stub & interventions-api-stub)
-  PARAMETERS_FILE="configuration/$AWS_ACCOUNT/dev-stubs-api-pipeline/parameters.json"
-  PARAMETERS=$(jq ". += [
-                          {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
-                          {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
-                          {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"}
-                      ] | tojson" -r "${PARAMETERS_FILE}")
-
-  TMP_PARAM_FILE=$(mktemp)
-  echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
-  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" dev-stubs-api-pipeline sam-deploy-pipeline v2.76.0
 }
 
 # ------------------
