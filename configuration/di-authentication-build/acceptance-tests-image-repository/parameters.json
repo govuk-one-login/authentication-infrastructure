@@ -5,6 +5,6 @@
   },
   {
     "ParameterKey": "RetainedImageCount",
-    "ParameterValue": "30"
+    "ParameterValue": "100"
   }
 ]
