@@ -62,9 +62,10 @@ get_lambda_configs_for_functions() {
 
     echo "Getting config for ${function_name} (${AWS_ACCOUNT}) ..."
 
-    # Get function configuration
+    # Get function configuration and provisioned concurrency
     {
-      aws lambda get-function-configuration \
+      # Get basic configuration
+      FUNC_CONFIG=$(aws lambda get-function-configuration \
         --function-name "${function_name}" \
         --region "${AWS_REGION}" \
         --query '{
@@ -73,32 +74,29 @@ get_lambda_configs_for_functions() {
                 Timeout: Timeout,
                 Handler: Handler,
                 Environment: Environment.Variables,
-                ReservedConcurrencyExecutions: ReservedConcurrencyExecutions,
                 DeadLetterConfig: DeadLetterConfig,
                 PackageType: PackageType,
                 Architectures: Architectures,
                 SnapStart: SnapStart
             }' \
-        --output json 2> /dev/null
-
-      echo ""
+        --output json 2> /dev/null)
 
       # Get provisioned concurrency
-      echo "=== Provisioned Concurrency ==="
-      aws lambda get-provisioned-concurrency-config \
+      PROV_CONCURRENCY=$(aws lambda get-provisioned-concurrency-config \
         --function-name "${function_name}" \
         --region "${AWS_REGION}" \
         --query '{AllocatedConcurrency: AllocatedConcurrency, AvailableConcurrency: AvailableConcurrency, Status: Status}' \
-        --output json 2> /dev/null || echo "No provisioned concurrency configured"
+        --output json 2> /dev/null || echo '{"AllocatedConcurrency": null, "AvailableConcurrency": null, "Status": "Not configured"}')
 
-      echo ""
-
-      echo "=== Function URL ==="
-      aws lambda get-function-url-config \
+      # Get function URL
+      FUNC_URL=$(aws lambda get-function-url-config \
         --function-name "${function_name}" \
         --region "${AWS_REGION}" \
         --query '{FunctionUrl: FunctionUrl, AuthType: AuthType, Cors: Cors}' \
-        --output json 2> /dev/null || echo "No function URL configured"
+        --output json 2> /dev/null || echo '{"FunctionUrl": null, "AuthType": null, "Cors": null}')
+
+      # Combine all configurations
+      echo "${FUNC_CONFIG}" | jq --argjson pc "${PROV_CONCURRENCY}" --argjson fu "${FUNC_URL}" '. + {ProvisionedConcurrency: $pc, FunctionUrl: $fu}'
     } > "${config_file}"
   done < "${functions_file}"
 }
