@@ -1,7 +1,7 @@
 [
   {
     "ParameterKey": "SAMStackName",
-    "ParameterValue": "authdev2-am-pipeline"
+    "ParameterValue": "authdev2-am-api"
   },
   {
     "ParameterKey": "Environment",
