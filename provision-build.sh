@@ -134,19 +134,19 @@ function provision_vpc {
 function provision_pipeline {
   PIPELINE_TEMPLATE_VERSION="v2.69.13"
 
-  # # Build frontend pipelines
-  # PARAMETERS_FILE="configuration/$AWS_ACCOUNT/frontend-pipeline/parameters.json"
-  # PARAMETERS=$(jq ". += [
-  #                           {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
-  #                           {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
-  #                           {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"},
-  #                           {\"ParameterKey\":\"TestImageRepositoryUri\",\"ParameterValue\":\"${TestImageRepositoryUri}\"}
-  #                       ] | tojson" -r "${PARAMETERS_FILE}")
+  # Build frontend pipelines
+  PARAMETERS_FILE="configuration/$AWS_ACCOUNT/frontend-pipeline/parameters.json"
+  PARAMETERS=$(jq ". += [
+                            {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
+                            {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
+                            {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"},
+                            {\"ParameterKey\":\"TestImageRepositoryUri\",\"ParameterValue\":\"${TestImageRepositoryUri}\"}
+                        ] | tojson" -r "${PARAMETERS_FILE}")
 
-  # TMP_PARAM_FILE=$(mktemp)
-  # echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
-  # export AWS_REGION="eu-west-2"
-  # PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" frontend-pipeline sam-deploy-pipeline "${PIPELINE_TEMPLATE_VERSION}"
+  TMP_PARAM_FILE=$(mktemp)
+  echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+  export AWS_REGION="eu-west-2"
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" frontend-pipeline sam-deploy-pipeline "${PIPELINE_TEMPLATE_VERSION}"
 
   # Build backend
   PARAMETERS_FILE="configuration/$AWS_ACCOUNT/authentication-api-pipeline/parameters.json"
@@ -161,53 +161,53 @@ function provision_pipeline {
   echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
   PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authentication-api-pipeline sam-deploy-pipeline v2.76.0
 
-  # # Build Smoke test pipeline
-  # PARAMETERS_FILE="configuration/$AWS_ACCOUNT/smoke-test-pipeline/parameters.json"
-  # PARAMETERS=$(jq ". += [
-  #                           {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
-  #                           {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
-  #                           {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"}
-  #                       ] | tojson" -r "${PARAMETERS_FILE}")
+  # Build Smoke test pipeline
+  PARAMETERS_FILE="configuration/$AWS_ACCOUNT/smoke-test-pipeline/parameters.json"
+  PARAMETERS=$(jq ". += [
+                            {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
+                            {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
+                            {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"}
+                        ] | tojson" -r "${PARAMETERS_FILE}")
 
-  # TMP_PARAM_FILE=$(mktemp)
-  # echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
-  # PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" smoke-test-pipeline sam-deploy-pipeline v2.87.0
+  TMP_PARAM_FILE=$(mktemp)
+  echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" smoke-test-pipeline sam-deploy-pipeline v2.87.0
 
-  # # Build ipv-stub pipeline
-  # PARAMETERS_FILE="configuration/$AWS_ACCOUNT/build-ipv-stub-pipeline/parameters.json"
-  # PARAMETERS=$(jq ". += [
-  #                           {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
-  #                           {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
-  #                           {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"}
-  #                       ] | tojson" -r "${PARAMETERS_FILE}")
+  # Build ipv-stub pipeline
+  PARAMETERS_FILE="configuration/$AWS_ACCOUNT/build-ipv-stub-pipeline/parameters.json"
+  PARAMETERS=$(jq ". += [
+                            {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
+                            {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
+                            {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"}
+                        ] | tojson" -r "${PARAMETERS_FILE}")
 
-  # TMP_PARAM_FILE=$(mktemp)
-  # echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
-  # PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" build-ipv-stub-pipeline sam-deploy-pipeline "${PIPELINE_TEMPLATE_VERSION}"
+  TMP_PARAM_FILE=$(mktemp)
+  echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" build-ipv-stub-pipeline sam-deploy-pipeline "${PIPELINE_TEMPLATE_VERSION}"
 
-  # # orch-stub pipeline
-  # PARAMETERS_FILE="configuration/$AWS_ACCOUNT/build-orch-stub-pipeline/parameters.json"
-  # PARAMETERS=$(jq ". += [
-  #                           {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
-  #                           {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
-  #                           {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"}
-  #                       ] | tojson" -r "${PARAMETERS_FILE}")
+  # orch-stub pipeline
+  PARAMETERS_FILE="configuration/$AWS_ACCOUNT/build-orch-stub-pipeline/parameters.json"
+  PARAMETERS=$(jq ". += [
+                            {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
+                            {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
+                            {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"}
+                        ] | tojson" -r "${PARAMETERS_FILE}")
 
-  # TMP_PARAM_FILE=$(mktemp)
-  # echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
-  # PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" build-orch-stub-pipeline sam-deploy-pipeline v2.67.1
+  TMP_PARAM_FILE=$(mktemp)
+  echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" build-orch-stub-pipeline sam-deploy-pipeline v2.67.1
 
-  # # build Stubs api pipeline (ticf-cri-stub & interventions-api-stub)
-  # PARAMETERS_FILE="configuration/$AWS_ACCOUNT/build-stubs-api-pipeline/parameters.json"
-  # PARAMETERS=$(jq ". += [
-  #                         {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
-  #                         {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
-  #                         {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"}
-  #                     ] | tojson" -r "${PARAMETERS_FILE}")
+  # build Stubs api pipeline (ticf-cri-stub & interventions-api-stub)
+  PARAMETERS_FILE="configuration/$AWS_ACCOUNT/build-stubs-api-pipeline/parameters.json"
+  PARAMETERS=$(jq ". += [
+                          {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
+                          {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
+                          {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"}
+                      ] | tojson" -r "${PARAMETERS_FILE}")
 
-  # TMP_PARAM_FILE=$(mktemp)
-  # echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
-  # PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" build-stubs-api-pipeline sam-deploy-pipeline v2.76.0
+  TMP_PARAM_FILE=$(mktemp)
+  echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" build-stubs-api-pipeline sam-deploy-pipeline v2.76.0
 }
 
 # ------------------
