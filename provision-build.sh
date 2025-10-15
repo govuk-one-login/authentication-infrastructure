@@ -264,7 +264,7 @@ function provision_notification {
 
   # shellcheck disable=SC1091
   source "./scripts/read_cloudformation_stack_outputs.sh" "build-notifications"
-  NotificationTopicArn=${CFN_build_notifications_BuildNotificationTopicArn:-"none"}
+  NotificationTopicArn=${CFN_build_notifications_BuildNotificationDetailedTopicArn:-"none"}
 
   PARAMETERS_FILE="configuration/$AWS_ACCOUNT/lambda-code-storage-alarm/parameters.json"
   PARAMETERS=$(jq ". += [
