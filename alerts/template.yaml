@@ -39,18 +39,32 @@ Outputs:
     Export:
       Name: !Sub "${AWS::StackName}-NotificationTopicArn"
 
+Conditions:
+  IsSlackNotifyEnabled: !Equals
+    - !FindInMap [
+        EnvironmentConfiguration,
+        !Ref Environment,
+        IsSlackNotifyEnabled,
+      ]
+    - "Yes"
+
 Mappings:
   EnvironmentConfiguration:
     dev:
       AccountAlias: "di-authentication-development"
+      IsSlackNotifyEnabled: "No"
     build:
       AccountAlias: "di-authentication-build"
+      IsSlackNotifyEnabled: "No"
     staging:
       AccountAlias: "di-authentication-staging"
+      IsSlackNotifyEnabled: "No"
     integration:
       AccountAlias: "di-authentication-integration"
+      IsSlackNotifyEnabled: "Yes"
     production:
       AccountAlias: "di-authentication-production"
+      IsSlackNotifyEnabled: "Yes"
 
 Resources:
   NotificationTopic:
@@ -249,3 +263,87 @@ Resources:
       SlackWorkspaceId: !Ref SlackWorkspaceId
       SnsTopicArns:
         - !Ref NotificationDetailedTopic
+
+  SlackAlertNotificationTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub "${Environment}-slack-alerts"
+      Subscription: !If
+        - IsSlackNotifyEnabled
+        - - Protocol: lambda
+            Endpoint: !Sub arn:aws:lambda:eu-west-2:${AWS::AccountId}:function:${Environment}-alerts
+        - !Ref AWS::NoValue
+      Tags:
+        - Key: Name
+          Value: !Sub "${Environment}-slack-alerts"
+        - Key: Service
+          Value: "Authentication"
+        - Key: Source
+          Value: "govuk-one-login/authentication-infrastructure/alerts/template.yaml"
+
+  SlackAlertNotificationTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics:
+        - !Ref SlackAlertNotificationTopic
+      PolicyDocument:
+        Statement:
+          - Action: "sns:Publish"
+            Effect: Allow
+            Resource: !Ref SlackAlertNotificationTopic
+            Principal:
+              Service:
+                - cloudwatch.amazonaws.com
+
+  SlackAlertNotificationTopicSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "The ARN of the SNS topic that receives CloudWatch Alarm notifications "
+      Name: !Sub "/deploy/${Environment}/slack_alert_notification_topic_arn"
+      Type: String
+      Value: !Ref SlackAlertNotificationTopic
+      Tags:
+        Application: "Authentication"
+        Source: govuk-one-login/authentication-infrastructure/alerts/template.yaml
+
+  SlackEventNotificationTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub "${Environment}-slack-events"
+      Subscription: !If
+        - IsSlackNotifyEnabled
+        - - Protocol: lambda
+            Endpoint: !Sub arn:aws:lambda:eu-west-2:${AWS::AccountId}:function:${Environment}-alerts
+        - !Ref AWS::NoValue
+      Tags:
+        - Key: Name
+          Value: !Sub "${Environment}-slack-events"
+        - Key: Service
+          Value: "Authentication"
+        - Key: Source
+          Value: "govuk-one-login/authentication-infrastructure/alerts/template.yaml"
+
+  SlackEventNotificationTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics:
+        - !Ref SlackEventNotificationTopic
+      PolicyDocument:
+        Statement:
+          - Action: "sns:Publish"
+            Effect: Allow
+            Resource: !Ref SlackEventNotificationTopic
+            Principal:
+              Service:
+                - cloudwatch.amazonaws.com
+
+  SlackEventNotificationTopicSSM:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Description: "The ARN of the SNS topic that receives CloudWatch Alarm notifications "
+      Name: !Sub "/deploy/${Environment}/slack_events_notification_topic_arn"
+      Type: String
+      Value: !Ref SlackEventNotificationTopic
+      Tags:
+        Application: "Authentication"
+        Source: govuk-one-login/authentication-infrastructure/alerts/template.yaml
