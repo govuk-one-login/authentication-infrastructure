@@ -161,7 +161,7 @@ function provision_pipeline {
   echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
   PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authentication-api-pipeline sam-deploy-pipeline v2.76.0
 
-  # Build backend
+  # Build Account-Management
   PARAMETERS_FILE="configuration/$AWS_ACCOUNT/account-management-api-pipeline/parameters.json"
   PARAMETERS=$(jq ". += [
                             {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
