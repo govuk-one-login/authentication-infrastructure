@@ -1,7 +1,7 @@
 [
   {
     "ParameterKey": "CodeStorageThreshold",
-    "ParameterValue": "75"
+    "ParameterValue": "250"
   },
   {
     "ParameterKey": "LambdaCodeStorageAlarmDescription",
