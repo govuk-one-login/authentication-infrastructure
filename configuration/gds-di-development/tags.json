@@ -1,0 +1,30 @@
+[
+    {
+        "Key": "Owner",
+        "Value": "di-authentication@digital.cabinet-office.gov.uk"
+    },
+    {
+        "Key": "Environment",
+        "Value": "build"
+    },
+    {
+        "Key": "Product",
+        "Value": "GOV.UK Sign In"
+    },
+    {
+        "Key": "Service",
+        "Value": "ci/cd"
+    },
+    {
+        "Key": "Source",
+        "Value": "govuk-one-login/devplatform-deploy/auth-deploy-pipeline/template.yaml"
+    },
+    {
+        "Key": "System",
+        "Value": "Authentication"
+    },
+    {
+        "Key": "Name",
+        "Value": "build-auth-deploy-pipeline-Pipeline"
+    }
+]

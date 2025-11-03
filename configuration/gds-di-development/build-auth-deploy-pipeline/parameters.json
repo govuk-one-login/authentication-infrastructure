@@ -1,0 +1,130 @@
+[
+    {
+        "ParameterKey": "StateBucketName",
+        "ParameterValue": "digital-identity-dev-tfstate"
+    },
+    {
+        "ParameterKey": "ParallelTests",
+        "ParameterValue": "4"
+    },
+    {
+        "ParameterKey": "IncludePromotion",
+        "ParameterValue": "Yes"
+    },
+    {
+        "ParameterKey": "IncludeDeployExternalAPI",
+        "ParameterValue": "Yes"
+    },
+    {
+        "ParameterKey": "ArtifactWriteTimeLoggingLambdaArn",
+        "ParameterValue": "None"
+    },
+    {
+        "ParameterKey": "IncludeDeploySharedStage",
+        "ParameterValue": "Yes"
+    },
+    {
+        "ParameterKey": "IncludeDeploySmokeTestsStage",
+        "ParameterValue": "No"
+    },
+    {
+        "ParameterKey": "RunTestContainerInVPC",
+        "ParameterValue": "False"
+    },
+    {
+        "ParameterKey": "IncludeDeployFrontEndStage",
+        "ParameterValue": "No"
+    },
+    {
+        "ParameterKey": "SigningProfileArn",
+        "ParameterValue": "arn:aws:signer:eu-west-2:761723964695:/signing-profiles/SigningProfile_Ag2f7jC8aokY"
+    },
+    {
+        "ParameterKey": "DynamoTableName",
+        "ParameterValue": "digital-identity-dev-tfstate-locking"
+    },
+    {
+        "ParameterKey": "ArtifactSourceBucketArn",
+        "ParameterValue": "none"
+    },
+    {
+        "ParameterKey": "LambdaVersionsToKeep",
+        "ParameterValue": "5"
+    },
+    {
+        "ParameterKey": "TerraformVersion",
+        "ParameterValue": "1.9.8"
+    },
+    {
+        "ParameterKey": "TestImageRepositoryUri",
+        "ParameterValue": "761723964695.dkr.ecr.eu-west-2.amazonaws.com/acceptance-tests-testrunnerimagerepository-yaqn2qfs5qn2"
+    },
+    {
+        "ParameterKey": "RequireManualApproval",
+        "ParameterValue": "No"
+    },
+    {
+        "ParameterKey": "LogRetentionDays",
+        "ParameterValue": "30"
+    },
+    {
+        "ParameterKey": "AllowedAccounts",
+        "ParameterValue": "761723964695,758531536632,222110992898,622942135269,172348255554"
+    },
+    {
+        "ParameterKey": "IncludeDeployApiModulesStage",
+        "ParameterValue": "Yes"
+    },
+    {
+        "ParameterKey": "VpcStackName",
+        "ParameterValue": "none"
+    },
+    {
+        "ParameterKey": "BuildNotificationStackName",
+        "ParameterValue": "build-notifications"
+    },
+    {
+        "ParameterKey": "TestReportFormat",
+        "ParameterValue": "CUCUMBERJSON"
+    },
+    {
+        "ParameterKey": "TestComputeType",
+        "ParameterValue": "BUILD_GENERAL1_SMALL"
+    },
+    {
+        "ParameterKey": "CustomKmsKeyArns",
+        "ParameterValue": ""
+    },
+    {
+        "ParameterKey": "SigningProfileVersionArn",
+        "ParameterValue": "arn:aws:signer:eu-west-2:761723964695:/signing-profiles/SigningProfile_Ag2f7jC8aokY/hsozMWacYH"
+    },
+    {
+        "ParameterKey": "RequireTestContainerSignatureValidation",
+        "ParameterValue": "No"
+    },
+    {
+        "ParameterKey": "TerraformApplyCondition",
+        "ParameterValue": "ApplyChanges"
+    },
+    {
+        "ParameterKey": "AWSOrganizationId",
+        "ParameterValue": "o-pjzf8d99ys,o-dpp53lco28"
+    },
+    {
+        "ParameterKey": "Environment",
+        "ParameterValue": "build"
+    },
+    {
+        "ParameterKey": "ContainerSignerKmsKeyArn",
+        "ParameterValue": "none"
+    },
+    {
+        "ParameterKey": "AdditionalSigningConfigArn",
+        "ParameterValue": "none"
+    },
+    {
+        "ParameterKey": "SlackNotificationType",
+        "ParameterValue": "Failures-action"
+    }
+]
