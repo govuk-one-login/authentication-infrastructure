@@ -126,5 +126,17 @@
     {
         "ParameterKey": "SlackNotificationType",
         "ParameterValue": "Failures-action"
+    },
+    {
+        "ParameterKey": "TestVpcId",
+        "ParameterValue": "vpc-03db44fa71b8d00b2"
+    },
+    {
+        "ParameterKey": "TestSubnetIdA",
+        "ParameterValue": "subnet-06431beae9b136e15"
+    },
+    {
+        "ParameterKey": "TestSubnetIdB",
+        "ParameterValue": "subnet-016db45a259212743"
     }
 ]
