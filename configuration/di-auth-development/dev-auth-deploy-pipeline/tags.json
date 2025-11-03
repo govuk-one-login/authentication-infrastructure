@@ -1,0 +1,14 @@
+[
+  {
+    "Key": "Service",
+    "Value": "ci/cd"
+  },
+  {
+    "Key": "Source",
+    "Value": "govuk-one-login/devplatform-deploy/auth-deploy-pipeline/template.yaml"
+  },
+  {
+    "Key": "Name",
+    "Value": "dev-auth-deploy-pipeline-Pipeline"
+  }
+]
