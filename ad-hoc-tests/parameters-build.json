@@ -1,0 +1,62 @@
+[
+  {
+    "ParameterKey": "Environment",
+    "ParameterValue": "build"
+  },
+  {
+    "ParameterKey": "GitHubActionsRoleName",
+    "ParameterValue": "build-auth-deploy-pipeline-GitHubActionsRole-160U5ADTRKQ2O"
+  },
+  {
+    "ParameterKey": "AWSOrganizationId",
+    "ParameterValue": "o-pjzf8d99ys,o-dpp53lco28"
+  },
+  {
+    "ParameterKey": "RetainedImageCount",
+    "ParameterValue": "5"
+  },
+  {
+    "ParameterKey": "ECRImageRetentionEnabled",
+    "ParameterValue": "True"
+  },
+  {
+    "ParameterKey": "TestComputeType",
+    "ParameterValue": "BUILD_GENERAL1_SMALL"
+  },
+  {
+    "ParameterKey": "ParallelTests",
+    "ParameterValue": "1"
+  },
+  {
+    "ParameterKey": "TestReportFormat",
+    "ParameterValue": "CUCUMBERJSON"
+  },
+  {
+    "ParameterKey": "RunTestContainerInVPC",
+    "ParameterValue": "True"
+  },
+  {
+    "ParameterKey": "TestVpcId",
+    "ParameterValue": "vpc-03db44fa71b8d00b2"
+  },
+  {
+    "ParameterKey": "TestSubnetIdA",
+    "ParameterValue": "subnet-06431beae9b136e15"
+  },
+  {
+    "ParameterKey": "TestSubnetIdB",
+    "ParameterValue": "subnet-016db45a259212743"
+  },
+  {
+    "ParameterKey": "CustomKmsKeyArns",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "AuthDynamoDBKmsKeyArn",
+    "ParameterValue": "none"
+  },
+  {
+    "ParameterKey": "LogRetentionDays",
+    "ParameterValue": "7"
+  }
+]

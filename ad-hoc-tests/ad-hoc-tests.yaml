@@ -1,0 +1,656 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: >
+  Standalone acceptance test CodeBuild project
+
+Parameters:
+  Environment:
+    Description: "The name of the environment to deploy to"
+    Type: "String"
+
+  GitHubActionsRoleName:
+    Description: "Name of the GitHub Actions OIDC role"
+    Type: "String"
+
+  AWSOrganizationId:
+    Description: "AWS Organization ID for ECR access"
+    Type: "String"
+
+  RetainedImageCount:
+    Description: "Number of images to retain in ECR"
+    Type: Number
+    Default: 10
+
+  ECRImageRetentionEnabled:
+    Description: "Enable ECR image retention policy"
+    Type: "String"
+    Default: "True"
+    AllowedValues:
+      - "True"
+      - "False"
+
+  TestComputeType:
+    Description: "Build environment compute type"
+    Type: "String"
+    Default: "BUILD_GENERAL1_SMALL"
+    AllowedValues:
+      - "BUILD_GENERAL1_SMALL"
+      - "BUILD_GENERAL1_MEDIUM"
+      - "BUILD_GENERAL1_LARGE"
+      - "BUILD_GENERAL1_2XLARGE"
+
+  ParallelTests:
+    Description: "Number of tests to run in parallel"
+    Type: Number
+    MinValue: 1
+    MaxValue: 10
+    Default: 1
+
+  TestReportFormat:
+    Description: "Test report format"
+    Type: "String"
+    Default: "JUNITXML"
+    AllowedValues:
+      - CUCUMBERJSON
+      - JUNITXML
+
+  RunTestContainerInVPC:
+    Description: "Run test container in VPC"
+    Type: "String"
+    AllowedValues:
+      - "True"
+      - "False"
+    Default: "False"
+
+  TestVpcId:
+    Description: "VPC ID for test container"
+    Type: "String"
+    Default: "none"
+
+  TestSubnetIdA:
+    Description: "Subnet ID for test container (AZ A)"
+    Type: "String"
+    Default: "none"
+
+  TestSubnetIdB:
+    Description: "Subnet ID for test container (AZ B)"
+    Type: "String"
+    Default: "none"
+
+  CustomKmsKeyArns:
+    Type: "CommaDelimitedList"
+    Default: ""
+    Description: "ARNs of custom KMS keys for secrets access"
+
+  AuthDynamoDBKmsKeyArn:
+    Type: "String"
+    Default: "none"
+    AllowedPattern: "(arn:.*:kms:.*:.*:key/.+)|(none)"
+
+  LogRetentionDays:
+    Description: "Log retention in days"
+    Type: Number
+    Default: 7
+
+Conditions:
+  CreateVPCConfigurationForTestContainer:
+    Fn::And:
+      - Fn::Equals:
+          - !Ref RunTestContainerInVPC
+          - "True"
+      - Fn::Not:
+          - Fn::Equals:
+              - !Ref TestVpcId
+              - "none"
+
+  CreateCustomKMSKeyPolicy:
+    Fn::Not:
+      - Fn::Equals:
+          - !Join ['', !Ref CustomKmsKeyArns]
+          - ""
+
+  CreateAuthDynamoDBKMSKeyPolicy:
+    Fn::Not:
+      - Fn::Equals:
+          - !Ref AuthDynamoDBKmsKeyArn
+          - "none"
+
+  NotProduction:
+    Fn::Not:
+      - Fn::Equals:
+          - !Ref Environment
+          - "production"
+
+  AuthAccount:
+    Fn::Or:
+      - Fn::Equals:
+          - !Ref AWS::AccountId
+          - "653994557586"
+      - Fn::Equals:
+          - !Ref AWS::AccountId
+          - "761723964695"
+      - Fn::Equals:
+          - !Ref AWS::AccountId
+          - "758531536632"
+
+  ECRImageRetentionEnabled:
+    Fn::Equals:
+      - !Ref ECRImageRetentionEnabled
+      - "True"
+
+Resources:
+  AdHocTestRunnerImageRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      EncryptionConfiguration:
+        EncryptionType: "KMS"
+      LifecyclePolicy:
+        !If
+        - ECRImageRetentionEnabled
+        - LifecyclePolicyText:
+            !Sub |
+            {
+                "rules": [
+                  {
+                    "rulePriority": 10,
+                    "description": "Rule 10 - Retain only ${RetainedImageCount} images",
+                    "selection": {
+                        "tagStatus": "any",
+                        "countType": "imageCountMoreThan",
+                        "countNumber": ${RetainedImageCount}
+                    },
+                    "action": {
+                      "type": "expire"
+                    }
+                  }
+                ]
+              }
+        - !Ref "AWS::NoValue"
+      RepositoryPolicyText:
+        Version: 2012-10-17
+        Statement:
+          - Sid: AllowAccountToPull
+            Effect: Allow
+            Principal: "*"
+            Action:
+              - "ecr:BatchCheckLayerAvailability"
+              - "ecr:BatchGetImage"
+              - "ecr:DescribeImages"
+              - "ecr:DescribeRepositories"
+              - "ecr:GetDownloadUrlForLayer"
+              - "ecr:GetLifecyclePolicy"
+              - "ecr:GetLifecyclePolicyPreview"
+              - "ecr:GetRepositoryPolicy"
+              - "ecr:ListImages"
+            Condition:
+              StringEquals:
+                "aws:PrincipalOrgID": !Ref AWSOrganizationId
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-AdHocTestRunnerImageRepository"
+        - Key: Service
+          Value: ci/cd
+
+  AdHocTestRunnerImageRepositoryPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Sub "${AWS::StackName}-AdHocTestRunnerImageRepositoryPolicy"
+      Roles:
+        - !Ref GitHubActionsRoleName
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Sid: ListImagesInRepository
+            Action:
+              - "ecr:ListImages"
+            Resource:
+              - !GetAtt AdHocTestRunnerImageRepository.Arn
+          - Effect: Allow
+            Sid: ManageRepositoryContents
+            Action:
+              - "ecr:BatchCheckLayerAvailability"
+              - "ecr:GetDownloadUrlForLayer"
+              - "ecr:GetRepositoryPolicy"
+              - "ecr:DescribeRepositories"
+              - "ecr:ListImages"
+              - "ecr:DescribeImages"
+              - "ecr:BatchGetImage"
+              - "ecr:InitiateLayerUpload"
+              - "ecr:UploadLayerPart"
+              - "ecr:CompleteLayerUpload"
+              - "ecr:PutImage"
+            Resource:
+              - !GetAtt AdHocTestRunnerImageRepository.Arn
+
+  LogsKmsKey:
+    Type: AWS::KMS::Key
+    Properties:
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              AWS: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:root"
+            Action: "kms:*"
+            Resource: "*"
+          - Effect: "Allow"
+            Principal:
+              Service: !Sub "logs.${AWS::Region}.amazonaws.com"
+            Action:
+              - "kms:Encrypt*"
+              - "kms:Decrypt*"
+              - "kms:ReEncrypt*"
+              - "kms:GenerateDataKey*"
+              - "kms:Describe*"
+            Resource: "*"
+            Condition:
+              ArnLike:
+                "kms:EncryptionContext:aws:logs:arn": !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:*"
+
+  S3AccessLogsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      LifecycleConfiguration:
+        Rules:
+          - Id: expiry
+            Status: Enabled
+            ExpirationInDays: 30
+      VersioningConfiguration:
+        Status: "Enabled"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+  S3AccessLogsBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref S3AccessLogsBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: "EnableS3Logging"
+            Effect: "Allow"
+            Resource: !Sub "${S3AccessLogsBucket.Arn}/*"
+            Principal:
+              Service: "logging.s3.amazonaws.com"
+            Action: "s3:PutObject"
+            Condition:
+              StringEquals:
+                "aws:SourceAccount": !Sub "${AWS::AccountId}"
+              Bool:
+                "aws:SecureTransport": true
+
+  AdHocAcceptanceTestsArtifactBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      LifecycleConfiguration:
+        Rules:
+          - Id: expiry
+            Status: Enabled
+            ExpirationInDays: 180
+      VersioningConfiguration:
+        Status: "Enabled"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      LoggingConfiguration:
+        DestinationBucketName: !Ref S3AccessLogsBucket
+        LogFilePrefix: "test/"
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: "AES256"
+
+  AdHocAcceptanceTestsBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref AdHocAcceptanceTestsArtifactBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Resource:
+              - !GetAtt AdHocAcceptanceTestsArtifactBucket.Arn
+              - !Sub "${AdHocAcceptanceTestsArtifactBucket.Arn}/*"
+            Principal:
+              AWS: !GetAtt TestRole.Arn
+            Action:
+              - "s3:PutObject"
+              - "s3:PutObjectAcl"
+              - "s3:ListBucket"
+            Condition:
+              Bool:
+                "aws:SecureTransport": true
+
+  TestPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action:
+              - "logs:CreateLogGroup"
+              - "logs:CreateLogStream"
+              - "logs:PutLogEvents"
+            Resource: !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/*"
+          - Effect: "Allow"
+            Action:
+              - "cloudformation:DescribeStacks"
+            Resource: !Sub "arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${AWS::StackName}/*"
+          - Effect: "Allow"
+            Action:
+              - "ssm:GetParameter"
+              - "ssm:GetParameters"
+              - "ssm:GetParametersByPath"
+            Resource: !Sub "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*"
+          - !If
+            - NotProduction
+            - Effect: "Allow"
+              Action: "secretsmanager:GetSecretValue"
+              Resource: !Sub "arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:*"
+            - !Ref AWS::NoValue
+          - !If
+            - CreateCustomKMSKeyPolicy
+            - Sid: "CustomKMSKeySigning"
+              Effect: "Allow"
+              Action:
+                - "kms:DescribeKey"
+                - "kms:GetPublicKey"
+                - "kms:Decrypt"
+                - "kms:Verify"
+              Resource: !Ref "CustomKmsKeyArns"
+            - !Ref AWS::NoValue
+          - !If
+            - CreateAuthDynamoDBKMSKeyPolicy
+            - Sid: "AuthDynamoDBKMSAccess"
+              Effect: "Allow"
+              Action:
+                - "kms:Decrypt"
+                - "kms:DescribeKey"
+              Resource: !Ref AuthDynamoDBKmsKeyArn
+            - !Ref AWS::NoValue
+          - !If
+            - AuthAccount
+            - Sid: "DynamoDBKMSAccess"
+              Effect: "Allow"
+              Action:
+                - "kms:Decrypt"
+                - "kms:DescribeKey"
+                - "kms:Sign"
+              Resource: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/*"
+            - !Ref AWS::NoValue
+          - Effect: "Allow"
+            Action:
+              - "logs:DescribeLogGroups"
+              - "logs:DescribeLogStreams"
+              - "logs:DescribeMetricFilters"
+              - "logs:FilterLogEvents"
+              - "logs:GetLogEvents"
+              - "logs:StartQuery"
+            Resource:
+              - !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:*"
+              - !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:*:*"
+          - Effect: "Allow"
+            Action:
+              - "logs:DescribeQueries"
+              - "logs:DescribeQueryDefinitions"
+              - "logs:GetLogDelivery"
+              - "logs:GetLogRecord"
+              - "logs:GetQueryResults"
+              - "logs:ListLogDeliveries"
+              - "logs:StopQuery"
+              - "logs:TestMetricFilter"
+            Resource: "*"
+          - Effect: "Allow"
+            Action: "apigateway:GET"
+            Resource:
+              - "arn:aws:apigateway:*::/restapis/*"
+              - "arn:aws:apigateway:*::/restapis"
+          - Effect: "Allow"
+            Action:
+              - "dynamodb:PutItem"
+              - "dynamodb:DeleteItem"
+              - "dynamodb:GetItem"
+              - "dynamodb:UpdateItem"
+            Resource:
+              - !Sub "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Environment}-user-profile"
+              - !Sub "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Environment}-user-credentials"
+          - Effect: "Allow"
+            Action: "lambda:InvokeFunction"
+            Resource:
+              - !Sub "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:${Environment}-api_gateway_authorizer"
+              - !Sub "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:${Environment}-authenticate-lambda"
+          - Sid: "LegacyAPIGatewayQueryAccess"
+            Effect: "Allow"
+            Action: "apigateway:GET"
+            Resource:
+              - "arn:aws:apigateway:*::/restapis/*/resources"
+              - "arn:aws:apigateway:*::/restapis/*/resources/*"
+              - "arn:aws:apigateway:*::/restapis/*/methods/*"
+              - "arn:aws:apigateway:*::/restapis/*/stages/*"
+          - Sid: "LegacyLambdaInvokeAccess"
+            Effect: "Allow"
+            Action: "lambda:InvokeFunction"
+            Resource: !Sub "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:${Environment}-*"
+          - Effect: "Allow"
+            Action: "s3:ListBucket"
+            Resource: !Sub "arn:${AWS::Partition}:s3:::${Environment}-am-api-acceptance-tests-otp"
+          - Effect: "Allow"
+            Action:
+              - "s3:GetObject"
+              - "s3:DeleteObject"
+            Resource: !Sub "arn:${AWS::Partition}:s3:::${Environment}-am-api-acceptance-tests-otp/*"
+          - !If
+            - NotProduction
+            - !If
+              - AuthAccount
+              - Effect: "Allow"
+                Action:
+                  - "dynamodb:batchUpdate"
+                  - "dynamodb:batchDelete"
+                Resource: !Sub "arn:${AWS::Partition}:dynamodb:${AWS::Region}:*:*"
+                Condition:
+                  ForAnyValue:StringEquals:
+                    "aws:ResourceAccount": AuthAccount
+              - !Ref AWS::NoValue
+            - !Ref AWS::NoValue
+          - Effect: "Allow"
+            Action:
+              - "codebuild:CreateReportGroup"
+              - "codebuild:CreateReport"
+              - "codebuild:UpdateReport"
+              - "codebuild:BatchPutTestCases"
+            Resource: !Sub "arn:${AWS::Partition}:codebuild:${AWS::Region}:${AWS::AccountId}:report-group/*"
+
+  VPCTestPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Condition: CreateVPCConfigurationForTestContainer
+    Properties:
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - ec2:DescribeDhcpOptions
+              - ec2:DescribeNetworkInterfaces
+              - ec2:DescribeSubnets
+              - ec2:DescribeSecurityGroups
+              - ec2:DescribeVpcs
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - ec2:CreateNetworkInterface
+              - ec2:DeleteNetworkInterface
+            Resource: !Sub "arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:*"
+          - Effect: Allow
+            Action: ec2:CreateNetworkInterfacePermission
+            Resource: !Sub "arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:network-interface/*"
+            Condition:
+              StringEquals:
+                ec2:AuthorizedService: codebuild.amazonaws.com
+              ArnEquals:
+                ec2:Subnet:
+                  - !Sub "arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:subnet/${TestSubnetIdA}"
+                  - !Sub "arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:subnet/${TestSubnetIdB}"
+
+  TestRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service: "codebuild.amazonaws.com"
+            Action: "sts:AssumeRole"
+      ManagedPolicyArns:
+        - !Ref TestPolicy
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+        - !If
+          - CreateVPCConfigurationForTestContainer
+          - !Ref VPCTestPolicy
+          - !Ref AWS::NoValue
+
+  AdHocTestCodeBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub "Test-${AWS::StackName}"
+      ServiceRole: !GetAtt TestRole.Arn
+      ConcurrentBuildLimit: 1
+      Artifacts:
+        Type: "NO_ARTIFACTS"
+      Environment:
+        ComputeType: !Ref TestComputeType
+        Image: !Sub "${AdHocTestRunnerImageRepository.RepositoryUri}:latest"
+        Type: "LINUX_CONTAINER"
+        ImagePullCredentialsType: "SERVICE_ROLE"
+        PrivilegedMode: false
+      VpcConfig: !If
+        - CreateVPCConfigurationForTestContainer
+        - SecurityGroupIds:
+            - !GetAtt TestContainerSecurityGroup.GroupId
+          Subnets:
+            - !Ref TestSubnetIdA
+            - !Ref TestSubnetIdB
+          VpcId: !Ref TestVpcId
+        - !Ref AWS::NoValue
+      Source:
+        Type: "NO_SOURCE"
+        BuildSpec: !Sub |
+          version: 0.2
+
+          env:
+            variables:
+              TEST_REPORT_DIR: "results"
+              TEST_REPORT_BUCKET: "${AdHocAcceptanceTestsArtifactBucket}"
+              PARALLEL_BROWSERS: ${ParallelTests}
+
+          phases:
+
+            pre_build:
+              commands:
+                - mkdir -p "$TEST_REPORT_DIR" || { echo "Failed to create test report directory"; exit 1; }
+
+            build:
+              commands:
+                - /test/run-acceptance-tests.sh -s ${Environment} || { echo "Test execution failed"; exit 1; }
+
+            post_build:
+              commands:
+                - cp -r /test/acceptance-tests/target/cucumber-report/* "$(pwd)"/results/ || { echo "Failed to copy test reports"; exit 1; }
+                - export TEST_REPORT_ABSOLUTE_DIR="$(pwd)/$TEST_REPORT_DIR"
+                - aws s3 cp "$TEST_REPORT_DIR" "s3://$TEST_REPORT_BUCKET/cucumber-report-$(date +%Y-%m-%d-%H-%M-%S)" --recursive --region eu-west-2 || { echo "Failed to upload test reports to S3"; exit 1; }
+
+          reports:
+            TestReports:
+              files:
+                - results/**/*
+              file-format: ${TestReportFormat}
+
+  AdHocTestCodeBuildProjectLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      KmsKeyId: !GetAtt LogsKmsKey.Arn
+      LogGroupName: !Sub "/aws/codebuild/${AdHocTestCodeBuildProject}"
+      RetentionInDays: !Ref LogRetentionDays
+
+  TestContainerSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Condition: CreateVPCConfigurationForTestContainer
+    Properties:
+      GroupDescription: "Permits unrestricted outbound traffic for test container"
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          Description: Allow all outbound traffic
+          IpProtocol: -1
+      VpcId: !Ref TestVpcId
+
+  EventBridgeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: StartCodeBuildPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: codebuild:StartBuild
+                Resource: !GetAtt AdHocTestCodeBuildProject.Arn
+
+  ECRImagePushRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: Trigger CodeBuild when new image is pushed to ECR
+      EventPattern:
+        source:
+          - aws.ecr
+        detail-type:
+          - ECR Image Action
+        detail:
+          action-type:
+            - PUSH
+          result:
+            - SUCCESS
+          repository-name:
+            - !Ref AdHocTestRunnerImageRepository
+          image-tag:
+            - latest
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt AdHocTestCodeBuildProject.Arn
+          RoleArn: !GetAtt EventBridgeRole.Arn
+          Id: CodeBuildTarget
+
+Outputs:
+  AdHocTestCodeBuildProjectArn:
+    Value: !GetAtt AdHocTestCodeBuildProject.Arn
+  AdHocTestCodeBuildProjectName:
+    Value: !Ref AdHocTestCodeBuildProject
+  AdHocAcceptanceTestsArtifactBucketName:
+    Value: !Ref AdHocAcceptanceTestsArtifactBucket
+  RepositoryUri:
+    Value: !GetAtt AdHocTestRunnerImageRepository.RepositoryUri
+  RepositoryArn:
+    Value: !GetAtt AdHocTestRunnerImageRepository.Arn
