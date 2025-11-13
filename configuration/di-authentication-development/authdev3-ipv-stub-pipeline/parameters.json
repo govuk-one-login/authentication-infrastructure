@@ -1,0 +1,22 @@
+[
+  {
+    "ParameterKey": "SAMStackName",
+    "ParameterValue": "authdev3-ipv-stub"
+  },
+  {
+    "ParameterKey": "Environment",
+    "ParameterValue": "dev"
+  },
+  {
+    "ParameterKey": "SubEnvironment",
+    "ParameterValue": "authdev3"
+  },
+  {
+    "ParameterKey": "OneLoginRepositoryName",
+    "ParameterValue": "authentication-stubs"
+  },
+  {
+    "ParameterKey": "IncludePromotion",
+    "ParameterValue": "No"
+  }
+]
