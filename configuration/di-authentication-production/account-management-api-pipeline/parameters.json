@@ -5,7 +5,7 @@
   },
   {
     "ParameterKey": "Environment",
-    "ParameterValue": "staging"
+    "ParameterValue": "production"
   },
   {
     "ParameterKey": "ProgrammaticPermissionsBoundary",
@@ -41,27 +41,31 @@
   },
   {
     "ParameterKey": "IncludePromotion",
-    "ParameterValue": "Yes"
-  },
-  {
-    "ParameterKey": "AllowedAccounts",
-    "ParameterValue": "211125303002,211125600642"
+    "ParameterValue": "No"
   },
   {
     "ParameterKey": "LambdaCanaryDeployment",
-    "ParameterValue": "LambdaCanary10Percent2Minutes"
+    "ParameterValue": "CodeDeployDefault.LambdaCanary10Percent5Minutes"
+  },
+  {
+    "ParameterKey": "SlackNotificationType",
+    "ParameterValue": "Failures"
+  },
+  {
+    "ParameterKey": "BuildNotificationStackName",
+    "ParameterValue": "build-notifications"
   },
   {
     "ParameterKey": "AccessCrossAccountSQS",
-    "ParameterValue": "758531536632"
+    "ParameterValue": "172348255554"
   },
   {
     "ParameterKey": "AccessDynamoDBAccounts",
-    "ParameterValue": "758531536632,590183975515"
+    "ParameterValue": "172348255554,533266965190"
   },
   {
     "ParameterKey": "TestContainerAllowCrossAccountAssumeRole",
-    "ParameterValue": "Yes"
+    "ParameterValue": "No"
   },
   {
     "ParameterKey": "TestReportFormat",
