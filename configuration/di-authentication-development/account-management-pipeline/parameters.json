@@ -1,7 +1,7 @@
 [
   {
     "ParameterKey": "SAMStackName",
-    "ParameterValue": "am-api"
+    "ParameterValue": "dev-am-api"
   },
   {
     "ParameterKey": "Environment",
@@ -54,6 +54,10 @@
   {
     "ParameterKey": "LambdaCanaryDeployment",
     "ParameterValue": "LambdaCanary10Percent2Minutes"
+  },
+  {
+    "ParameterKey": "TestImageRepositoryUri",
+    "ParameterValue": "975050272416.dkr.ecr.eu-west-2.amazonaws.com/acceptance-tests-image-repository-testrunnerimagerepository-8r6rruhoannw"
   },
   {
     "ParameterKey": "AccessCrossAccountSQS",
