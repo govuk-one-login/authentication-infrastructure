@@ -48,6 +48,10 @@
     "ParameterValue": "Yes"
   },
   {
+    "ParameterKey": "STSApiEnabled",
+    "ParameterValue": "Yes"
+  },
+  {
     "ParameterKey": "S3ApiEnabled",
     "ParameterValue": "Yes"
   },

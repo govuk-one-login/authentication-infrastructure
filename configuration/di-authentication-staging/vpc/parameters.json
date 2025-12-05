@@ -24,6 +24,10 @@
     "ParameterValue": "Yes"
   },
   {
+    "ParameterKey": "STSApiEnabled",
+    "ParameterValue": "Yes"
+  },
+  {
     "ParameterKey": "SQSApiEnabled",
     "ParameterValue": "Yes"
   },

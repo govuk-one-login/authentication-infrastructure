@@ -20,6 +20,10 @@
     "ParameterValue": "Yes"
   },
   {
+    "ParameterKey": "STSApiEnabled",
+    "ParameterValue": "Yes"
+  },
+  {
     "ParameterKey": "ExecuteApiGatewayEnabled",
     "ParameterValue": "Yes"
   },
