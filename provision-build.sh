@@ -62,7 +62,7 @@ done
 # build account initialisation
 # ----------------------------
 export AWS_ACCOUNT=di-authentication-build
-export AWS_PROFILE=di-authentication-build-AWSAdministratorAccess
+export AWS_PROFILE=di-authentication-build-ApprovedAdmin
 if ! aws sts get-caller-identity &> /dev/null; then
   aws sso login --profile "${AWS_PROFILE}"
 fi
@@ -124,7 +124,7 @@ function provision_base_stacks {
 function provision_vpc {
   export AWS_REGION="eu-west-2"
 
-  VPC_TEMPLATE_VERSION="v2.10.0"
+  VPC_TEMPLATE_VERSION="v2.10.1"
   ./provisioner.sh "${AWS_ACCOUNT}" vpc vpc "${VPC_TEMPLATE_VERSION}"
 }
 
