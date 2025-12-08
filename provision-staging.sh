@@ -61,7 +61,7 @@ done
 # --------------------------------------------
 # extract outputs from stacks in build account
 # --------------------------------------------
-export AWS_PROFILE=di-authentication-build-AWSAdministratorAccess
+export AWS_PROFILE=di-authentication-build-ApprovedAdmin
 if ! aws sts get-caller-identity &> /dev/null; then
   aws sso login --profile "${AWS_PROFILE}"
 fi
@@ -109,7 +109,7 @@ SmoketestArtifactSourceBucketEventTriggerRoleArn=${CFN_smoke_test_pipeline_Artif
 # Staging account initialisation
 # ------------------------------
 export AWS_ACCOUNT=di-authentication-staging
-export AWS_PROFILE=di-authentication-staging-AWSAdministratorAccess
+export AWS_PROFILE=di-authentication-staging-ApprovedAdmin
 
 export AWS_PAGER=
 export SKIP_AWS_AUTHENTICATION="${SKIP_AWS_AUTHENTICATION:-true}"
@@ -144,7 +144,7 @@ function provision_base_stacks {
 function provision_vpc {
   export AWS_REGION="eu-west-2"
 
-  VPC_TEMPLATE_VERSION="v2.10.0"
+  VPC_TEMPLATE_VERSION="v2.10.1"
   ./provisioner.sh "${AWS_ACCOUNT}" vpc vpc "${VPC_TEMPLATE_VERSION}"
 }
 
