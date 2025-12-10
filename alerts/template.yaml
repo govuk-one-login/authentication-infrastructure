@@ -14,6 +14,9 @@ Parameters:
       - production
       - integration
       - dev
+      - authdev1
+      - authdev2
+      - authdev3
 
   SlackWorkspaceId:
     Description: >
@@ -47,6 +50,9 @@ Conditions:
         IsSlackNotifyEnabled,
       ]
     - "Yes"
+  IsDevEnvironment: !Equals
+    - !Ref Environment
+    - "dev"
 
 Mappings:
   EnvironmentConfiguration:
@@ -65,6 +71,7 @@ Mappings:
     production:
       AccountAlias: "di-authentication-production"
       IsSlackNotifyEnabled: "Yes"
+
 
 Resources:
   NotificationTopic:
@@ -344,6 +351,213 @@ Resources:
       Name: !Sub "/deploy/${Environment}/slack_events_notification_topic_arn"
       Type: String
       Value: !Ref SlackEventNotificationTopic
+      Tags:
+        Application: "Authentication"
+        Source: govuk-one-login/authentication-infrastructure/alerts/template.yaml
+
+# Below SNS topic are for Authdevs only created in Dev AWS account
+# IF subscription if required for testing in authdev please created againt 'dev-alerts' Lambda
+
+  Authdev1SlackAlertNotificationTopic:
+    Type: AWS::SNS::Topic
+    Condition: IsDevEnvironment
+    Properties:
+      TopicName: "authdev1-slack-alerts"
+      Tags:
+        - Key: Name
+          Value: "authdev1-slack-alerts"
+        - Key: Service
+          Value: "Authentication"
+        - Key: Source
+          Value: "govuk-one-login/authentication-infrastructure/alerts/template.yaml"
+
+  Authdev1SlackEventNotificationTopic:
+    Type: AWS::SNS::Topic
+    Condition: IsDevEnvironment
+    Properties:
+      TopicName: "authdev1-slack-events"
+      Tags:
+        - Key: Name
+          Value: "authdev1-slack-events"
+        - Key: Service
+          Value: "Authentication"
+        - Key: Source
+          Value: "govuk-one-login/authentication-infrastructure/alerts/template.yaml"
+
+  Authdev2SlackAlertNotificationTopic:
+    Type: AWS::SNS::Topic
+    Condition: IsDevEnvironment
+    Properties:
+      TopicName: "authdev2-slack-alerts"
+      Tags:
+        - Key: Name
+          Value: "authdev2-slack-alerts"
+        - Key: Service
+          Value: "Authentication"
+        - Key: Source
+          Value: "govuk-one-login/authentication-infrastructure/alerts/template.yaml"
+
+  Authdev2SlackEventNotificationTopic:
+    Type: AWS::SNS::Topic
+    Condition: IsDevEnvironment
+    Properties:
+      TopicName: "authdev2-slack-events"
+      Tags:
+        - Key: Name
+          Value: "authdev2-slack-events"
+        - Key: Service
+          Value: "Authentication"
+        - Key: Source
+          Value: "govuk-one-login/authentication-infrastructure/alerts/template.yaml"
+
+  Authdev3SlackAlertNotificationTopic:
+    Type: AWS::SNS::Topic
+    Condition: IsDevEnvironment
+    Properties:
+      TopicName: "authdev3-slack-alerts"
+      Tags:
+        - Key: Name
+          Value: "authdev3-slack-alerts"
+        - Key: Service
+          Value: "Authentication"
+        - Key: Source
+          Value: "govuk-one-login/authentication-infrastructure/alerts/template.yaml"
+
+  Authdev3SlackEventNotificationTopic:
+    Type: AWS::SNS::Topic
+    Condition: IsDevEnvironment
+    Properties:
+      TopicName: "authdev3-slack-events"
+      Tags:
+        - Key: Name
+          Value: "authdev3-slack-events"
+        - Key: Service
+          Value: "Authentication"
+        - Key: Source
+          Value: "govuk-one-login/authentication-infrastructure/alerts/template.yaml"
+
+  AuthdevSlackNotificationTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Condition: IsDevEnvironment
+    Properties:
+      Topics:
+        - !Ref Authdev1SlackAlertNotificationTopic
+        - !Ref Authdev1SlackEventNotificationTopic
+      PolicyDocument:
+        Statement:
+          - Action: "sns:Publish"
+            Effect: Allow
+            Resource:
+              - !Ref Authdev1SlackAlertNotificationTopic
+              - !Ref Authdev1SlackEventNotificationTopic
+            Principal:
+              Service:
+                - cloudwatch.amazonaws.com
+
+  Authdev2SlackNotificationTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Condition: IsDevEnvironment
+    Properties:
+      Topics:
+        - !Ref Authdev2SlackAlertNotificationTopic
+        - !Ref Authdev2SlackEventNotificationTopic
+      PolicyDocument:
+        Statement:
+          - Action: "sns:Publish"
+            Effect: Allow
+            Resource:
+              - !Ref Authdev2SlackAlertNotificationTopic
+              - !Ref Authdev2SlackEventNotificationTopic
+            Principal:
+              Service:
+                - cloudwatch.amazonaws.com
+
+  Authdev3SlackNotificationTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Condition: IsDevEnvironment
+    Properties:
+      Topics:
+        - !Ref Authdev3SlackAlertNotificationTopic
+        - !Ref Authdev3SlackEventNotificationTopic
+      PolicyDocument:
+        Statement:
+          - Action: "sns:Publish"
+            Effect: Allow
+            Resource:
+              - !Ref Authdev3SlackAlertNotificationTopic
+              - !Ref Authdev3SlackEventNotificationTopic
+            Principal:
+              Service:
+                - cloudwatch.amazonaws.com
+
+  Authdev1SlackAlertNotificationTopicSSM:
+    Type: AWS::SSM::Parameter
+    Condition: IsDevEnvironment
+    Properties:
+      Description: "The ARN of the Authdev1 SNS topic for slack alerts"
+      Name: "/deploy/authdev1/slack_alert_notification_topic_arn"
+      Type: String
+      Value: !Ref Authdev1SlackAlertNotificationTopic
+      Tags:
+        Application: "Authentication"
+        Source: govuk-one-login/authentication-infrastructure/alerts/template.yaml
+
+  Authdev1SlackEventNotificationTopicSSM:
+    Type: AWS::SSM::Parameter
+    Condition: IsDevEnvironment
+    Properties:
+      Description: "The ARN of the Authdev1 SNS topic for slack events"
+      Name: "/deploy/authdev1/slack_events_notification_topic_arn"
+      Type: String
+      Value: !Ref Authdev1SlackEventNotificationTopic
+      Tags:
+        Application: "Authentication"
+        Source: govuk-one-login/authentication-infrastructure/alerts/template.yaml
+
+  Authdev2SlackAlertNotificationTopicSSM:
+    Type: AWS::SSM::Parameter
+    Condition: IsDevEnvironment
+    Properties:
+      Description: "The ARN of the Authdev2 SNS topic for slack alerts"
+      Name: "/deploy/authdev2/slack_alert_notification_topic_arn"
+      Type: String
+      Value: !Ref Authdev2SlackAlertNotificationTopic
+      Tags:
+        Application: "Authentication"
+        Source: govuk-one-login/authentication-infrastructure/alerts/template.yaml
+
+  Authdev2SlackEventNotificationTopicSSM:
+    Type: AWS::SSM::Parameter
+    Condition: IsDevEnvironment
+    Properties:
+      Description: "The ARN of the Authdev2 SNS topic for slack events"
+      Name: "/deploy/authdev2/slack_events_notification_topic_arn"
+      Type: String
+      Value: !Ref Authdev2SlackEventNotificationTopic
+      Tags:
+        Application: "Authentication"
+        Source: govuk-one-login/authentication-infrastructure/alerts/template.yaml
+
+  Authdev3SlackAlertNotificationTopicSSM:
+    Type: AWS::SSM::Parameter
+    Condition: IsDevEnvironment
+    Properties:
+      Description: "The ARN of the Authdev3 SNS topic for slack alerts"
+      Name: "/deploy/authdev3/slack_alert_notification_topic_arn"
+      Type: String
+      Value: !Ref Authdev3SlackAlertNotificationTopic
+      Tags:
+        Application: "Authentication"
+        Source: govuk-one-login/authentication-infrastructure/alerts/template.yaml
+
+  Authdev3SlackEventNotificationTopicSSM:
+    Type: AWS::SSM::Parameter
+    Condition: IsDevEnvironment
+    Properties:
+      Description: "The ARN of the Authdev3 SNS topic for slack events"
+      Name: "/deploy/authdev3/slack_events_notification_topic_arn"
+      Type: String
+      Value: !Ref Authdev3SlackEventNotificationTopic
       Tags:
         Application: "Authentication"
         Source: govuk-one-login/authentication-infrastructure/alerts/template.yaml
