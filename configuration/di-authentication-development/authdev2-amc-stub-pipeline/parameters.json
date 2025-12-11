@@ -1,0 +1,18 @@
+[
+  {
+    "ParameterKey": "SAMStackName",
+    "ParameterValue": "authdev2-amc-stub"
+  },
+  {
+    "ParameterKey": "Environment",
+    "ParameterValue": "authdev2"
+  },
+  {
+    "ParameterKey": "OneLoginRepositoryName",
+    "ParameterValue": "authentication-stubs"
+  },
+  {
+    "ParameterKey": "IncludePromotion",
+    "ParameterValue": "No"
+  }
+]
