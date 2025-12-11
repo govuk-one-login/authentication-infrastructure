@@ -221,6 +221,17 @@ function provision_pipeline {
   TMP_PARAM_FILE=$(mktemp)
   echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
   PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" build-stubs-api-pipeline sam-deploy-pipeline v2.76.0
+
+  # build amc-stub pipeline
+  PARAMETERS_FILE="configuration/$AWS_ACCOUNT/build-amc-stub-pipeline/parameters.json"
+  PARAMETERS=$(jq ". += [
+                          {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
+                          {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"}
+                      ] | tojson" -r "${PARAMETERS_FILE}")
+
+  TMP_PARAM_FILE=$(mktemp)
+  echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" build-amc-stub-pipeline sam-deploy-pipeline LATEST
 }
 
 # ------------------

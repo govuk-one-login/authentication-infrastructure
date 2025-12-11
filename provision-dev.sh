@@ -194,6 +194,17 @@ function provision_pipeline {
   echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
   PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" dev-stubs-api-pipeline sam-deploy-pipeline v2.76.0
 
+  # dev amc-stub pipeline
+  PARAMETERS_FILE="configuration/$AWS_ACCOUNT/dev-amc-stub-pipeline/parameters.json"
+  PARAMETERS=$(jq ". += [
+                          {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
+                          {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"}
+                      ] | tojson" -r "${PARAMETERS_FILE}")
+
+  TMP_PARAM_FILE=$(mktemp)
+  echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" dev-amc-stub-pipeline sam-deploy-pipeline LATEST
+
   # authdev1-frontend
   PARAMETERS_FILE="configuration/$AWS_ACCOUNT/authdev1-frontend-pipeline/parameters.json"
   PARAMETERS=$(jq ". += [
@@ -229,6 +240,17 @@ function provision_pipeline {
   TMP_PARAM_FILE=$(mktemp)
   echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
   PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev1-stubs-api-pipeline sam-deploy-pipeline v2.76.0
+
+  # authdev1 amc-stub pipeline
+  PARAMETERS_FILE="configuration/$AWS_ACCOUNT/authdev1-amc-stub-pipeline/parameters.json"
+  PARAMETERS=$(jq ". += [
+                          {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
+                          {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"}
+                      ] | tojson" -r "${PARAMETERS_FILE}")
+
+  TMP_PARAM_FILE=$(mktemp)
+  echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev1-amc-stub-pipeline sam-deploy-pipeline LATEST
 
   # authdev2-frontend
   PARAMETERS_FILE="configuration/$AWS_ACCOUNT/authdev2-frontend-pipeline/parameters.json"
@@ -266,6 +288,17 @@ function provision_pipeline {
   echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
   PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev2-stubs-api-pipeline sam-deploy-pipeline v2.76.0
 
+  # authdev2 amc-stub pipeline
+  PARAMETERS_FILE="configuration/$AWS_ACCOUNT/authdev2-amc-stub-pipeline/parameters.json"
+  PARAMETERS=$(jq ". += [
+                          {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
+                          {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"}
+                      ] | tojson" -r "${PARAMETERS_FILE}")
+
+  TMP_PARAM_FILE=$(mktemp)
+  echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev2-amc-stub-pipeline sam-deploy-pipeline LATEST
+
   # authdev3-frontend
   PARAMETERS_FILE="configuration/$AWS_ACCOUNT/authdev3-frontend-pipeline/parameters.json"
   PARAMETERS=$(jq ". += [
@@ -301,6 +334,17 @@ function provision_pipeline {
   TMP_PARAM_FILE=$(mktemp)
   echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
   PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev3-stubs-api-pipeline sam-deploy-pipeline v2.76.0
+
+  # authdev3 amc-stub pipeline
+  PARAMETERS_FILE="configuration/$AWS_ACCOUNT/authdev3-amc-stub-pipeline/parameters.json"
+  PARAMETERS=$(jq ". += [
+                          {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
+                          {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"}
+                      ] | tojson" -r "${PARAMETERS_FILE}")
+
+  TMP_PARAM_FILE=$(mktemp)
+  echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev3-amc-stub-pipeline sam-deploy-pipeline LATEST
 
   # dev ipv-stub pipeline
   PARAMETERS_FILE="configuration/$AWS_ACCOUNT/dev-ipv-stub-pipeline/parameters.json"
