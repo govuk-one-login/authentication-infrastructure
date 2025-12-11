@@ -29,7 +29,7 @@
     },
     {
         "ParameterKey": "RunTestContainerInVPC",
-        "ParameterValue": "False"
+        "ParameterValue": "True"
     },
     {
         "ParameterKey": "IncludeDeployFrontEndStage",
