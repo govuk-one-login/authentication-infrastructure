@@ -5,6 +5,10 @@
   },
   {
     "ParameterKey": "Environment",
+    "ParameterValue": "dev"
+  },
+  {
+    "ParameterKey": "SubEnvironment",
     "ParameterValue": "authdev3"
   },
   {
