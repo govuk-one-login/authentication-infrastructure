@@ -56,6 +56,10 @@
     "ParameterValue": "851725205974"
   },
   {
+    "ParameterKey": "RunTestContainerInVPC",
+    "ParameterValue": "True"
+  },
+  {
     "ParameterKey": "LambdaCanaryDeployment",
     "ParameterValue": "LambdaCanary10Percent2Minutes"
   },

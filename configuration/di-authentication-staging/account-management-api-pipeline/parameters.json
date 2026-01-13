@@ -1,7 +1,7 @@
 [
   {
     "ParameterKey": "SAMStackName",
-    "ParameterValue": "account-mangement-api"
+    "ParameterValue": "am-api"
   },
   {
     "ParameterKey": "Environment",
@@ -52,12 +52,24 @@
     "ParameterValue": "LambdaCanary10Percent2Minutes"
   },
   {
+    "ParameterKey": "SlackNotificationType",
+    "ParameterValue": "Failures"
+  },
+  {
+    "ParameterKey": "BuildNotificationStackName",
+    "ParameterValue": "build-notifications"
+  },
+  {
     "ParameterKey": "AccessCrossAccountSQS",
     "ParameterValue": "758531536632"
   },
   {
     "ParameterKey": "AccessDynamoDBAccounts",
     "ParameterValue": "758531536632,590183975515"
+  },
+  {
+    "ParameterKey": "RunTestContainerInVPC",
+    "ParameterValue": "True"
   },
   {
     "ParameterKey": "TestContainerAllowCrossAccountAssumeRole",
