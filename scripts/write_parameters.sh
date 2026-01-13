@@ -41,10 +41,11 @@ if [ "${READONLY}" = "readonly" ]; then
 fi
 
 params="
-  ${ENVIRONMENT}-session-redis-master-host |
-  ${ENVIRONMENT}-session-redis-password |
-  ${ENVIRONMENT}-session-redis-port |
-  ${ENVIRONMENT}-session-redis-tls |
+  ${ENVIRONMENT}-account-management-redis-master-host |
+  ${ENVIRONMENT}-account-management-redis-password |
+  ${ENVIRONMENT}-account-management-redis-port |
+  ${ENVIRONMENT}-account-management-redis-replica-host |
+  ${ENVIRONMENT}-account-management-redis-tls |
 "
 
 # shellcheck disable=SC2162,SC2086
