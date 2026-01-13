@@ -52,6 +52,14 @@
     "ParameterValue": "LambdaCanary10Percent2Minutes"
   },
   {
+    "ParameterKey": "SlackNotificationType",
+    "ParameterValue": "Failures"
+  },
+  {
+    "ParameterKey": "BuildNotificationStackName",
+    "ParameterValue": "build-notifications"
+  },
+  {
     "ParameterKey": "AccessCrossAccountSQS",
     "ParameterValue": "758531536632"
   },
