@@ -1,7 +1,7 @@
 [
   {
     "ParameterKey": "SAMStackName",
-    "ParameterValue": "account-mangement-api"
+    "ParameterValue": "am-api"
   },
   {
     "ParameterKey": "Environment",
@@ -58,6 +58,10 @@
   {
     "ParameterKey": "AccessDynamoDBAccounts",
     "ParameterValue": "758531536632,590183975515"
+  },
+  {
+    "ParameterKey": "RunTestContainerInVPC",
+    "ParameterValue": "True"
   },
   {
     "ParameterKey": "TestContainerAllowCrossAccountAssumeRole",
