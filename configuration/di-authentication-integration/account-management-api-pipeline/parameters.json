@@ -5,7 +5,7 @@
   },
   {
     "ParameterKey": "Environment",
-    "ParameterValue": "build"
+    "ParameterValue": "integration"
   },
   {
     "ParameterKey": "ProgrammaticPermissionsBoundary",
@@ -36,24 +36,16 @@
     "ParameterValue": "vpc"
   },
   {
-    "ParameterKey": "OneLoginRepositoryName",
-    "ParameterValue": "authentication-api"
-  },
-  {
-    "ParameterKey": "OneLoginTestImageRepositoryNames",
-    "ParameterValue": "authentication-acceptance-tests"
-  },
-  {
     "ParameterKey": "AdditionalCodeSigningVersionArns",
     "ParameterValue": "arn:aws:signer:eu-west-2:216552277552:/signing-profiles/DynatraceSigner/5uwzCCGTPq,arn:aws:signer:eu-west-2:354770603991:/signing-profiles/SigningProfile_SxeU7YX0F6Pb/HyVGO9gC7b"
   },
   {
     "ParameterKey": "IncludePromotion",
-    "ParameterValue": "Yes"
+    "ParameterValue": "No"
   },
   {
-    "ParameterKey": "AllowedAccounts",
-    "ParameterValue": "851725205974"
+    "ParameterKey": "LambdaCanaryDeployment",
+    "ParameterValue": "CodeDeployDefault.LambdaCanary10Percent5Minutes"
   },
   {
     "ParameterKey": "SlackNotificationType",
@@ -64,24 +56,16 @@
     "ParameterValue": "build-notifications"
   },
   {
-    "ParameterKey": "RunTestContainerInVPC",
-    "ParameterValue": "True"
-  },
-  {
-    "ParameterKey": "LambdaCanaryDeployment",
-    "ParameterValue": "LambdaCanary10Percent2Minutes"
-  },
-  {
     "ParameterKey": "AccessCrossAccountSQS",
     "ParameterValue": "761723964695"
   },
   {
     "ParameterKey": "AccessDynamoDBAccounts",
-    "ParameterValue": "761723964695,767397776536"
+    "ParameterValue": "761723964695,058264132019"
   },
   {
     "ParameterKey": "TestContainerAllowCrossAccountAssumeRole",
-    "ParameterValue": "Yes"
+    "ParameterValue": "No"
   },
   {
     "ParameterKey": "TestReportFormat",
