@@ -1,0 +1,10 @@
+[
+  {
+    "ParameterKey": "PipelineStackName",
+    "ParameterValue": "pipeline-visualiser-pipeline"
+  },
+  {
+    "ParameterKey": "RetainedImageCount",
+    "ParameterValue": "10"
+  }
+]

@@ -1,0 +1,38 @@
+<% case status
+   when "Cancelled" %>
+    <strong class="govuk-tag govuk-tag--purple govuk-!-margin-bottom-1">
+        Cancelled
+    </strong>
+<% when "InProgress" %>
+    <strong class="govuk-tag govuk-tag--yellow govuk-!-margin-bottom-1">
+        In Progress
+    </strong>
+<% when "Failed" %>
+    <strong class="govuk-tag govuk-tag--red govuk-!-margin-bottom-1">
+        Failed
+    </strong>
+<% when "Stopped" %>
+    <strong class="govuk-tag govuk-tag--blue govuk-!-margin-bottom-1">
+        Stopped
+    </strong>
+<% when "Stopping" %>
+    <strong class="govuk-tag govuk-tag--turqoise govuk-!-margin-bottom-1">
+        Stopping
+    </strong>
+<% when "Succeeded" %>
+    <strong class="govuk-tag govuk-tag--green govuk-!-margin-bottom-1">
+        Succeeded
+    </strong>
+<% when "Not Started" %>
+    <strong class="govuk-tag govuk-tag--grey govuk-!-margin-bottom-1">
+        Not Started
+    </strong>
+<% when "Paused" # This is one of our own states, not one of CodePipelines %>
+    <strong class="govuk-tag govuk-tag--light-blue govuk-!-margin-bottom-1">
+        Paused
+    </strong>
+<% when "InboundTransitionPaused" # This is one of our own states, not one of CodePipelines %>
+    <strong class="govuk-tag govuk-tag--light-blue govuk-!-margin-bottom-1">
+        Paused On Inbound
+    </strong>
+<% end %>

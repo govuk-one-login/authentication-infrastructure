@@ -9,7 +9,7 @@ function usage {
   Script to bootstrap di-authentication-development account
 
   Usage:
-    $0 [-b|--base-stacks] [-n|--notification] [-p|--pipelines] [-r|--pruner] [-v|--vpc] [-z|--hosted-zone-resources]
+    $0 [-b|--base-stacks] [-n|--notification] [-p|--pipelines] [-r|--pruner] [-v|--vpc] [-z|--hosted-zone-resources] [--pipeline-visualiser]
 
   Options:
     -b, --base-stacks                      Provision base stacks
@@ -18,6 +18,7 @@ function usage {
     -r, --pruner                           Provision Lambda version pruner
     -v, --vpc                              Provision VPC stack
     -z, --hosted-zone-resources            Provision hosted zone, certificates and SSM params
+    --pipeline-visualiser                  Deploy pipeline visualiser infrastructure
 USAGE
 }
 
@@ -32,6 +33,7 @@ PROVISION_LAMBDA_PRUNER=false
 PROVISION_NOTIFICATION_STACK=false
 PROVISION_PIPELINES=false
 PROVISION_VPC=false
+PROVISION_PIPELINE_VISUALISER=false
 
 while [[ $# -gt 0 ]]; do
   case "${1}" in
@@ -52,6 +54,9 @@ while [[ $# -gt 0 ]]; do
       ;;
     -z | --hosted-zone-resources)
       PROVISION_HOSTED_ZONE_AND_RECORDS=true
+      ;;
+    --pipeline-visualiser)
+      PROVISION_PIPELINE_VISUALISER=true
       ;;
     *)
       usage
@@ -103,6 +108,8 @@ function provision_base_stacks {
   ./provisioner.sh "${AWS_ACCOUNT}" frontend-apitest-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
   ./provisioner.sh "${AWS_ACCOUNT}" service-down-page-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
   ./provisioner.sh "${AWS_ACCOUNT}" acceptance-tests-image-repository test-image-repository v1.2.0
+
+  ./provisioner.sh "${AWS_ACCOUNT}" pipeline-visualiser-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
 
   # NOTE: tag immutability is manually disabled for these ecr repositories
   ./provisioner.sh "${AWS_ACCOUNT}" authdev1-frontend-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
@@ -667,3 +674,4 @@ function provision_lambda_pruner {
 [ "${PROVISION_LAMBDA_PRUNER}" == "true" ] && provision_lambda_pruner
 [ "${PROVISION_PIPELINES}" == "true" ] && provision_pipeline
 [ "${PROVISION_VPC}" == "true" ] && provision_vpc
+[ "${PROVISION_PIPELINE_VISUALISER}" == "true" ] && provision_pipeline_visualiser

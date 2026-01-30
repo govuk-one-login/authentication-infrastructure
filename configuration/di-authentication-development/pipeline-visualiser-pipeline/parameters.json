@@ -1,0 +1,18 @@
+[
+  {
+    "ParameterKey": "SAMStackName",
+    "ParameterValue": "pipeline-visualiser"
+  },
+  {
+    "ParameterKey": "Environment",
+    "ParameterValue": "dev"
+  },
+  {
+    "ParameterKey": "OneLoginRepositoryName",
+    "ParameterValue": "authentication-infrastructure"
+  },
+  {
+    "ParameterKey": "IncludePromotion",
+    "ParameterValue": "No"
+  }
+]
