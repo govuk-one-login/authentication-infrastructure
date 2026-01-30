@@ -9,7 +9,7 @@ function usage {
   Script to bootstrap di-authentication-development account
 
   Usage:
-    $0 [-b|--base-stacks] [-n|--notification] [-p|--pipelines] [-v|--vpc] [-z|--hosted-zone-resources]
+    $0 [-b|--base-stacks] [-n|--notification] [-p|--pipelines] [-v|--vpc] [-z|--hosted-zone-resources] [--pipeline-visualiser]
 
   Options:
     -b, --base-stacks                      Provision base stacks
@@ -17,6 +17,7 @@ function usage {
     -p, --pipelines                        Provision secure pipelines
     -v, --vpc                              Provision VPC stack
     -z, --hosted-zone-resources            Provision hosted zone, certificates and SSM params
+    --pipeline-visualiser                  Deploy pipeline visualiser infrastructure
 USAGE
 }
 
@@ -30,6 +31,7 @@ PROVISION_HOSTED_ZONE_AND_RECORDS=false
 PROVISION_NOTIFICATION_STACK=false
 PROVISION_PIPELINES=false
 PROVISION_VPC=false
+PROVISION_PIPELINE_VISUALISER=false
 
 while [[ $# -gt 0 ]]; do
   case "${1}" in
@@ -47,6 +49,9 @@ while [[ $# -gt 0 ]]; do
       ;;
     -z | --hosted-zone-resources)
       PROVISION_HOSTED_ZONE_AND_RECORDS=true
+      ;;
+    --pipeline-visualiser)
+      PROVISION_PIPELINE_VISUALISER=true
       ;;
     *)
       usage
@@ -98,6 +103,8 @@ function provision_base_stacks {
   ./provisioner.sh "${AWS_ACCOUNT}" frontend-apitest-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
   ./provisioner.sh "${AWS_ACCOUNT}" service-down-page-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
   ./provisioner.sh "${AWS_ACCOUNT}" acceptance-tests-image-repository test-image-repository v1.2.0
+
+  ./provisioner.sh "${AWS_ACCOUNT}" pipeline-visualiser-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
 
   # NOTE: tag immutability is manually disabled for these ecr repositories
   ./provisioner.sh "${AWS_ACCOUNT}" authdev1-frontend-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
@@ -490,6 +497,18 @@ function provision_pipeline {
   echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
   PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev3-account-management-pipeline sam-deploy-pipeline v2.87.0
 
+  # dev pipeline-visualiser pipeline
+  PARAMETERS_FILE="configuration/$AWS_ACCOUNT/pipeline-visualiser-pipeline/parameters.json"
+  PARAMETERS=$(jq ". += [
+                            {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
+                            {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
+                            {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"}
+                        ] | tojson" -r "${PARAMETERS_FILE}")
+
+  TMP_PARAM_FILE=$(mktemp)
+  echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" pipeline-visualiser-pipeline sam-deploy-pipeline v2.87.0
+
 }
 
 # ------------------
@@ -543,6 +562,73 @@ function provision_notification {
   PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" lambda-code-storage-alarm cloudwatch-alarm-stack v0.0.7
 }
 
+# -------------------------
+# provision pipeline visualiser
+# -------------------------
+function provision_pipeline_visualiser {
+  export AWS_REGION="eu-west-2"
+
+  # ECR configuration
+  ECR_REGISTRY="975050272416.dkr.ecr.eu-west-2.amazonaws.com"
+  ECR_REPO_NAME="pipeline-visualiser-image-repository-containerrepository-l7wt51njeibd"
+  GITHUB_SHA="$(git rev-parse HEAD)"
+  DOCKER_PLATFORM="${DOCKER_PLATFORM:-linux/amd64}"
+  PUSH_LATEST_TAG="${PUSH_LATEST_TAG:-false}"
+
+  CONFIRM_CHANGESET_OPTION="--confirm-changeset"
+  if [ "${AUTO_APPLY_CHANGESET}" == "true" ]; then
+    CONFIRM_CHANGESET_OPTION="--no-confirm-changeset"
+  fi
+
+  # Login to ECR
+  echo "Generating temporary ECR credentials..."
+  aws ecr get-login-password --region eu-west-2 \
+    | docker login --username AWS --password-stdin "${ECR_REGISTRY}"
+
+  pushd pipeline-visualiser
+
+  # Build and push Docker image
+  echo "Building image"
+  docker build \
+    --tag "$ECR_REGISTRY/$ECR_REPO_NAME:$GITHUB_SHA" \
+    --platform "$DOCKER_PLATFORM" \
+    .
+
+  docker push "$ECR_REGISTRY/$ECR_REPO_NAME:$GITHUB_SHA"
+
+  # Build SAM template
+  echo "Running sam build on template file"
+  sam build --template-file infrastructure.yaml
+  mv .aws-sam/build/template.yaml cf-template.yaml
+
+  # Replace image placeholder with actual ECR image
+  IMAGE_DIGEST="$(docker inspect "$ECR_REGISTRY/$ECR_REPO_NAME:$GITHUB_SHA" | jq -r '.[0].RepoDigests[0] | split("@") | .[1]')"
+  echo "Digest = ${IMAGE_DIGEST}"
+
+  if grep -q "CONTAINER-IMAGE-PLACEHOLDER" cf-template.yaml; then
+    echo 'Replacing "CONTAINER-IMAGE-PLACEHOLDER" with new ECR image ref'
+    sed -i.bak "s|CONTAINER-IMAGE-PLACEHOLDER|$ECR_REGISTRY/$ECR_REPO_NAME@$IMAGE_DIGEST|" cf-template.yaml
+  fi
+
+  # Deploy SAM application
+  # shellcheck disable=SC2086
+  sam deploy \
+    --template-file cf-template.yaml \
+    --stack-name "pipeline-visualiser" \
+    --resolve-s3 true \
+    --s3-prefix "pipeline-visualiser" \
+    --region "eu-west-2" \
+    --capabilities "CAPABILITY_NAMED_IAM" \
+    $CONFIRM_CHANGESET_OPTION \
+    --no-fail-on-empty-changeset \
+    --parameter-overrides Environment=dev VpcStackName=vpc
+
+  # Cleanup
+  rm cf-template.yaml*
+
+  popd
+}
+
 # --------------------
 # Provision components
 # --------------------
@@ -551,3 +637,4 @@ function provision_notification {
 [ "${PROVISION_NOTIFICATION_STACK}" == "true" ] && provision_notification
 [ "${PROVISION_PIPELINES}" == "true" ] && provision_pipeline
 [ "${PROVISION_VPC}" == "true" ] && provision_vpc
+[ "${PROVISION_PIPELINE_VISUALISER}" == "true" ] && provision_pipeline_visualiser

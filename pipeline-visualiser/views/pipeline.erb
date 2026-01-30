@@ -1,0 +1,140 @@
+<%= erb :'partials/breadcrumbs', :locals => {breadcrumbs: breadcrumbs } %>
+
+<span class="govuk-caption-l">Pipeline</span>
+<h1 class="govuk-heading-l">
+    <%= pipeline.name %>
+    <%= erb :'partials/label', :locals => { status: pipeline.status } %>
+
+  <% if pipeline.paused %>
+    <%= erb :'partials/label', :locals => {status: "Paused"} %>
+  <% end %>
+</h1>
+
+<p class="govuk-body">
+    <strong>Last execution time</strong> <%= erb :'partials/time', :locals => {time: pipeline.last_started_at } %>
+</p>
+<p class="govuk-body">
+  <strong>Execution id</strong> <%= pipeline.execution_id %>
+</p>
+
+<details class="govuk-details">
+  <summary class="govuk-details__summary">
+    <span class="govuk-details__summary-text">Viewing this pipeline in AWS CodePipeline</span>
+  </summary>
+
+  <div class="govuk-details__text">
+    <p class="govuk-body">
+    You can view this pipeline in AWS CodePipeline by logging into the relevant account and visiting
+    </p>
+
+    <p class="govuk-body">
+      <a href="https://eu-west-2.console.aws.amazon.com/codesuite/codepipeline/pipelines/<%= pipeline.name %>/view?region=eu-west-2">https://eu-west-2.console.aws.amazon.com/codesuite/codepipeline/pipelines/<%= pipeline.name %>/view?region=eu-west-2</a>
+    </p>
+
+    <p class="govuk-body">
+      You can also view this pipeline directly in the AWS Console using the link above.
+    </p>
+  </div>
+</details>
+
+<h2 class="govuk-heading-m">Pipeline stages</h2>
+<table class="govuk-table">
+    <caption class="govuk-table__caption govuk-visually-hidden">Stages</caption>
+
+    <thead>
+        <tr class="govuk-tabke__row">
+            <th scope="col" class="govuk-table__header">Stage</th>
+            <th scope="col" class="govuk-table__header">Status</th>
+            <th scope="col" class="govuk-table__header"><!-- Error messages, no visual header --></th>
+        </tr>
+    </thead>
+
+    <tbody class="govuk-table__body">
+        <% pipeline.stages.each do |stage| %>
+            <tr class="govuk-table__row">
+              <th scope="row" class="govuk-table__header"><%= stage.name %></th>
+              <td class="govuk-table__cell govuk-!-width-one-quarter">
+                <% if stage.outdated %>
+                    <%= erb :'partials/label', :locals => {status: "Not Started"} %>
+                <% else %>
+                    <%= erb :'partials/label', :locals => {status: stage.status} %>
+                <% end %>
+
+                <% if stage.paused %>
+                    <%= erb :'partials/label', :locals => {status: "InboundTransitionPaused"} %>
+                <% end %>
+              </td>
+              <td class="govuk-table__cell">
+                <% if stage.error_message %>
+                  <%= stage.error_message %>
+                <% end %>
+              </td>
+            </tr>
+        <% end %>
+    </tbody>
+</table>
+
+<h2 class="govuk-heading-m">About this execution</h2>
+<table class="govuk-table">
+  <caption class="govuk-table__caption">Artifacts</caption>
+
+  <thead>
+  <tr class="govuk-tabke__row">
+    <th scope="col" class="govuk-table__header">Name</th>
+    <th scope="col" class="govuk-table__header">Revision</th>
+    <th scope="col" class="govuk-table__header">Summary</th>
+  </tr>
+  </thead>
+
+
+  <tbody class="govuk-table__body">
+  <% if pipeline.artifacts.length == 0 %>
+    <tr class="govuk-table__row">
+      <th scope="row" class="govuk-table__header" colspan="2">
+        No artifacts
+      </th>
+    </tr>
+  <% else %>
+    <% pipeline.artifacts.each do |artifact| %>
+      <tr class="govuk-table__row">
+        <td class="govuk-table__cell"><%= artifact.name %></td>
+        <td class="govuk-table__cell"><%= artifact.revision_id %></td>
+        <td class="govuk-table__cell">
+          <p style="text-wrap: balance">
+            <%= artifact.revision_summary.strip %>
+          </p>
+        </td>
+      </tr>
+    <% end %>
+  <% end %>
+  </tbody>
+</table>
+
+<table class="govuk-table">
+  <caption class="govuk-table__caption">Variables</caption>
+
+  <thead>
+  <tr class="govuk-tabke__row">
+    <th scope="col" class="govuk-table__header">Name</th>
+    <th scope="col" class="govuk-table__header">Value</th>
+  </tr>
+  </thead>
+
+
+  <tbody class="govuk-table__body">
+  <% if pipeline.variables.length == 0 %>
+    <tr class="govuk-table__row">
+      <th scope="row" class="govuk-table__header" colspan="2">
+        No variables
+      </th>
+    </tr>
+  <% else %>
+    <% pipeline.variables.each do |name, value| %>
+      <tr class="govuk-table__row">
+        <td class="govuk-table__cell"><%= name %></td>
+        <td class="govuk-table__cell"><%= value %></td>
+      </tr>
+    <% end %>
+  <% end %>
+  </tbody>
+</table>

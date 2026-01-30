@@ -1,0 +1,9 @@
+<% text = defined?(text) ? text : nil %>
+<% puts(text) %>
+<time datetime="<%= time.utc.strftime('%Y-%m-%dT%H:%M:%S.%L%z')%>" title="<%= time.utc.strftime('%Y-%m-%dT%H:%M:%S.%L%z')%>" <%= text.nil? ? '' : 'data-relative-time' %>>
+    <% if text.nil? %>
+        <%= time.strftime("%H:%M, %A %d %b %Y ") %>
+    <% else %>
+        <%= text %>
+    <% end %>
+</time>

@@ -1,0 +1,9 @@
+<div class="govuk-breadcrumbs">
+  <ol class="govuk-breadcrumbs__list">
+    <% breadcrumbs.each do |text, url| %>
+      <li class="govuk-breadcrumbs__list-item">
+        <a class="govuk-breadcrumbs__link" href="<%= url %>"><%= text %></a>
+      </li>
+    <% end %>
+  </ol>
+</div>

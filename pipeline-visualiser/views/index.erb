@@ -1,0 +1,92 @@
+<h1 class="govuk-heading-l">DI Auth Pipelines</h1>
+<section>
+  <h2 class="govuk-heading-m">Running pipelines</h2>
+
+  <table class="govuk-table">
+    <caption class="govuk-table__caption govuk-visually-hidden">Running pipelines</caption>
+    <thead class="govuk-table__head">
+      <tr class="govuk-table__row">
+        <th scope="col" class="govuk-table__header">Pipeline</th>
+        <th scope="col" class="govuk-table__header">Stage</th>
+        <th scope="col" class="govuk-table__header">State</th>
+        <th scope="col" class="govuk-table__header">Duration</th>
+      </tr>
+    </thead>
+    <tbody class="govuk-table__body">
+      <% if view.running_pipelines.length == 0 %>
+        <tr class="govuk-table__row">
+          <td class="govuk-table__cell" colspan="4">
+            There are no running pipelines
+          </td>
+        </tr>
+      <% else %>
+        <% view.running_pipelines.each do |pipeline| %>
+          <tr class="govuk-table__row">
+            <td class="govuk-table__cell">
+              <a href="<%= view.pipeline_url(pipeline.name) %>" class="govuk-link"><%= pipeline.name %></a>
+            </td>
+            <td class="govuk-table__cell"><%= pipeline.current_stage_name %></td>
+            <td class="govuk-table__cell">
+              <%= erb :'partials/label', :locals => {status: pipeline.status} %>
+
+              <% if pipeline.paused %>
+                <%= erb :'partials/label', :locals => {status: "Paused"} %>
+              <% end %>
+            </td>
+            <td class="govuk-table__cell">
+              <%= pipeline.running_duration.human_str %>
+            </td>
+          </tr>
+        <% end %>
+      <% end %>
+    </tbody>
+  </table>
+</section>
+
+<h2 class="govuk-heading-m">Failing pipelines</h2>
+<section>
+  <table class="govuk-table">
+    <caption class="govuk-table__caption govuk-visually-hidden">Running pipelines</caption>
+    <thead class="govuk-table__head">
+    <tr class="govuk-table__row">
+      <th scope="col" class="govuk-table__header">Pipeline</th>
+      <th scope="col" class="govuk-table__header">Stage</th>
+      <th scope="col" class="govuk-table__header">Error</th>
+    </tr>
+    </thead>
+    <tbody class="govuk-table__body">
+    <% if view.failing_pipelines.length == 0 %>
+      <tr class="govuk-table__row">
+        <td class="govuk-table__cell" colspan="4">
+          There are no failing pipelines
+        </td>
+      </tr>
+    <% else %>
+      <% view.failing_pipelines.each do |pipeline| %>
+        <tr class="govuk-table__row">
+          <td class="govuk-table__cell">
+            <a href="<%= view.pipeline_url(pipeline.name) %>" class="govuk-link"><%= pipeline.name %></a>
+          </td>
+          <td class="govuk-table__cell"><%= pipeline.first_failing_stage_name %></td>
+          <td class="govuk-table__cell">
+            <span class="error-message-short-<%= pipeline.name.gsub(/[^a-zA-Z0-9]/, '-') %>"><%= pipeline.truncated_error_message %></span>
+            <% if pipeline.has_long_error_message? %>
+              <span class="error-message-full-<%= pipeline.name.gsub(/[^a-zA-Z0-9]/, '-') %>" style="display: none;"><%= pipeline.first_failing_stage_error_message %></span>
+              <br><a href="#" class="govuk-link" onclick="toggleErrorMessage('<%= pipeline.name.gsub(/[^a-zA-Z0-9]/, '-') %>'); return false;">Show more</a>
+            <% end %>
+          </td>
+        </tr>
+      <% end %>
+    <% end %>
+    </tbody>
+  </table>
+</section>
+
+<h2 class="govuk-heading-m">Pipeline groups</h2>
+<ul class="govuk-list govuk-list--bullet govuk-list--spaced">
+  <% view.pipeline_groups.each do |group| %>
+    <li>
+      <a href="/group/<%= slugify(group.name) %>" class="govuk-link"><%= group.name %></a> <%= erb :'partials/label', :locals => {status: group.status } %>
+    </li>
+  <% end %>
+</ul>

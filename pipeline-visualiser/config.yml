@@ -1,0 +1,137 @@
+
+---
+roles:
+  - sso_config:
+      sso_account_id: 653994557586 #di-auth-development
+      sso_role_name: ReadOnlyAccessPermission
+      sso_region: eu-west-2
+      sso_session: di-sso
+  - sso_config:
+      sso_account_id: 975050272416 #di-authentication-development
+      sso_role_name: ReadOnlyAccessPermission
+      sso_region: eu-west-2
+      sso_session: di-sso
+  - sso_config:
+      sso_account_id: 058264536367 #di-authentication-build
+      sso_role_name: ReadOnlyAccessPermission
+      sso_region: eu-west-2
+      sso_session: di-sso
+  - sso_config:
+      sso_account_id: 761723964695 #gds-di-development
+      sso_role_name: DeployStatusAccessPermission
+      sso_region: eu-west-2
+      sso_session: di-sso
+  - sso_config:
+      sso_account_id: 758531536632 #di-auth-staging
+      sso_role_name: ReadOnlyAccessPermission
+      sso_region: eu-west-2
+      sso_session: di-sso
+  - sso_config:
+      sso_account_id: 851725205974 #di-authentication-staging
+      sso_role_name: ReadOnlyAccessPermission
+      sso_region: eu-west-2
+      sso_session: di-sso
+  - sso_config:
+      sso_account_id: 211125600642 #di-authentication-integration
+      sso_role_name: DeployStatusAccessPermission
+      sso_region: eu-west-2
+      sso_session: di-sso
+  - sso_config:
+      sso_account_id: 211125303002 #di-authentication-production
+      sso_role_name: DeployStatusAccessPermission
+      sso_region: eu-west-2
+      sso_session: di-sso
+  - sso_config:
+      sso_account_id: 172348255554 #gds-di-production
+      sso_role_name: DeployStatusAccessPermission
+      sso_region: eu-west-2
+      sso_session: di-sso
+
+ecs_roles:
+  # - role_arn: "arn:aws:iam::058264536367:role/codepipeline-readonly"
+  - role_arn: "arn:aws:iam::975050272416:role/codepipeline-readonly"
+  - role_arn: "arn:aws:iam::653994557586:role/codepipeline-readonly"
+  # - role_arn: "arn:aws:iam::761723964695:role/codepipeline-readonly"
+  # - role_arn: "arn:aws:iam::758531536632:role/codepipeline-readonly"
+  # - role_arn: "arn:aws:iam::851725205974:role/codepipeline-readonly"
+  # - role_arn: "arn:aws:iam::211125600642:role/codepipeline-readonly"
+  # - role_arn: "arn:aws:iam::211125303002:role/codepipeline-readonly"
+  # - role_arn: "arn:aws:iam::172348255554:role/codepipeline-readonly"
+
+
+groups:
+
+  "AuthDev1":
+    - "authdev1-api-pipeline-Pipeline-iWYTJJdutUPS"
+    - "authdev1-frontend-pipeline-Pipeline-IccQA00xaTDe"
+    - "authdev1-ipv-stub-pipeline-Pipeline-1fl9dazOEW8z"
+    - "authdev1-orch-stub-pipeline-Pipeline-efruDJiWL8MU"
+    - "authdev1-utils-pipeline-Pipeline-VVsgPUUPLFix"
+    - "authdev1-amc-stub-pipeline-Pipeline-KMWCG3na65fX"
+    - "authdev1-account-management-pipeline-Pipeline-6sSAibdPpco7"
+    - "authdev1-stubs-api-pipeline-Pipeline-mCTXaHOEVCmx"
+
+  "AuthDev2":
+    - "authdev2-api-pipeline-Pipeline-yfa0OOUbijR6"
+    - "authdev2-frontend-pipeline-Pipeline-XyR1gjYFaMHo"
+    - "authdev2-ipv-stub-pipeline-Pipeline-TBqx6V6RvHRp"
+    - "authdev2-orch-stub-pipeline-Pipeline-jZwCtQF7khOL"
+    - "authdev2-utils-pipeline-Pipeline-xGaHgetcwIU6"
+    - "authdev2-amc-stub-pipeline-Pipeline-VmivlVPaDCjK"
+    - "authdev2-account-management-pipeline-Pipeline-kXlK83uNLuE3"
+    - "authdev2-stubs-api-pipeline-Pipeline-NTWn1YuwaL60"
+
+  "AuthDev3":
+    - "authdev3-api-pipeline-Pipeline-BLTtiqmZF4XP"
+    - "authdev3-frontend-pipeline-Pipeline-E3y8d3RUO6tg"
+    - "authdev3-ipv-stub-pipeline-Pipeline-992nNIfUJV2H"
+    - "authdev3-utils-pipeline-Pipeline-FwiXzvZIVis6"
+    - "authdev3-amc-stub-pipeline-Pipeline-tnbmGjulnM6w"
+    - "authdev3-account-management-pipeline-Pipeline-EBcYidlprjIA"
+    - "authdev3-stubs-api-pipeline-Pipeline-qrGrLdOWusGu"
+
+  "Development":
+    - "dev-auth-deploy-pipeline-Pipeline-1E412BA4D27N6"
+    - "authentication-api-pipeline-Pipeline-ixWCpfvSgkoH"
+    - "frontend-pipeline-Pipeline-V8ycwrVxDvQ3"
+    - "dev-ipv-stub-pipeline-Pipeline-WijzZZv94YOy"
+    - "dev-orch-stub-pipeline-Pipeline-1wh0OC935buX"
+    - "dev-utils-pipeline-Pipeline-vYNwNcPwvBWj"
+    - "pipeline-visualiser-pipeline-Pipeline-SwFlDSqO25P2"
+    - "dev-amc-stub-pipeline-Pipeline-cQLCuTTlcI3v"
+    - "dev-account-management-pipeline-Pipeline-gVNBQHLGiM4b"
+    - "dev-stubs-api-pipeline-Pipeline-b70Oq4IK7nuX"
+    - "dev-smoke-test-pipeline-Pipeline-UkGL5OAHqjii"
+
+  "Build":
+    - "build-auth-deploy-pipeline-Pipeline-10J9HBNB0B4ID"
+    - "build-amc-stub-pipeline-Pipeline-H99su4K2Rw2V"
+    - "account-management-api-pipeline-Pipeline-DEWqI1AQlzzf"
+    - "build-stubs-api-pipeline-Pipeline-ATsHc8lKwQgB"
+    - "smoke-test-pipeline-Pipeline-oTfHySp2dSoj"
+    - "authentication-api-pipeline-Pipeline-J0TH4tdjtXf8"
+    - "build-orch-stub-pipeline-Pipeline-eWEdZuWPJ0em"
+    - "build-ipv-stub-pipeline-Pipeline-ByVbLEP0fAhF"
+    - "frontend-pipeline-Pipeline-SL4I8EJA5OX8"
+
+  "Staging":
+    - "staging-auth-deploy-pipeline-Pipeline-1NUV2VTLJV45Q"
+    - "frontend-pipeline-Pipeline-IuhxX517jeVi"
+    - "account-management-api-pipeline-Pipeline-viSsrMLO9RHk"
+    - "authentication-api-pipeline-Pipeline-xLhs2z6zSo0L"
+    - "smoke-test-pipeline-Pipeline-pQHrrdpmdyKV"
+    - "staging-orch-stub-pipeline-Pipeline-1ihd92qnIvyQ"
+
+  "Integration":
+    - "integration-auth-deploy-pipeline-Pipeline-1UWXGCHOA9J56"
+    - "account-management-api-pipeline-Pipeline-mz8xAYqCVtAu"
+    - "authentication-api-pipeline-Pipeline-wooHFmPETNaC"
+    - "frontend-pipeline-Pipeline-RY2DjNds4FDr"
+    - "smoke-test-pipeline-Pipeline-cW8HSFyOk4os"
+
+  "production":
+    - "production-auth-deploy-pipeline-Pipeline-1T9RTE3C9TF3B"
+    - "account-management-api-pipeline-Pipeline-WiFjFTElG09q"
+    - "authentication-api-pipeline-Pipeline-SiKUP0wEqZcl"
+    - "frontend-pipeline-Pipeline-joHvvuff3HGS"
+    - "smoke-test-pipeline-Pipeline-0u8AKyrgCc8S"
