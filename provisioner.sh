@@ -45,33 +45,137 @@ function stack_exists {
   fi
 }
 
+# Cache directory for template version lookups
+CACHE_DIR="${HOME}/.cache/provisioner"
+CACHE_FILE="${CACHE_DIR}/template-versions.cache"
+
+# Initialize cache
+function init_cache {
+  mkdir -p "${CACHE_DIR}"
+  touch "${CACHE_FILE}"
+}
+
+# Get cached version ID
+function get_cached_versionid {
+  local cache_key="$1"
+
+  if [ ! -f "${CACHE_FILE}" ]; then
+    return 1
+  fi
+
+  # Look up in cache file (format: key=value)
+  local cached_value
+  cached_value=$(grep "^${cache_key}=" "${CACHE_FILE}" 2> /dev/null | cut -d'=' -f2)
+
+  if [ -n "$cached_value" ]; then
+    echo "$cached_value"
+    return 0
+  fi
+
+  return 1
+}
+
+# Store version ID in cache
+function cache_versionid {
+  local cache_key="$1"
+  local version_id="$2"
+
+  init_cache
+
+  # Remove old entry if exists, then add new one
+  grep -v "^${cache_key}=" "${CACHE_FILE}" > "${CACHE_FILE}.tmp" 2> /dev/null || true
+  echo "${cache_key}=${version_id}" >> "${CACHE_FILE}.tmp"
+  mv "${CACHE_FILE}.tmp" "${CACHE_FILE}"
+}
+
 # Gets the VersionId from the requested template version
 function get_versionid {
   local stack_template="$1"
   local template_version="$2"
 
   local template_key="${stack_template}/template.yaml"
+  local cache_key="${TEMPLATE_BUCKET}:${template_key}:${template_version}"
 
-  for version_id in $(aws s3api list-object-versions --bucket "${TEMPLATE_BUCKET}" --prefix "${template_key}" \
-    | jq -r '.Versions[].VersionId'); do
+  # Check cache first
+  if [ "${SKIP_CACHE:-false}" != "true" ]; then
+    local cached_version=""
+    if cached_version=$(get_cached_versionid "$cache_key"); then
+      echo "Using cached VersionId for ${template_version}: ${cached_version}" >&2
+      echo "${cached_version}"
+      return 0
+    fi
+  fi
 
-    echo "looking for ${template_version} in VersionId ${version_id}" >&2
-    FOUND_VERSION="$(aws s3api head-object --bucket "${TEMPLATE_BUCKET}" --key "${template_key}" \
-      --version-id "${version_id}" --query 'Metadata.version' --output text)"
+  echo "Searching for template version ${template_version} in ${template_key}..." >&2
 
-    if [[ $template_version == "${FOUND_VERSION}" ]]; then
-      echo "Template match found" >&2
-      break
+  # Get all version IDs - use json output for reliability
+  local version_ids_json=""
+  version_ids_json=$(aws s3api list-object-versions \
+    --bucket "${TEMPLATE_BUCKET}" \
+    --prefix "${template_key}" \
+    --query 'Versions[].VersionId' \
+    --output json)
+
+  # Parse JSON array into bash array
+  local version_ids=()
+  while IFS= read -r version_id; do
+    version_ids+=("$version_id")
+  done < <(echo "$version_ids_json" | jq -r '.[]')
+
+  local total_versions=${#version_ids[@]}
+
+  echo "Checking ${total_versions} versions..." >&2
+
+  # Sequential search with early exit
+  local result=""
+  local count=0
+  local cached_count=0
+
+  for version_id in "${version_ids[@]}"; do
+    count=$((count + 1))
+
+    # Show progress every 100 versions
+    if [ $((count % 100)) -eq 0 ]; then
+      echo "Checked ${count}/${total_versions} versions (cached ${cached_count} mappings)..." >&2
     fi
 
-    echo "No match, keep trying..." >&2
+    local found_version=""
+    found_version=$(aws s3api head-object \
+      --bucket "${TEMPLATE_BUCKET}" \
+      --key "${template_key}" \
+      --version-id "$version_id" \
+      --query 'Metadata.version' \
+      --output text 2> /dev/null || echo "")
+
+    # Cache every version mapping we discover (not just the target)
+    if [ -n "$found_version" ] && [ "$found_version" != "None" ]; then
+      local discovered_cache_key="${TEMPLATE_BUCKET}:${template_key}:${found_version}"
+      cache_versionid "$discovered_cache_key" "$version_id"
+      cached_count=$((cached_count + 1))
+    fi
+
+    # Debug: Show first few checks
+    if [ $count -le 3 ]; then
+      echo "  Version $count: VersionId=$version_id, Metadata.version='$found_version' (cached)" >&2
+    fi
+
+    if [ "$found_version" = "${template_version}" ]; then
+      result="$version_id"
+      echo "Match found at check ${count}/${total_versions}! (Cached ${cached_count} version mappings)" >&2
+      break
+    fi
   done
 
-  if [[ $template_version != "${FOUND_VERSION}" ]]; then
+  if [ -z "$result" ]; then
+    echo "No matching version found for ${template_version}" >&2
+    echo "However, cached ${cached_count} version mappings for future lookups" >&2
     return 1
   fi
 
-  echo "${version_id}"
+  echo "Found version ${template_version} with VersionId: ${result}" >&2
+
+  echo "${result}"
+  return 0
 }
 
 # Creates the CloudFormation stack if it doesnt already exist
