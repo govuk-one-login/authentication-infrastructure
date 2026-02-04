@@ -10,6 +10,7 @@ endef
 .PHONY: run
 run:
 	$(call sso_login); \
+	RACK_ENV=local \
 	PIPELINE_VISUALISER_SSO_MODE=true \
 	ruby index.rb
 
@@ -22,6 +23,7 @@ run_in_docker:
 	rm -rf ./docker_aws_config; \
 	docker run \
 		-p "4567:4567" \
+		-e RACK_ENV=local \
 		-e PIPELINE_VISUALISER_SSO_MODE=true \
 		-v "$$(pwd):/app" \
 		auth-pipeline-visualiser:latest
