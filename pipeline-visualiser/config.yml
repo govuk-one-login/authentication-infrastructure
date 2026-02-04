@@ -103,35 +103,35 @@ groups:
     - "dev-stubs-api-pipeline-Pipeline-b70Oq4IK7nuX"
     - "dev-smoke-test-pipeline-Pipeline-UkGL5OAHqjii"
 
-  "Build":
-    - "build-auth-deploy-pipeline-Pipeline-10J9HBNB0B4ID"
-    - "build-amc-stub-pipeline-Pipeline-H99su4K2Rw2V"
-    - "account-management-api-pipeline-Pipeline-DEWqI1AQlzzf"
-    - "build-stubs-api-pipeline-Pipeline-ATsHc8lKwQgB"
-    - "smoke-test-pipeline-Pipeline-oTfHySp2dSoj"
-    - "authentication-api-pipeline-Pipeline-J0TH4tdjtXf8"
-    - "build-orch-stub-pipeline-Pipeline-eWEdZuWPJ0em"
-    - "build-ipv-stub-pipeline-Pipeline-ByVbLEP0fAhF"
-    - "frontend-pipeline-Pipeline-SL4I8EJA5OX8"
+  # "Build":
+  #   - "build-auth-deploy-pipeline-Pipeline-10J9HBNB0B4ID"
+  #   - "build-amc-stub-pipeline-Pipeline-H99su4K2Rw2V"
+  #   - "account-management-api-pipeline-Pipeline-DEWqI1AQlzzf"
+  #   - "build-stubs-api-pipeline-Pipeline-ATsHc8lKwQgB"
+  #   - "smoke-test-pipeline-Pipeline-oTfHySp2dSoj"
+  #   - "authentication-api-pipeline-Pipeline-J0TH4tdjtXf8"
+  #   - "build-orch-stub-pipeline-Pipeline-eWEdZuWPJ0em"
+  #   - "build-ipv-stub-pipeline-Pipeline-ByVbLEP0fAhF"
+  #   - "frontend-pipeline-Pipeline-SL4I8EJA5OX8"
 
-  "Staging":
-    - "staging-auth-deploy-pipeline-Pipeline-1NUV2VTLJV45Q"
-    - "frontend-pipeline-Pipeline-IuhxX517jeVi"
-    - "account-management-api-pipeline-Pipeline-viSsrMLO9RHk"
-    - "authentication-api-pipeline-Pipeline-xLhs2z6zSo0L"
-    - "smoke-test-pipeline-Pipeline-pQHrrdpmdyKV"
-    - "staging-orch-stub-pipeline-Pipeline-1ihd92qnIvyQ"
+  # "Staging":
+  #   - "staging-auth-deploy-pipeline-Pipeline-1NUV2VTLJV45Q"
+  #   - "frontend-pipeline-Pipeline-IuhxX517jeVi"
+  #   - "account-management-api-pipeline-Pipeline-viSsrMLO9RHk"
+  #   - "authentication-api-pipeline-Pipeline-xLhs2z6zSo0L"
+  #   - "smoke-test-pipeline-Pipeline-pQHrrdpmdyKV"
+  #   - "staging-orch-stub-pipeline-Pipeline-1ihd92qnIvyQ"
 
-  "Integration":
-    - "integration-auth-deploy-pipeline-Pipeline-1UWXGCHOA9J56"
-    - "account-management-api-pipeline-Pipeline-mz8xAYqCVtAu"
-    - "authentication-api-pipeline-Pipeline-wooHFmPETNaC"
-    - "frontend-pipeline-Pipeline-RY2DjNds4FDr"
-    - "smoke-test-pipeline-Pipeline-cW8HSFyOk4os"
+  # "Integration":
+  #   - "integration-auth-deploy-pipeline-Pipeline-1UWXGCHOA9J56"
+  #   - "account-management-api-pipeline-Pipeline-mz8xAYqCVtAu"
+  #   - "authentication-api-pipeline-Pipeline-wooHFmPETNaC"
+  #   - "frontend-pipeline-Pipeline-RY2DjNds4FDr"
+  #   - "smoke-test-pipeline-Pipeline-cW8HSFyOk4os"
 
-  "production":
-    - "production-auth-deploy-pipeline-Pipeline-1T9RTE3C9TF3B"
-    - "account-management-api-pipeline-Pipeline-WiFjFTElG09q"
-    - "authentication-api-pipeline-Pipeline-SiKUP0wEqZcl"
-    - "frontend-pipeline-Pipeline-joHvvuff3HGS"
-    - "smoke-test-pipeline-Pipeline-0u8AKyrgCc8S"
+  # "production":
+  #   - "production-auth-deploy-pipeline-Pipeline-1T9RTE3C9TF3B"
+  #   - "account-management-api-pipeline-Pipeline-WiFjFTElG09q"
+  #   - "authentication-api-pipeline-Pipeline-SiKUP0wEqZcl"
+  #   - "frontend-pipeline-Pipeline-joHvvuff3HGS"
+  #   - "smoke-test-pipeline-Pipeline-0u8AKyrgCc8S"

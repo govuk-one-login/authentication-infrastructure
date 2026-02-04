@@ -5,6 +5,7 @@ require 'sinatra'
 require 'yaml'
 
 require_relative './background_pipeline_status_updates'
+require_relative 'lib/ip_authorizer'
 
 require_relative 'lib/aws-sdk-factory/live'
 require_relative 'lib/aws-sdk-factory/sso'
@@ -14,6 +15,11 @@ require_relative 'lib/views/group'
 
 set :public_folder, 'public'
 set :bind, '0.0.0.0'
+
+before do
+  client_ip = request.env['HTTP_X_FORWARDED_FOR']&.split(',')&.first&.strip || request.ip
+  halt 403, 'Access denied. Please connect to VPN to access this service.' unless IPAuthorizer.authorized?(client_ip)
+end
 
 helpers do
   def slugify(str)

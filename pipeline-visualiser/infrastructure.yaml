@@ -1,11 +1,11 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'Authentication Pipeline Visualiser Infrastructure'
+Description: 'Authentication Pipeline Visualiser Infrastructure and role'
 
 Parameters:
   Environment:
     Type: String
-    Default: dev
-    AllowedValues: [dev]
+    Default: build
+    AllowedValues: [build, dev, staging, integration, production]
 
   VpcStackName:
     Type: String
@@ -17,10 +17,17 @@ Parameters:
     Description: Account ID where the pipeline visualiser ECS task runs
     Default: 058264536367
 
+Conditions:
+  IsBuildEnv:
+    Fn::Equals:
+      - !Ref Environment
+      - build
+
 Resources:
   # Security Groups
   PipelineVisualiserSecurityGroup:
     Type: AWS::EC2::SecurityGroup
+    Condition: IsBuildEnv
     Properties:
       GroupDescription: Security group for pipeline visualiser
       VpcId:
@@ -50,6 +57,7 @@ Resources:
 
   ALBSecurityGroup:
     Type: AWS::EC2::SecurityGroup
+    Condition: IsBuildEnv
     Properties:
       GroupDescription: Security group for ALB
       VpcId:
@@ -70,12 +78,14 @@ Resources:
   # ECS Cluster
   ECSCluster:
     Type: AWS::ECS::Cluster
+    Condition: IsBuildEnv
     Properties:
       ClusterName: !Sub "${Environment}-pipeline-visualiser-cluster"
 
   # CloudWatch Log Group
   LogGroup:
     Type: AWS::Logs::LogGroup
+    Condition: IsBuildEnv
     Properties:
       LogGroupName: !Sub "/ecs/${Environment}-pipeline-visualiser"
       RetentionInDays: 1
@@ -83,6 +93,7 @@ Resources:
   # IAM Roles
   ECSTaskExecutionRole:
     Type: AWS::IAM::Role
+    Condition: IsBuildEnv
     Properties:
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
@@ -96,6 +107,7 @@ Resources:
 
   PipelineVisualiserTaskRole:
     Type: AWS::IAM::Role
+    Condition: IsBuildEnv
     Properties:
       RoleName: !Sub "${Environment}-pipeline-visualiser-task-role"
       AssumeRolePolicyDocument:
@@ -125,17 +137,16 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              AWS:
-                # - !Sub "arn:aws:iam::${DeployAccountId}:role/deploy-pipeline-visualiser-ecs-task"
-                - !GetAtt PipelineVisualiserTaskRole.Arn
+              AWS: !Sub arn:aws:iam::058264536367:role/build-pipeline-visualiser-task-role #ecs task Role from di-authentication-build
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AWSCodePipeline_ReadOnlyAccess
 
-  # VPC Endpoints for AWS Services Thsi is required for ECS to List the codepipline
+  # VPC Endpoints for AWS Services This is required for ECS to List the codepipline
   # If deploying in firewall subnet this Endpoint is not needed
   CodePipelineVPCEndpoint:
     Type: AWS::EC2::VPCEndpoint
+    Condition: IsBuildEnv
     Properties:
       VpcId:
         Fn::ImportValue: !Sub ${VpcStackName}-VpcId
@@ -152,6 +163,7 @@ Resources:
   # ECS Task Definition
   TaskDefinition:
     Type: AWS::ECS::TaskDefinition
+    Condition: IsBuildEnv
     Properties:
       Family: !Sub "${Environment}-pipeline-visualiser"
       NetworkMode: awsvpc
@@ -186,6 +198,7 @@ Resources:
   # ECS Service
   ECSService:
     Type: AWS::ECS::Service
+    Condition: IsBuildEnv
     DependsOn:
       - ALBListener
       - ALBListenerHTTPS
@@ -198,6 +211,9 @@ Resources:
       DeploymentConfiguration:
         MaximumPercent: 200
         MinimumHealthyPercent: 100
+        DeploymentCircuitBreaker:
+          Enable: true
+          Rollback: true
       NetworkConfiguration:
         AwsvpcConfiguration:
           SecurityGroups:
@@ -215,6 +231,7 @@ Resources:
   # ACM Certificate
   SSLCertificate:
     Type: AWS::CertificateManager::Certificate
+    Condition: IsBuildEnv
     Properties:
       DomainName: !Sub "Authpipeline.signin.${Environment}.account.gov.uk"
       ValidationMethod: DNS
@@ -227,6 +244,7 @@ Resources:
   # Application Load Balancer
   ApplicationLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Condition: IsBuildEnv
     Properties:
       Name: !Sub "${Environment}-pipeline-visualiser-alb"
       Scheme: internet-facing
@@ -240,6 +258,7 @@ Resources:
 
   TargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Condition: IsBuildEnv
     Properties:
       Name: !Sub "${Environment}-pipeline-visualiser-tg"
       Port: 4567
@@ -258,6 +277,7 @@ Resources:
 
   ALBListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
+    Condition: IsBuildEnv
     Properties:
       DefaultActions:
         - Type: redirect
@@ -271,6 +291,7 @@ Resources:
 
   ALBListenerHTTPS:
     Type: AWS::ElasticLoadBalancingV2::Listener
+    Condition: IsBuildEnv
     Properties:
       DefaultActions:
         - Type: forward
@@ -284,6 +305,7 @@ Resources:
 
   ALBDnsRecordA:
     Type: AWS::Route53::RecordSet
+    Condition: IsBuildEnv
     Properties:
       Name: !Sub "Authpipeline.signin.${Environment}.account.gov.uk"
       Type: A
@@ -299,18 +321,21 @@ Resources:
 
 Outputs:
   LoadBalancerDNS:
+    Condition: IsBuildEnv
     Description: DNS name of the load balancer
     Value: !GetAtt ApplicationLoadBalancer.DNSName
     Export:
       Name: !Sub "${Environment}-pipeline-visualiser-alb-dns"
 
   ECSClusterName:
+    Condition: IsBuildEnv
     Description: ECS Cluster Name
     Value: !Ref ECSCluster
     Export:
       Name: !Sub "${Environment}-pipeline-visualiser-cluster-name"
 
   ECSServiceName:
+    Condition: IsBuildEnv
     Description: ECS Service Name
     Value: !Ref ECSService
     Export:
