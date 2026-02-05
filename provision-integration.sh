@@ -107,6 +107,11 @@ source "./scripts/read_cloudformation_stack_outputs.sh" "smoke-test-pipeline"
 SmoketestArtifactSourceBucketArn=${CFN_smoke_test_pipeline_ArtifactPromotionBucketArn:-"none"}
 SmoketestArtifactSourceBucketEventTriggerRoleArn=${CFN_smoke_test_pipeline_ArtifactPromotionBucketEventTriggerRoleArn:-"none"}
 
+# shellcheck disable=SC1091
+source "./scripts/read_cloudformation_stack_outputs.sh" "account-data-api-pipeline"
+AccountDataApiArtifactSourceBucketArn=${CFN_account_data_api_pipeline_ArtifactPromotionBucketArn:-"none"}
+AccountDataApiArtifactSourceBucketEventTriggerRoleArn=${CFN_account_data_api_pipeline_ArtifactPromotionBucketEventTriggerRoleArn:-"none"}
+
 # ----------------------------------
 # Integration account initialisation
 # ----------------------------------
@@ -224,6 +229,22 @@ function provision_pipeline {
   echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
   export AWS_REGION="eu-west-2"
   PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" smoke-test-pipeline sam-deploy-pipeline v2.87.0
+
+  # Account data api pipeline
+  PARAMETERS_FILE="configuration/$AWS_ACCOUNT/account-data-api-pipeline/parameters.json"
+  PARAMETERS=$(jq ". += [
+                            {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
+                            {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
+                            {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"},
+                            {\"ParameterKey\":\"ArtifactSourceBucketArn\",\"ParameterValue\":\"${AccountDataApiArtifactSourceBucketArn}\"},
+                            {\"ParameterKey\":\"ArtifactSourceBucketEventTriggerRoleArn\",\"ParameterValue\":\"${AccountDataApiArtifactSourceBucketEventTriggerRoleArn}\"}
+                        ] | tojson" -r "${PARAMETERS_FILE}")
+
+  TMP_PARAM_FILE=$(mktemp)
+  echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+  export AWS_REGION="eu-west-2"
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" account-data-api-pipeline sam-deploy-pipeline v2.76.0
+
 }
 
 # ------------------

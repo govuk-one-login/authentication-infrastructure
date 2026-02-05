@@ -490,6 +490,53 @@ function provision_pipeline {
   echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
   PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev3-account-management-pipeline sam-deploy-pipeline v2.87.0
 
+  # Dev  Account data Api  pipeline
+  PARAMETERS_FILE="configuration/$AWS_ACCOUNT/dev-account-data-api-pipeline/parameters.json"
+  PARAMETERS=$(jq ". += [
+                            {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
+                            {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
+                            {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"}
+                        ] | tojson" -r "${PARAMETERS_FILE}")
+
+  TMP_PARAM_FILE=$(mktemp)
+  echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" dev-account-data-api-pipeline sam-deploy-pipeline v2.87.0
+
+  # Authdev1  Account data Api  pipeline
+  PARAMETERS_FILE="configuration/$AWS_ACCOUNT/authdev1-account-data-api-pipeline/parameters.json"
+  PARAMETERS=$(jq ". += [
+                            {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
+                            {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
+                            {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"}
+                        ] | tojson" -r "${PARAMETERS_FILE}")
+
+  TMP_PARAM_FILE=$(mktemp)
+  echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev1-account-data-api-pipeline sam-deploy-pipeline v2.87.0
+
+  # Authdev2  Account data Api  pipeline
+  PARAMETERS_FILE="configuration/$AWS_ACCOUNT/authdev2-account-data-api-pipeline/parameters.json"
+  PARAMETERS=$(jq ". += [
+                            {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
+                            {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
+                            {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"}
+                        ] | tojson" -r "${PARAMETERS_FILE}")
+
+  TMP_PARAM_FILE=$(mktemp)
+  echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev2-account-data-api-pipeline sam-deploy-pipeline v2.87.0
+
+  # Authdev3  Account data Api  pipeline
+  PARAMETERS_FILE="configuration/$AWS_ACCOUNT/authdev3-account-data-api-pipeline/parameters.json"
+  PARAMETERS=$(jq ". += [
+                            {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
+                            {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
+                            {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"}
+                        ] | tojson" -r "${PARAMETERS_FILE}")
+
+  TMP_PARAM_FILE=$(mktemp)
+  echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev3-account-data-api-pipeline sam-deploy-pipeline v2.87.0
 }
 
 # ------------------
