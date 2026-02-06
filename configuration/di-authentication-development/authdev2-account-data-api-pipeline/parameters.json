@@ -61,7 +61,7 @@
   },
   {
     "ParameterKey": "AccessDynamoDBAccounts",
-    "ParameterValue": "653994557586,816047645251"
+    "ParameterValue": "653994557586"
   },
   {
     "ParameterKey": "TestReportFormat",
