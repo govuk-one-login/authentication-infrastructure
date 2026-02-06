@@ -1,0 +1,74 @@
+[
+  {
+    "ParameterKey": "SAMStackName",
+    "ParameterValue": "authdev1-act-data-api"
+  },
+  {
+    "ParameterKey": "Environment",
+    "ParameterValue": "dev"
+  },
+   {
+    "ParameterKey": "SubEnvironment",
+    "ParameterValue": "authdev1"
+  },
+  {
+    "ParameterKey": "ProgrammaticPermissionsBoundary",
+    "ParameterValue": "True"
+  },
+  {
+    "ParameterKey": "AllowedServiceOne",
+    "ParameterValue": "Lambda"
+  },
+  {
+    "ParameterKey": "AllowedServiceTwo",
+    "ParameterValue": "EC2"
+  },
+  {
+    "ParameterKey": "AllowedServiceThree",
+    "ParameterValue": "DynamoDB"
+  },
+  {
+    "ParameterKey": "AllowedServiceFour",
+    "ParameterValue": "SQS"
+  },
+  {
+    "ParameterKey": "AllowedServiceFive",
+    "ParameterValue": "SSM"
+  },
+  {
+    "ParameterKey": "VpcStackName",
+    "ParameterValue": "vpc"
+  },
+  {
+    "ParameterKey": "OneLoginRepositoryName",
+    "ParameterValue": "authentication-api"
+  },
+  {
+    "ParameterKey": "OneLoginTestImageRepositoryNames",
+    "ParameterValue": "authentication-acceptance-tests"
+  },
+  {
+    "ParameterKey": "AdditionalCodeSigningVersionArns",
+    "ParameterValue": "arn:aws:signer:eu-west-2:216552277552:/signing-profiles/DynatraceSigner/5uwzCCGTPq,arn:aws:signer:eu-west-2:354770603991:/signing-profiles/SigningProfile_SxeU7YX0F6Pb/HyVGO9gC7b"
+  },
+  {
+    "ParameterKey": "IncludePromotion",
+    "ParameterValue": "No"
+  },
+  {
+    "ParameterKey": "LambdaCanaryDeployment",
+    "ParameterValue": "LambdaCanary10Percent2Minutes"
+  },
+  {
+    "ParameterKey": "AccessDynamoDBAccounts",
+    "ParameterValue": "653994557586"
+  },
+  {
+    "ParameterKey": "TestReportFormat",
+    "ParameterValue": "CUCUMBERJSON"
+  },
+  {
+    "ParameterKey": "StoreTestReportInS3Bucket",
+    "ParameterValue": "Yes"
+  }
+]
