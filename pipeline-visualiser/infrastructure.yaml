@@ -4,8 +4,8 @@ Description: 'Authentication Pipeline Visualiser Infrastructure'
 Parameters:
   Environment:
     Type: String
-    Default: dev
-    AllowedValues: [dev]
+    Default: build
+    AllowedValues: [build]
 
   VpcStackName:
     Type: String
@@ -115,22 +115,22 @@ Resources:
                 Action: sts:AssumeRole
                 Resource: "arn:aws:iam::*:role/codepipeline-readonly"
 
-  # Cross-account CodePipeline readonly role
-  CodePipelineReadOnlyRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: codepipeline-readonly
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              AWS:
-                # - !Sub "arn:aws:iam::${DeployAccountId}:role/deploy-pipeline-visualiser-ecs-task"
-                - !GetAtt PipelineVisualiserTaskRole.Arn
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AWSCodePipeline_ReadOnlyAccess
+  # # Cross-account CodePipeline readonly role
+  # CodePipelineReadOnlyRole:
+  #   Type: AWS::IAM::Role
+  #   Properties:
+  #     RoleName: codepipeline-readonly
+  #     AssumeRolePolicyDocument:
+  #       Version: '2012-10-17'
+  #       Statement:
+  #         - Effect: Allow
+  #           Principal:
+  #             AWS:
+  #               # - !Sub "arn:aws:iam::${DeployAccountId}:role/deploy-pipeline-visualiser-ecs-task"
+  #               - !GetAtt PipelineVisualiserTaskRole.Arn
+  #           Action: sts:AssumeRole
+  #     ManagedPolicyArns:
+  #       - arn:aws:iam::aws:policy/AWSCodePipeline_ReadOnlyAccess
 
   # VPC Endpoints for AWS Services Thsi is required for ECS to List the codepipline
   # If deploying in firewall subnet this Endpoint is not needed
