@@ -36,40 +36,44 @@
     "ParameterValue": "vpc"
   },
   {
-    "ParameterKey": "OneLoginRepositoryName",
-    "ParameterValue": "authentication-api"
-  },
-  {
-    "ParameterKey": "OneLoginTestImageRepositoryNames",
-    "ParameterValue": "authentication-acceptance-tests"
-  },
-  {
     "ParameterKey": "AdditionalCodeSigningVersionArns",
     "ParameterValue": "arn:aws:signer:eu-west-2:216552277552:/signing-profiles/DynatraceSigner/5uwzCCGTPq,arn:aws:signer:eu-west-2:354770603991:/signing-profiles/SigningProfile_SxeU7YX0F6Pb/HyVGO9gC7b"
   },
   {
     "ParameterKey": "IncludePromotion",
-    "ParameterValue": "No"
+    "ParameterValue": "Yes"
+  },
+  {
+    "ParameterKey": "AllowedAccounts",
+    "ParameterValue": "211125303002,211125600642"
   },
   {
     "ParameterKey": "LambdaCanaryDeployment",
     "ParameterValue": "LambdaCanary10Percent2Minutes"
   },
   {
+    "ParameterKey": "SlackNotificationType",
+    "ParameterValue": "Failures"
+  },
+  {
+    "ParameterKey": "BuildNotificationStackName",
+    "ParameterValue": "build-notifications"
+  },
+  {
+    "ParameterKey": "AccessCrossAccountSQS",
+    "ParameterValue": "758531536632"
+  },
+  {
+    "ParameterKey": "AccessDynamoDBAccounts",
+    "ParameterValue": "758531536632,590183975515"
+  },
+  {
     "ParameterKey": "RunTestContainerInVPC",
     "ParameterValue": "True"
   },
   {
-    "ParameterKey": "TestImageRepositoryUri",
-    "ParameterValue": "975050272416.dkr.ecr.eu-west-2.amazonaws.com/acceptance-tests-image-repository-testrunnerimagerepository-8r6rruhoannw"
-  },
-  {
-    "ParameterKey": "AccessCrossAccountSQS",
-    "ParameterValue": "653994557586"
-  },
-  {
-    "ParameterKey": "AccessDynamoDBAccounts",
-    "ParameterValue": "653994557586,816047645251"
+    "ParameterKey": "TestContainerAllowCrossAccountAssumeRole",
+    "ParameterValue": "Yes"
   },
   {
     "ParameterKey": "TestReportFormat",

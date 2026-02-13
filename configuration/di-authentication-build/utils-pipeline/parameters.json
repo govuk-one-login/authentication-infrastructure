@@ -49,27 +49,39 @@
   },
   {
     "ParameterKey": "IncludePromotion",
-    "ParameterValue": "No"
+    "ParameterValue": "Yes"
   },
   {
-    "ParameterKey": "LambdaCanaryDeployment",
-    "ParameterValue": "LambdaCanary10Percent2Minutes"
+    "ParameterKey": "AllowedAccounts",
+    "ParameterValue": "851725205974"
+  },
+  {
+    "ParameterKey": "SlackNotificationType",
+    "ParameterValue": "Failures"
+  },
+  {
+    "ParameterKey": "BuildNotificationStackName",
+    "ParameterValue": "build-notifications"
   },
   {
     "ParameterKey": "RunTestContainerInVPC",
     "ParameterValue": "True"
   },
   {
-    "ParameterKey": "TestImageRepositoryUri",
-    "ParameterValue": "975050272416.dkr.ecr.eu-west-2.amazonaws.com/acceptance-tests-image-repository-testrunnerimagerepository-8r6rruhoannw"
+    "ParameterKey": "LambdaCanaryDeployment",
+    "ParameterValue": "LambdaCanary10Percent2Minutes"
   },
   {
     "ParameterKey": "AccessCrossAccountSQS",
-    "ParameterValue": "653994557586"
+    "ParameterValue": "761723964695"
   },
   {
     "ParameterKey": "AccessDynamoDBAccounts",
-    "ParameterValue": "653994557586,816047645251"
+    "ParameterValue": "761723964695,767397776536"
+  },
+  {
+    "ParameterKey": "TestContainerAllowCrossAccountAssumeRole",
+    "ParameterValue": "Yes"
   },
   {
     "ParameterKey": "TestReportFormat",
