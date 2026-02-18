@@ -13,7 +13,7 @@
     },
     {
         "ParameterKey": "IncludeDeployExternalAPI",
-        "ParameterValue": "Yes"
+        "ParameterValue": "No"
     },
     {
         "ParameterKey": "ArtifactWriteTimeLoggingLambdaArn",
