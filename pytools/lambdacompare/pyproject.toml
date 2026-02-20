@@ -1,0 +1,16 @@
+[project]
+name = "lambdacompare"
+version = "0.1.0"
+description = "Compare Lambda functions between AWS accounts to verify migration"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "boto3>=1.34.0",
+]
+
+[project.scripts]
+compare-lambda-migration = "lambdacompare.compare_lambda_migration:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
