@@ -32,6 +32,10 @@
     "ParameterValue": "SSM"
   },
   {
+    "ParameterKey": "AllowedServiceSix",
+    "ParameterValue": "SNS"
+  },
+  {
     "ParameterKey": "VpcStackName",
     "ParameterValue": "vpc"
   },
