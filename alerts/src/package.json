@@ -9,5 +9,8 @@
   },
   "scripts": {
     "build": "mkdir -p ../dist && zip -r ../dist/alerts.zip ."
+  },
+  "resolutions": {
+    "fast-xml-parser": ">=5.5.6"
   }
 }
