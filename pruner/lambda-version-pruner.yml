@@ -30,11 +30,6 @@ Parameters:
       - "No"
     Default: "Yes"
 
-  BuildNotificationStackName:
-    Type: String
-    Description: Name of the build notification stack
-    Default: "build-notifications"
-
 Conditions:
   IsLowerEnvOnly:
     Fn::Or:
@@ -64,7 +59,7 @@ Conditions:
 Mappings:
   EnvironmentConfiguration:
     dev:
-      IsSlackNotifyEnabled: "No"
+      IsSlackNotifyEnabled: "Yes"
     build:
       IsSlackNotifyEnabled: "Yes"
     staging:
@@ -92,6 +87,17 @@ Resources:
           Value: "Authentication"
         - Key: Source
           Value: "govuk-one-login/authentication-infrastructure/pruner/lambda-version-pruner.yaml"
+
+
+  SlackLambdaPrunerPermission:
+    Type: AWS::Lambda::Permission
+    Condition: IsLowerEnvOnly
+    Properties:
+      FunctionName: !Sub arn:aws:lambda:eu-west-2:${AWS::AccountId}:function:${Environment}-alerts
+      Action: lambda:InvokeFunction
+      Principal: sns.amazonaws.com
+      SourceArn: !Ref SlackAlertNotificationTopic
+      Id: AllowExecutionFromSlackAlertsSNSTopic
 
   LambdaPrunerPermissionsBoundary:
     Type: AWS::IAM::ManagedPolicy

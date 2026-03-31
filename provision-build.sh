@@ -323,7 +323,13 @@ function provision_notification {
 # -----------------------------------------------
 function provision_lambda_pruner {
   export AWS_REGION="eu-west-2"
-  TEMPLATE_URL=file://pruner/lambda-version-pruner.yml ./provisioner.sh "${AWS_ACCOUNT}" lambda-version-pruner lambda-version-pruner LATEST
+
+  PARAMETERS_FILE="configuration/$AWS_ACCOUNT/lambda-version-pruner/parameters.json"
+  PARAMETERS=$(jq ". | tojson" -r "${PARAMETERS_FILE}")
+
+  TMP_PARAM_FILE=$(mktemp)
+  echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+  PARAMETERS_FILE=$TMP_PARAM_FILE TEMPLATE_URL=file://pruner/lambda-version-pruner.yml ./provisioner.sh "${AWS_ACCOUNT}" lambda-version-pruner lambda-version-pruner LATEST
 }
 
 # --------------------
