@@ -30,6 +30,11 @@ Parameters:
       - "No"
     Default: "Yes"
 
+  BuildNotificationStackName:
+    Type: String
+    Description: Name of the build notification stack
+    Default: "build-notifications"
+
 Conditions:
   IsLowerEnvOnly:
     Fn::Or:
@@ -48,7 +53,46 @@ Conditions:
       - !Ref EnableAlarmActions
       - "Yes"
 
+  IsSlackNotifyEnabled: !Equals
+    - !FindInMap [
+        EnvironmentConfiguration,
+        !Ref Environment,
+        IsSlackNotifyEnabled,
+      ]
+    - "Yes"
+
+Mappings:
+  EnvironmentConfiguration:
+    dev:
+      IsSlackNotifyEnabled: "No"
+    build:
+      IsSlackNotifyEnabled: "Yes"
+    staging:
+      IsSlackNotifyEnabled: "Yes"
+    integration:
+      IsSlackNotifyEnabled: "Yes"
+    production:
+      IsSlackNotifyEnabled: "Yes"
+
 Resources:
+  SlackAlertNotificationTopic:
+    Type: AWS::SNS::Topic
+    Condition: IsLowerEnvOnly
+    Properties:
+      TopicName: !Sub "${Environment}-lambda-pruner-notifications"
+      Subscription: !If
+        - IsSlackNotifyEnabled
+        - - Protocol: lambda
+            Endpoint: !Sub arn:aws:lambda:eu-west-2:${AWS::AccountId}:function:${Environment}-alerts
+        - !Ref AWS::NoValue
+      Tags:
+        - Key: Name
+          Value: !Sub "${Environment}-lambda-pruner-notifications"
+        - Key: Service
+          Value: "Authentication"
+        - Key: Source
+          Value: "govuk-one-login/authentication-infrastructure/pruner/lambda-version-pruner.yaml"
+
   LambdaPrunerPermissionsBoundary:
     Type: AWS::IAM::ManagedPolicy
     Condition: IsLowerEnvOnly
@@ -228,6 +272,6 @@ Resources:
           Value: !Ref PrunerAutomationDocument
       AlarmActions: !If
         - UseAlarmActions
-        - - !Sub "{{resolve:ssm:/deploy/${Environment}/slack_alert_notification_topic_arn}}"
+        - - !Ref SlackAlertNotificationTopic
         - []
       TreatMissingData: notBreaching
