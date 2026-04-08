@@ -1,0 +1,18 @@
+[
+  {
+    "ParameterKey": "Environment",
+    "ParameterValue": "staging"
+  },
+  {
+    "ParameterKey": "ScheduleCron",
+    "ParameterValue": "cron(0 10 ? * MON-FRI *)"
+  },
+  {
+    "ParameterKey": "VersionsToKeep",
+    "ParameterValue": "5"
+  },
+  {
+    "ParameterKey": "EnableAlarmActions",
+    "ParameterValue": "Yes"
+  }
+]

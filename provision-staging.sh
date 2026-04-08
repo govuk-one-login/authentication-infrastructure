@@ -9,12 +9,13 @@ function usage {
   Script to bootstrap di-authentication-staging account
 
   Usage:
-    $0 [-b|--base-stacks] [-n|--notification] [-p|--pipelines] [-v|--vpc] [-l|--live-zone-resources <zone-only|all>]
+    $0 [-b|--base-stacks] [-n|--notification] [-p|--pipelines] [-r|--pruner] [-v|--vpc] [-l|--live-zone-resources <zone-only|all>]
 
   Options:
     -b, --base-stacks                      Provision base stacks
     -n, --notification                     Creates a SNS topic with Slack integration
     -p, --pipelines                        Provision secure pipelines
+    -r, --pruner                           Provision Lambda version pruner
     -v, --vpc                              Provision VPC stack
     -l, --live-zone-resources              Provision live hosted zone, certificates and SSM params
 USAGE
@@ -26,6 +27,7 @@ if [ $# -lt 1 ]; then
 fi
 
 PROVISION_BASE_STACKS=false
+PROVISION_LAMBDA_PRUNER=false
 PROVISION_LIVE_HOSTED_ZONE_AND_RECORDS=false
 PROVISION_NOTIFICATION_STACK=false
 PROVISION_PIPELINES=false
@@ -41,6 +43,9 @@ while [[ $# -gt 0 ]]; do
       ;;
     -p | --pipelines)
       PROVISION_PIPELINES=true
+      ;;
+    -r | --pruner)
+      PROVISION_LAMBDA_PRUNER=true
       ;;
     -v | --vpc)
       PROVISION_VPC=true
@@ -319,11 +324,26 @@ function provision_notification {
   PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" lambda-code-storage-alarm cloudwatch-alarm-stack v0.0.7
 }
 
+# -----------------------------------------------
+# Provision Lambda version pruner
+# -----------------------------------------------
+function provision_lambda_pruner {
+  export AWS_REGION="eu-west-2"
+
+  PARAMETERS_FILE="configuration/$AWS_ACCOUNT/lambda-version-pruner/parameters.json"
+  PARAMETERS=$(jq ". | tojson" -r "${PARAMETERS_FILE}")
+
+  TMP_PARAM_FILE=$(mktemp)
+  echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+  PARAMETERS_FILE=$TMP_PARAM_FILE TEMPLATE_URL=file://pruner/lambda-version-pruner.yml ./provisioner.sh "${AWS_ACCOUNT}" lambda-version-pruner lambda-version-pruner LATEST
+}
+
 # --------------------
 # Provision components
 # --------------------
 [ "${PROVISION_BASE_STACKS}" == "true" ] && provision_base_stacks
 [ "${PROVISION_LIVE_HOSTED_ZONE_AND_RECORDS}" == "true" ] && provision_live_hosted_zone_and_records
 [ "${PROVISION_NOTIFICATION_STACK}" == "true" ] && provision_notification
+[ "${PROVISION_LAMBDA_PRUNER}" == "true" ] && provision_lambda_pruner
 [ "${PROVISION_PIPELINES}" == "true" ] && provision_pipeline
 [ "${PROVISION_VPC}" == "true" ] && provision_vpc
