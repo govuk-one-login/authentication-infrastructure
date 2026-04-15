@@ -1,0 +1,95 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform:
+  - AWS::Serverless-2016-10-31
+  - AWS::LanguageExtensions
+
+Resources:
+  OrchStubRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: build-orch-stub-repository
+      EmptyOnDelete: true
+      ImageTagMutability: MUTABLE
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      RepositoryPolicyText:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowPushFromGitHubRole
+            Effect: Allow
+            Principal:
+              AWS: !GetAtt OrchStubECRPushRole.Arn
+            Action:
+              - "ecr:GetDownloadUrlForLayer"
+              - "ecr:BatchGetImage"
+              - "ecr:BatchCheckLayerAvailability"
+              - "ecr:PutImage"
+              - "ecr:InitiateLayerUpload"
+              - "ecr:UploadLayerPart"
+              - "ecr:CompleteLayerUpload"
+          - Sid: AllowPullFromFrontendRole
+            Effect: Allow
+            Principal:
+              AWS: !GetAtt OrchStubECRPullRole.Arn
+            Action:
+              - "ecr:GetDownloadUrlForLayer"
+              - "ecr:BatchGetImage"
+              - "ecr:BatchCheckLayerAvailability"
+      LifecyclePolicy:
+        LifecyclePolicyText: '{"rules":[{"rulePriority":1,"description":"Keep last 5 images","selection":{"tagStatus":"any","countType":"imageCountMoreThan","countNumber":5},"action":{"type":"expire"}}]}'
+
+  OrchStubECRPushRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action: "sts:AssumeRoleWithWebIdentity"
+            Principal:
+              Federated: !ImportValue GitHubIdentityProviderArn
+            Condition:
+              StringEqualsIgnoreCase:
+                "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
+              StringLike:
+                "token.actions.githubusercontent.com:sub": "repo:govuk-one-login/authentication-stubs:*"
+      Policies:
+        - PolicyName: ECRPush
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "ecr:GetAuthorizationToken"
+                Resource: "*"
+
+  OrchStubECRPullRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action: "sts:AssumeRoleWithWebIdentity"
+            Principal:
+              Federated: !ImportValue GitHubIdentityProviderArn
+            Condition:
+              StringEqualsIgnoreCase:
+                "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
+              StringLike:
+                "token.actions.githubusercontent.com:sub": "repo:govuk-one-login/authentication-frontend:*"
+      Policies:
+        - PolicyName: ECRPull
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "ecr:GetAuthorizationToken"
+                Resource: "*"
+
+Outputs:
+  OrchStubECRPushRoleArn:
+    Value: !GetAtt OrchStubECRPushRole.Arn
+  OrchStubECRPullRoleArn:
+    Value: !GetAtt OrchStubECRPullRole.Arn
