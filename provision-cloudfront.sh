@@ -73,7 +73,13 @@ fi
 STACK_PREFIX_UNDERSCORE=$(echo "${STACK_PREFIX}" | tr "-" "_")
 
 export AWS_ACCOUNT="di-authentication-${ENVIRONMENT}"
-export AWS_PROFILE="di-authentication-${ENVIRONMENT}-AWSAdministratorAccess"
+
+if [[ ${ENVIRONMENT} == "development" ]]; then
+  export AWS_PROFILE="di-authentication-development-AdministratorAccessPermission"
+else
+  export AWS_PROFILE="di-authentication-${ENVIRONMENT}-ApprovedAdmin"
+fi
+
 export SKIP_AWS_AUTHENTICATION="${SKIP_AWS_AUTHENTICATION:-true}"
 export AUTO_APPLY_CHANGESET="${AUTO_APPLY_CHANGESET:-false}"
 if ! aws sts get-caller-identity &> /dev/null; then
