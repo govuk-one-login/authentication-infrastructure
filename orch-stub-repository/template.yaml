@@ -1,11 +1,11 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Transform:
-  - AWS::Serverless-2016-10-31
-  - AWS::LanguageExtensions
 
 Resources:
   OrchStubRepository:
     Type: AWS::ECR::Repository
+    DependsOn:
+      - OrchStubECRPushRole
+      - OrchStubECRPullRole
     Properties:
       RepositoryName: build-orch-stub-repository
       EmptyOnDelete: true
@@ -18,39 +18,40 @@ Resources:
           - Sid: AllowPushFromGitHubRole
             Effect: Allow
             Principal:
-              AWS: !GetAtt OrchStubECRPushRole.Arn
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:role/OrchStubECRPushRole
             Action:
-              - "ecr:GetDownloadUrlForLayer"
-              - "ecr:BatchGetImage"
-              - "ecr:BatchCheckLayerAvailability"
-              - "ecr:PutImage"
-              - "ecr:InitiateLayerUpload"
-              - "ecr:UploadLayerPart"
-              - "ecr:CompleteLayerUpload"
+              - ecr:GetDownloadUrlForLayer
+              - ecr:BatchGetImage
+              - ecr:BatchCheckLayerAvailability
+              - ecr:PutImage
+              - ecr:InitiateLayerUpload
+              - ecr:UploadLayerPart
+              - ecr:CompleteLayerUpload
           - Sid: AllowPullFromFrontendRole
             Effect: Allow
             Principal:
-              AWS: !GetAtt OrchStubECRPullRole.Arn
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:role/OrchStubECRPullRole
             Action:
-              - "ecr:GetDownloadUrlForLayer"
-              - "ecr:BatchGetImage"
-              - "ecr:BatchCheckLayerAvailability"
+              - ecr:GetDownloadUrlForLayer
+              - ecr:BatchGetImage
+              - ecr:BatchCheckLayerAvailability
       LifecyclePolicy:
         LifecyclePolicyText: '{"rules":[{"rulePriority":1,"description":"Keep last 5 images","selection":{"tagStatus":"any","countType":"imageCountMoreThan","countNumber":5},"action":{"type":"expire"}}]}'
 
   OrchStubECRPushRole:
     Type: AWS::IAM::Role
     Properties:
+      RoleName: OrchStubECRPushRole
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
           - Effect: Allow
-            Action: "sts:AssumeRoleWithWebIdentity"
+            Action: sts:AssumeRoleWithWebIdentity
             Principal:
               Federated: !ImportValue GitHubIdentityProviderArn
             Condition:
               StringEqualsIgnoreCase:
-                "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
+                "token.actions.githubusercontent.com:aud": sts.amazonaws.com
               StringLike:
                 "token.actions.githubusercontent.com:sub": "repo:govuk-one-login/authentication-stubs:ref:refs/heads/main"
       Policies:
@@ -59,33 +60,33 @@ Resources:
             Version: "2012-10-17"
             Statement:
               - Effect: Allow
-                Action:
-                  - "ecr:GetAuthorizationToken"
+                Action: ecr:GetAuthorizationToken
                 Resource: "*"
               - Effect: Allow
                 Action:
-                  - "ecr:GetDownloadUrlForLayer"
-                  - "ecr:BatchGetImage"
-                  - "ecr:BatchCheckLayerAvailability"
-                  - "ecr:PutImage"
-                  - "ecr:InitiateLayerUpload"
-                  - "ecr:UploadLayerPart"
-                  - "ecr:CompleteLayerUpload"
-                Resource: !GetAtt OrchStubRepository.Arn
+                  - ecr:GetDownloadUrlForLayer
+                  - ecr:BatchGetImage
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:PutImage
+                  - ecr:InitiateLayerUpload
+                  - ecr:UploadLayerPart
+                  - ecr:CompleteLayerUpload
+                Resource: !Sub arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/build-orch-stub-repository
 
   OrchStubECRPullRole:
     Type: AWS::IAM::Role
     Properties:
+      RoleName: OrchStubECRPullRole
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
           - Effect: Allow
-            Action: "sts:AssumeRoleWithWebIdentity"
+            Action: sts:AssumeRoleWithWebIdentity
             Principal:
               Federated: !ImportValue GitHubIdentityProviderArn
             Condition:
               StringEqualsIgnoreCase:
-                "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
+                "token.actions.githubusercontent.com:aud": sts.amazonaws.com
               StringLike:
                 "token.actions.githubusercontent.com:sub": "repo:govuk-one-login/authentication-frontend:*"
       Policies:
@@ -94,15 +95,14 @@ Resources:
             Version: "2012-10-17"
             Statement:
               - Effect: Allow
-                Action:
-                  - "ecr:GetAuthorizationToken"
+                Action: ecr:GetAuthorizationToken
                 Resource: "*"
               - Effect: Allow
                 Action:
-                  - "ecr:GetDownloadUrlForLayer"
-                  - "ecr:BatchGetImage"
-                  - "ecr:BatchCheckLayerAvailability"
-                Resource: !GetAtt OrchStubRepository.Arn
+                  - ecr:GetDownloadUrlForLayer
+                  - ecr:BatchGetImage
+                  - ecr:BatchCheckLayerAvailability
+                Resource: !Sub arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/build-orch-stub-repository
 
 Outputs:
   OrchStubECRPushRoleArn:
