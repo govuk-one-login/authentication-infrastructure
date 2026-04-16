@@ -121,6 +121,8 @@ function provision_base_stacks {
   ./provisioner.sh "${AWS_ACCOUNT}" acceptance-tests-image-repository test-image-repository v1.2.0
 
   TEMPLATE_URL=file://deployment-configs/template.yaml ./provisioner.sh "${AWS_ACCOUNT}" deployment-configs deployment-configs LATEST
+
+  TEMPLATE_URL=file://orch-stub-repository/template.yaml ./provisioner.sh "${AWS_ACCOUNT}" orch-stub-repository orch-stub-repository LATEST
 }
 
 # -------------------
