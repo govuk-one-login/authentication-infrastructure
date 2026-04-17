@@ -457,7 +457,7 @@ function provision_pipeline {
 
   TMP_PARAM_FILE=$(mktemp)
   echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
-  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" dev-account-management-pipeline sam-deploy-pipeline v2.87.0
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" dev-account-management-pipeline sam-deploy-pipeline v2.99.2
 
   # AuthDev1 Account Management pipeline
   PARAMETERS_FILE="configuration/$AWS_ACCOUNT/authdev1-account-management-pipeline/parameters.json"
@@ -469,7 +469,7 @@ function provision_pipeline {
 
   TMP_PARAM_FILE=$(mktemp)
   echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
-  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev1-account-management-pipeline sam-deploy-pipeline v2.87.0
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev1-account-management-pipeline sam-deploy-pipeline v2.99.2
 
   # AuthDev2 Account Management pipeline
   PARAMETERS_FILE="configuration/$AWS_ACCOUNT/authdev2-account-management-pipeline/parameters.json"
@@ -481,7 +481,7 @@ function provision_pipeline {
 
   TMP_PARAM_FILE=$(mktemp)
   echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
-  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev2-account-management-pipeline sam-deploy-pipeline v2.87.0
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev2-account-management-pipeline sam-deploy-pipeline v2.99.2
 
   # AuthDev3 Account Management pipeline
   PARAMETERS_FILE="configuration/$AWS_ACCOUNT/authdev3-account-management-pipeline/parameters.json"
@@ -493,7 +493,7 @@ function provision_pipeline {
 
   TMP_PARAM_FILE=$(mktemp)
   echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
-  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev3-account-management-pipeline sam-deploy-pipeline v2.87.0
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev3-account-management-pipeline sam-deploy-pipeline v2.99.2
 
   # Dev  Account data Api  pipeline
   PARAMETERS_FILE="configuration/$AWS_ACCOUNT/dev-account-data-api-pipeline/parameters.json"
