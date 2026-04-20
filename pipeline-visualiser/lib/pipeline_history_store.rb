@@ -8,8 +8,11 @@ class PipelineHistoryStore
     @client = Aws::DynamoDB::Client.new(region: "eu-west-2") if TABLE_NAME
   end
 
+  TERMINAL_STATUSES = %w[Succeeded Failed Stopped Superseded Cancelled].freeze
+
   def save(pipeline_summary)
     return unless TABLE_NAME
+    return unless TERMINAL_STATUSES.include?(pipeline_summary.status)
 
     @client.put_item(
       table_name: TABLE_NAME,
@@ -21,11 +24,8 @@ class PipelineHistoryStore
         "stages"          => pipeline_summary.stages.map { |s| { "name" => s.name, "status" => s.status } },
         "artifacts"       => pipeline_summary.artifacts.map { |a| { "name" => a.name, "revision_id" => a.revision_id, "summary" => a.revision_summary } },
         "ttl"             => (Time.now + 90 * 24 * 60 * 60).to_i
-      },
-      condition_expression: "attribute_not_exists(execution_id)"
+      }
     )
-  rescue Aws::DynamoDB::Errors::ConditionalCheckFailedException
-    # already stored, skip
   rescue StandardError => e
     puts "Error saving pipeline history for #{pipeline_summary.name}: #{e.message}"
   end
