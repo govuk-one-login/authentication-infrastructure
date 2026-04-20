@@ -31,18 +31,6 @@ Parameters:
     Default: "Yes"
 
 Conditions:
-  IsLowerEnvOnly:
-    Fn::Or:
-      - Fn::Equals:
-          - !Ref Environment
-          - dev
-      - Fn::Equals:
-          - !Ref Environment
-          - build
-      - Fn::Equals:
-          - !Ref Environment
-          - staging
-
   UseAlarmActions:
     Fn::Equals:
       - !Ref EnableAlarmActions
@@ -72,7 +60,6 @@ Mappings:
 Resources:
   SlackAlertNotificationTopic:
     Type: AWS::SNS::Topic
-    Condition: IsLowerEnvOnly
     Properties:
       TopicName: !Sub "${Environment}-lambda-pruner-notifications"
       Subscription: !If
@@ -91,7 +78,6 @@ Resources:
 
   SlackLambdaPrunerPermission:
     Type: AWS::Lambda::Permission
-    Condition: IsLowerEnvOnly
     Properties:
       FunctionName: !Sub arn:aws:lambda:eu-west-2:${AWS::AccountId}:function:${Environment}-alerts
       Action: lambda:InvokeFunction
@@ -101,7 +87,6 @@ Resources:
 
   LambdaPrunerPermissionsBoundary:
     Type: AWS::IAM::ManagedPolicy
-    Condition: IsLowerEnvOnly
     Properties:
       ManagedPolicyName: !Sub "${Environment}-lambda-pruner-permissions-boundary"
       Description: "Permissions boundary for Lambda pruner roles"
@@ -132,7 +117,6 @@ Resources:
 
   SSMAutomationRole:
     Type: AWS::IAM::Role
-    Condition: IsLowerEnvOnly
     Properties:
       RoleName: !Sub "${Environment}-lambda-pruner-ssm-role"
       AssumeRolePolicyDocument:
@@ -157,7 +141,6 @@ Resources:
 
   SchedulerRole:
     Type: AWS::IAM::Role
-    Condition: IsLowerEnvOnly
     Properties:
       RoleName: !Sub "${Environment}-lambda-pruner-scheduler-role"
       AssumeRolePolicyDocument:
@@ -184,7 +167,6 @@ Resources:
 
   PrunerAutomationDocument:
     Type: AWS::SSM::Document
-    Condition: IsLowerEnvOnly
     Properties:
       Name: !Sub "${Environment}-lambda-version-pruner"
       DocumentType: Automation
@@ -242,7 +224,6 @@ Resources:
 
   DailySchedule:
     Type: AWS::Scheduler::Schedule
-    Condition: IsLowerEnvOnly
     Properties:
       FlexibleTimeWindow:
         Mode: "OFF"
@@ -262,7 +243,6 @@ Resources:
 
   AutomationFailureAlarm:
     Type: AWS::CloudWatch::Alarm
-    Condition: IsLowerEnvOnly
     Properties:
       AlarmName: !Sub "${Environment}-lambda-pruner-automation-failure"
       AlarmDescription: "Alert when Lambda version pruner automation fails"
