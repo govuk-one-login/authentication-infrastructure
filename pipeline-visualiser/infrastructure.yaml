@@ -126,6 +126,40 @@ Resources:
                 Effect: Allow
                 Action: sts:AssumeRole
                 Resource: "arn:aws:iam::*:role/codepipeline-readonly"
+        - PolicyName: DynamoDBHistoryPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: AllowDynamoDBHistory
+                Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                  - dynamodb:Query
+                Resource: !GetAtt PipelineHistoryTable.Arn
+
+  # DynamoDB table for pipeline run history
+  PipelineHistoryTable:
+    Type: AWS::DynamoDB::Table
+    Condition: IsBuildEnv
+    Properties:
+      TableName: !Sub "${Environment}-pipeline-visualiser-history"
+      BillingMode: PAY_PER_REQUEST
+      TableClass: STANDARD_INFREQUENT_ACCESS
+      AttributeDefinitions:
+        - AttributeName: pipeline_name
+          AttributeType: S
+        - AttributeName: execution_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pipeline_name
+          KeyType: HASH
+        - AttributeName: execution_id
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
 
   # Cross-account CodePipeline readonly role
   CodePipelineReadOnlyRole:
@@ -137,7 +171,10 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              AWS: !Sub arn:aws:iam::058264536367:role/build-pipeline-visualiser-task-role #ecs task Role from di-authentication-build
+              AWS: !If
+                - IsBuildEnv
+                - !GetAtt PipelineVisualiserTaskRole.Arn
+                - !Sub arn:aws:iam::058264536367:role/build-pipeline-visualiser-task-role
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AWSCodePipeline_ReadOnlyAccess
@@ -187,6 +224,8 @@ Resources:
               Value: PRODUCTION
             - Name: PIPELINE_VISUALISER_SSO_MODE
               Value: "false"
+            - Name: PIPELINE_HISTORY_TABLE
+              Value: !Sub "${Environment}-pipeline-visualiser-history"
           LogConfiguration:
             LogDriver: awslogs
             Options:

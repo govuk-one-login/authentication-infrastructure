@@ -17,6 +17,10 @@
   <strong>Execution id</strong> <%= pipeline.execution_id %>
 </p>
 
+<p class="govuk-body">
+  <a class="govuk-link" href="<%= request.path %>/history">View run history</a>
+</p>
+
 <details class="govuk-details">
   <summary class="govuk-details__summary">
     <span class="govuk-details__summary-text">Viewing this pipeline in AWS CodePipeline</span>

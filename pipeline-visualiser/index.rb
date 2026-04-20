@@ -12,6 +12,7 @@ require_relative 'lib/aws-sdk-factory/sso'
 
 require_relative 'lib/views/all_pipelines'
 require_relative 'lib/views/group'
+require_relative 'lib/pipeline_history_store'
 
 set :public_folder, 'public'
 set :bind, '0.0.0.0'
@@ -90,6 +91,31 @@ get '/group/:group_slug' do
     view: Group.new(group[0], pipelines),
     breadcrumbs: {
       'Home' => '/'
+    }
+  }
+end
+
+get '/group/:group_slug/pipeline/:pipeline_slug/history' do
+  all_groups = config['groups'].to_a
+  group_slugs_to_names = config['groups'].keys.map { |name| [slugify(name), name] }.to_h
+  group = all_groups.find { |grp| params['group_slug'] == slugify(grp[0]) }
+  pass if group.nil?
+
+  pipeline_slugs_to_names = group[1].map { |name| [slugify(name), name] }.to_h
+  pass unless pipeline_slugs_to_names.keys.include? params['pipeline_slug']
+
+  group_name = group_slugs_to_names[params['group_slug']]
+  pipeline_name = pipeline_slugs_to_names[params['pipeline_slug']]
+
+  history = PipelineHistoryStore.new.fetch_history(pipeline_name)
+
+  erb :history, locals: {
+    pipeline_name:,
+    history:,
+    breadcrumbs: {
+      'Home' => '/',
+      group_name => "/group/#{params['group_slug']}",
+      pipeline_name => "/group/#{params['group_slug']}/pipeline/#{params['pipeline_slug']}"
     }
   }
 end

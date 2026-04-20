@@ -5,9 +5,11 @@ require_relative "lib/models/artifact_revision"
 require_relative "lib/models/pipeline_group"
 require_relative "lib/models/pipeline_stage"
 require_relative "lib/models/pipeline_summary"
+require_relative "lib/pipeline_history_store"
 
 def start_background_pipeline_status_updater(aws_clients)
   pipelines_map = Concurrent::Map.new
+  history_store = PipelineHistoryStore.new
 
   task = Concurrent::TimerTask.new(execution_interval: 30, run_now: true) do
     aws_clients.each do |client_config|
@@ -41,6 +43,7 @@ def start_background_pipeline_status_updater(aws_clients)
         viewdata = generate_pipeline_viewdata(state, latest.pipeline_execution, latest_execution_summary.start_time, client_config["gds_cli_role"] || "")
 
         pipelines_map[viewdata.name] = viewdata
+        history_store.save(viewdata)
       rescue StandardError => e
         # Log only error message, not full backtrace
         puts "Error processing pipeline #{pipeline}: #{e.message}"

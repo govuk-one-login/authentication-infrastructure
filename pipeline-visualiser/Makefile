@@ -14,6 +14,7 @@ run:
 	PIPELINE_VISUALISER_SSO_MODE=true \
 	ruby index.rb
 
+
 run_in_docker:
 	$(call sso_login); \
 	mkdir -p ./docker_aws_config; \
