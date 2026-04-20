@@ -663,6 +663,15 @@ function provision_lambda_pruner {
   PARAMETERS_FILE=$TMP_PARAM_FILE TEMPLATE_URL=file://pruner/lambda-version-pruner.yml ./provisioner.sh "${AWS_ACCOUNT}" lambda-version-pruner lambda-version-pruner LATEST
 }
 
+# -------------------------
+# provision pipeline visualiser
+# -------------------------
+function provision_pipeline_visualiser {
+  export AWS_REGION="eu-west-2"
+
+  TEMPLATE_URL=file://pipeline-visualiser/infrastructure.yaml ./provisioner.sh "${AWS_ACCOUNT}" pipeline-visualiser pipeline-visualiser LATEST
+}
+
 # --------------------
 # Provision components
 # --------------------
