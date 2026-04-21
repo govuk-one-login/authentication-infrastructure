@@ -9,7 +9,7 @@ function usage {
   Script to bootstrap di-authentication-build account
 
   Usage:
-    $0 [-b|--base-stacks] [-n|--notification] [-p|--pipelines] [-r|--pruner] [-v|--vpc] [-l|--live-zone-resources <zone-only|all>]
+    $0 [-b|--base-stacks] [-n|--notification] [-p|--pipelines] [-r|--pruner] [-v|--vpc] [-l|--live-zone-resources <zone-only|all>] [--pipeline-visualiser]
 
   Options:
     -b, --base-stacks                      Provision base stacks
@@ -18,6 +18,7 @@ function usage {
     -v, --vpc                              Provision VPC stack
     -r, --pruner                           Provision Lambda version pruner
     -l, --live-zone-resources              Provision live hosted zone, certificates and SSM params
+    --pipeline-visualiser                  Deploy pipeline visualiser infrastructure
 USAGE
 }
 
@@ -32,6 +33,7 @@ PROVISION_LIVE_HOSTED_ZONE_AND_RECORDS=false
 PROVISION_NOTIFICATION_STACK=false
 PROVISION_PIPELINES=false
 PROVISION_VPC=false
+PROVISION_PIPELINE_VISUALISER=false
 
 while [[ $# -gt 0 ]]; do
   case "${1}" in
@@ -54,6 +56,9 @@ while [[ $# -gt 0 ]]; do
       PROVISION_LIVE_HOSTED_ZONE_AND_RECORDS=true
       DEPLOY_CONFIG=${2}
       shift
+      ;;
+    --pipeline-visualiser)
+      PROVISION_PIPELINE_VISUALISER=true
       ;;
     *)
       usage
@@ -119,6 +124,8 @@ function provision_base_stacks {
   ./provisioner.sh "${AWS_ACCOUNT}" service-down-page-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
 
   ./provisioner.sh "${AWS_ACCOUNT}" acceptance-tests-image-repository test-image-repository v1.2.0
+
+  ./provisioner.sh "${AWS_ACCOUNT}" pipeline-visualiser-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
 
   TEMPLATE_URL=file://deployment-configs/template.yaml ./provisioner.sh "${AWS_ACCOUNT}" deployment-configs deployment-configs LATEST
 
@@ -347,6 +354,53 @@ function provision_lambda_pruner {
   PARAMETERS_FILE=$TMP_PARAM_FILE TEMPLATE_URL=file://pruner/lambda-version-pruner.yml ./provisioner.sh "${AWS_ACCOUNT}" lambda-version-pruner lambda-version-pruner LATEST
 }
 
+# -------------------------
+# provision pipeline visualiser
+# -------------------------
+function provision_pipeline_visualiser {
+  export AWS_REGION="eu-west-2"
+
+  # ECR configuration
+  ECR_REGISTRY="058264536367.dkr.ecr.eu-west-2.amazonaws.com"
+  ECR_REPO_NAME="pipeline-visualiser-image-repository-containerrepository-jmmobh2gjm55"
+  GITHUB_SHA="$(git rev-parse HEAD)"
+  DOCKER_PLATFORM="${DOCKER_PLATFORM:-linux/amd64}"
+
+  # Login to ECR
+  echo "Generating temporary ECR credentials..."
+  aws ecr get-login-password --region eu-west-2 \
+    | docker login --username AWS --password-stdin "${ECR_REGISTRY}"
+
+  pushd pipeline-visualiser
+
+  # Build and push Docker image
+  echo "Building image"
+  docker build \
+    --tag "$ECR_REGISTRY/$ECR_REPO_NAME:$GITHUB_SHA" \
+    --platform "$DOCKER_PLATFORM" \
+    .
+
+  docker push "$ECR_REGISTRY/$ECR_REPO_NAME:$GITHUB_SHA"
+
+  # Replace image placeholder with actual ECR image
+  IMAGE_DIGEST="$(docker inspect "$ECR_REGISTRY/$ECR_REPO_NAME:$GITHUB_SHA" | jq -r '.[0].RepoDigests[0] | split("@") | .[1]')"
+  echo "Digest = ${IMAGE_DIGEST}"
+
+  cp infrastructure.yaml cf-template.yaml
+  if grep -q "CONTAINER-IMAGE-PLACEHOLDER" cf-template.yaml; then
+    echo 'Replacing "CONTAINER-IMAGE-PLACEHOLDER" with new ECR image ref'
+    sed -i.bak "s|CONTAINER-IMAGE-PLACEHOLDER|$ECR_REGISTRY/$ECR_REPO_NAME@$IMAGE_DIGEST|" cf-template.yaml
+  fi
+
+  popd
+
+  # Deploy using provisioner
+  TEMPLATE_URL=file://pipeline-visualiser/cf-template.yaml ./provisioner.sh "${AWS_ACCOUNT}" pipeline-visualiser pipeline-visualiser LATEST
+
+  # Cleanup
+  rm pipeline-visualiser/cf-template.yaml*
+}
+
 # --------------------
 # Provision components
 # --------------------
@@ -356,3 +410,4 @@ function provision_lambda_pruner {
 [ "${PROVISION_LAMBDA_PRUNER}" == "true" ] && provision_lambda_pruner
 [ "${PROVISION_PIPELINES}" == "true" ] && provision_pipeline
 [ "${PROVISION_VPC}" == "true" ] && provision_vpc
+[ "${PROVISION_PIPELINE_VISUALISER}" == "true" ] && provision_pipeline_visualiser

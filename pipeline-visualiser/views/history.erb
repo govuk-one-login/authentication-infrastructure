@@ -1,0 +1,45 @@
+<%= erb :'partials/breadcrumbs', :locals => {breadcrumbs: breadcrumbs } %>
+
+<span class="govuk-caption-l">Pipeline</span>
+<h1 class="govuk-heading-l"><%= pipeline_name %></h1>
+
+<h2 class="govuk-heading-m">Run history</h2>
+
+<% if history.empty? %>
+  <p class="govuk-body">No historic runs found.</p>
+<% else %>
+  <table class="govuk-table">
+    <thead class="govuk-table__head">
+      <tr class="govuk-table__row">
+        <th scope="col" class="govuk-table__header">Execution ID</th>
+        <th scope="col" class="govuk-table__header">Started at</th>
+        <th scope="col" class="govuk-table__header">Status</th>
+        <th scope="col" class="govuk-table__header">Stages</th>
+        <th scope="col" class="govuk-table__header">Artifacts</th>
+      </tr>
+    </thead>
+    <tbody class="govuk-table__body">
+      <% history.each do |run| %>
+        <tr class="govuk-table__row">
+          <td class="govuk-table__cell"><code><%= run["execution_id"] %></code></td>
+          <td class="govuk-table__cell">
+            <time datetime="<%= run["started_at"] %>"><%= run["started_at"] %></time>
+          </td>
+          <td class="govuk-table__cell">
+            <%= erb :'partials/label', :locals => { status: run["status"] } %>
+          </td>
+          <td class="govuk-table__cell">
+            <% (run["stages"] || []).each do |stage| %>
+              <div><%= stage["name"] %>: <%= erb :'partials/label', :locals => { status: stage["status"] } %></div>
+            <% end %>
+          </td>
+          <td class="govuk-table__cell">
+            <% (run["artifacts"] || []).each do |artifact| %>
+              <div><strong><%= artifact["name"] %></strong> &mdash; <code><%= artifact["revision_id"]&.slice(0, 8) %></code> &mdash; <%= artifact["summary"] %></div>
+            <% end %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% end %>
