@@ -9,7 +9,7 @@ function usage {
   Script to bootstrap di-authentication-integration account
 
   Usage:
-    $0 [-b|--base-stacks] [-n|--notification] [-p|--pipelines] [-r|--pruner] [-v|--vpc] [-l|--live-zone-resources <zone-only|all>]
+    $0 [-b|--base-stacks] [-n|--notification] [-p|--pipelines] [-r|--pruner] [-v|--vpc] [-l|--live-zone-resources <zone-only|all>] [--pipeline-visualiser]
 
   Options:
     -b, --base-stacks                      Provision base stacks
@@ -18,6 +18,7 @@ function usage {
     -r, --pruner                           Provision Lambda version pruner
     -v, --vpc                              Provision VPC stack
     -l, --live-zone-resources              Provision live hosted zone, certificates and SSM params
+    --pipeline-visualiser                  Deploy pipeline visualiser infrastructure
 USAGE
 }
 
@@ -31,6 +32,7 @@ PROVISION_LAMBDA_PRUNER=false
 PROVISION_LIVE_HOSTED_ZONE_AND_RECORDS=false
 PROVISION_NOTIFICATION_STACK=false
 PROVISION_PIPELINES=false
+PROVISION_PIPELINE_VISUALISER=false
 PROVISION_VPC=false
 
 while [[ $# -gt 0 ]]; do
@@ -54,6 +56,9 @@ while [[ $# -gt 0 ]]; do
       PROVISION_LIVE_HOSTED_ZONE_AND_RECORDS=true
       DEPLOY_CONFIG=${2}
       shift
+      ;;
+    --pipeline-visualiser)
+      PROVISION_PIPELINE_VISUALISER=true
       ;;
     *)
       usage
@@ -337,6 +342,15 @@ function provision_notification {
   PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" lambda-code-storage-alarm cloudwatch-alarm-stack v0.0.7
 }
 
+# -------------------------
+# provision pipeline visualiser
+# -------------------------
+function provision_pipeline_visualiser {
+  export AWS_REGION="eu-west-2"
+
+  TEMPLATE_URL=file://pipeline-visualiser/infrastructure.yaml ./provisioner.sh "${AWS_ACCOUNT}" pipeline-visualiser pipeline-visualiser LATEST
+}
+
 # -----------------------------------------------
 # Provision Lambda version pruner
 # -----------------------------------------------
@@ -359,4 +373,5 @@ function provision_lambda_pruner {
 [ "${PROVISION_NOTIFICATION_STACK}" == "true" ] && provision_notification
 [ "${PROVISION_LAMBDA_PRUNER}" == "true" ] && provision_lambda_pruner
 [ "${PROVISION_PIPELINES}" == "true" ] && provision_pipeline
+[ "${PROVISION_PIPELINE_VISUALISER}" == "true" ] && provision_pipeline_visualiser
 [ "${PROVISION_VPC}" == "true" ] && provision_vpc
