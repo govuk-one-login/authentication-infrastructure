@@ -168,7 +168,6 @@ Resources:
   PrunerAutomationDocument:
     Type: AWS::SSM::Document
     Properties:
-      Name: !Sub "${Environment}-lambda-version-pruner"
       DocumentType: Automation
       Content:
         schemaVersion: "0.3"
@@ -184,6 +183,7 @@ Resources:
         mainSteps:
           - name: PruneVersions
             action: aws:executeScript
+            timeoutSeconds: 3600  # increasing up to 3600 (max for executeScript)
             inputs:
               Runtime: python3.11
               Handler: handler
@@ -241,23 +241,37 @@ Resources:
           }
         RoleArn: !GetAtt SchedulerRole.Arn
 
-  AutomationFailureAlarm:
-    Type: AWS::CloudWatch::Alarm
+  AutomationFailureEventRule:
+    Type: AWS::Events::Rule
     Properties:
-      AlarmName: !Sub "${Environment}-lambda-pruner-automation-failure"
-      AlarmDescription: "Alert when Lambda version pruner automation fails"
-      MetricName: "ExecutionsFailed"
-      Namespace: "AWS/SSM-RunCommand"
-      Statistic: Sum
-      Period: 300
-      EvaluationPeriods: 1
-      Threshold: 1
-      ComparisonOperator: GreaterThanOrEqualToThreshold
-      Dimensions:
-        - Name: "DocumentName"
-          Value: !Ref PrunerAutomationDocument
-      AlarmActions: !If
-        - UseAlarmActions
-        - - !Ref SlackAlertNotificationTopic
-        - []
-      TreatMissingData: notBreaching
+      Name: !Sub "${Environment}-lambda-pruner-automation-failure"
+      Description: "Trigger alert when Lambda version pruner SSM Automation fails or times out"
+      EventPattern:
+        source:
+          - aws.ssm
+        detail-type:
+          - EC2 Automation Execution Status-change Notification
+        detail:
+          Status:
+            - Failed
+            - TimedOut
+          Definition:
+            - !Ref PrunerAutomationDocument
+      State: ENABLED
+      Targets:
+        - Id: SlackNotification
+          Arn: !Ref SlackAlertNotificationTopic
+
+  AutomationFailureEventTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics:
+        - !Ref SlackAlertNotificationTopic
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action: sns:Publish
+            Resource: !Ref SlackAlertNotificationTopic
