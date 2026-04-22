@@ -1,7 +1,7 @@
 [
   {
     "ParameterKey": "SAMStackName",
-    "ParameterValue": "dev-am-api"
+    "ParameterValue": "am-api"
   },
   {
     "ParameterKey": "Environment",
