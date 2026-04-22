@@ -209,7 +209,7 @@ function provision_pipeline {
   TMP_PARAM_FILE=$(mktemp)
   echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
   export AWS_REGION="eu-west-2"
-  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" account-management-api-pipeline sam-deploy-pipeline v2.87.0
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" account-management-api-pipeline sam-deploy-pipeline v2.99.2
 
   # orch-stub pipeline
   PARAMETERS_FILE="configuration/$AWS_ACCOUNT/integration-orch-stub-pipeline/parameters.json"
