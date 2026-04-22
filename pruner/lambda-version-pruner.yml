@@ -261,6 +261,21 @@ Resources:
       Targets:
         - Id: SlackNotification
           Arn: !Ref SlackAlertNotificationTopic
+          InputTransformer:
+            InputPathsMap:
+              status: "$.detail.Status"
+              definition: "$.detail.Definition"
+              executionId: "$.detail.ExecutionId"
+              account: "$.account"
+              time: "$.time"
+            InputTemplate: >-
+              {
+                "AlarmName": "SSM Automation Failed: <definition>",
+                "AlarmDescription": "SSM Automation execution <executionId> status changed to <status>",
+                "NewStateValue": "ALARM",
+                "AWSAccountId": "<account>",
+                "StateChangeTime": "<time>"
+              }
 
   AutomationFailureEventTopicPolicy:
     Type: AWS::SNS::TopicPolicy
