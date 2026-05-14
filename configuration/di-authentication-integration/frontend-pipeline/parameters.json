@@ -28,6 +28,10 @@
     "ParameterValue": "ECR & ECS"
   },
   {
+    "ParameterKey": "AllowedServiceThree",
+    "ParameterValue": "DynamoDB"
+  },
+  {
     "ParameterKey": "IncludePromotion",
     "ParameterValue": "No"
   },
