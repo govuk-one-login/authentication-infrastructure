@@ -40,6 +40,10 @@
     "ParameterValue": "ECR & ECS"
   },
   {
+    "ParameterKey": "AllowedServiceThree",
+    "ParameterValue": "DynamoDB"
+  },
+  {
     "ParameterKey": "SlackNotificationType",
     "ParameterValue": "Failures"
   },

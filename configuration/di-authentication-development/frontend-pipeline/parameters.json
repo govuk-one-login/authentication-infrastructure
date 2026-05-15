@@ -36,6 +36,10 @@
     "ParameterValue": "ECR & ECS"
   },
   {
+    "ParameterKey": "AllowedServiceThree",
+    "ParameterValue": "DynamoDB"
+  },
+  {
     "ParameterKey": "ECSCanaryDeployment",
     "ParameterValue": "CodeDeployDefault.ECSAllAtOnce"
   },
