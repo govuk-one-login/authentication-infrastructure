@@ -14,3 +14,4 @@ authentication-frontend
 !.vscode/*.code-snippets
 
 cf-template.*
+**/.DS_Store

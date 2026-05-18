@@ -40,7 +40,9 @@ class PipelineHistoryStore
       scan_index_forward: false,
       limit: limit
     )
-    result.items
+
+    # Sort by started_at timestamp in descending order (latest first)
+    result.items.sort_by { |item| item["started_at"] }.reverse
   rescue StandardError => e
     puts "Error fetching pipeline history for #{pipeline_name}: #{e.message}"
     []
