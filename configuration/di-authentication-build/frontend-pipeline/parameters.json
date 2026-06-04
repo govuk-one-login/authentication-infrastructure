@@ -53,7 +53,7 @@
   },
   {
     "ParameterKey": "ECSCanaryDeployment",
-    "ParameterValue": "CodeDeployDefault.ECSAllAtOnce"
+    "ParameterValue": "CodeDeployDefault.ECSCanary10Percent5Minutes"
   },
   {
     "ParameterKey": "TestContainerAllowCrossAccountAssumeRole",
