@@ -9,7 +9,7 @@ gem "activesupport-duration-human_string", "~> 1.0"
 gem "aws-sdk-codepipeline", "~> 1.111"
 gem "aws-sdk-dynamodb", "~> 1.0"
 gem "concurrent-ruby", require: "concurrent"
-gem "puma", "~> 7.1"
+gem "puma", "~> 7.2"
 gem "rackup", "~> 2.3"
 gem "sinatra", "~> 4.2"
 
