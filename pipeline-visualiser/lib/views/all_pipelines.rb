@@ -7,16 +7,18 @@ class AllPipelinesView
 
   def running_pipelines
     @pipeline_groups
-      .collect(&:pipelines)
-      .flatten
-      .filter(&:is_running?)
+      .flat_map do |group|
+        group.pipelines.each { |pipeline| pipeline.group_name = group.name }
+      end
+      .select(&:is_running?)
   end
 
   def failing_pipelines
     @pipeline_groups
-      .collect(&:pipelines)
-      .flatten
-      .filter { |pipeline| pipeline.status == "Failed" }
+      .flat_map do |group|
+        group.pipelines.each { |pipeline| pipeline.group_name = group.name }
+      end
+      .select { |pipeline| pipeline.status == "Failed" }
   end
 
   def pipeline_url(pipeline_name)

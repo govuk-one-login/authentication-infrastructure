@@ -2,16 +2,16 @@ require "active_support"
 require "active_support/duration"
 
 class PipelineSummary
-  attr_accessor :name, :execution_id, :last_started_at, :status, :gds_cli_role, :variables, :artifacts, :stages, :running_duration, :current_stage_name, :first_failing_stage_name, :first_failing_stage_error_message, :paused
+  attr_accessor :name, :execution_id, :last_started_at, :status, :gds_cli_role, :variables, :artifacts, :stages, :running_duration, :current_stage_name, :first_failing_stage_name, :first_failing_stage_error_message, :paused, :group_name
 
   # @param [Aws::CodePipeline::Types::GetPipelineStateOutput] codepipeline_state
   # @param [Aws::CodePipeline::Types::PipelineExecutionSummary] codepipeline_execution
   # @param [Date] last_started_at
-  def initialize(codepipeline_state, codepipeline_execution, last_started_at)
+  def initialize(codepipeline_state, codepipeline_execution, last_started_at, authoritative_status = nil)
     @name = codepipeline_state.pipeline_name
     @execution_id = codepipeline_execution.pipeline_execution_id
     @last_started_at = last_started_at
-    @status = codepipeline_execution.status
+    @status = authoritative_status || codepipeline_execution.status
     @paused = codepipeline_state.stage_states.any? { |stage| !stage.inbound_transition_state.enabled }
 
     vars = codepipeline_execution.variables || []

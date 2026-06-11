@@ -30,19 +30,36 @@ class PipelineHistoryStore
     puts "Error saving pipeline history for #{pipeline_summary.name}: #{e.message}"
   end
 
+  def save_execution(pipeline_name:, execution:, start_time:)
+    return unless TABLE_NAME
+    return unless TERMINAL_STATUSES.include?(execution.status.to_s)
+
+    @client.put_item(
+      table_name: TABLE_NAME,
+      item: {
+        "pipeline_name" => pipeline_name,
+        "execution_id"  => execution.pipeline_execution_id,
+        "started_at"    => start_time.utc.iso8601,
+        "status"        => execution.status,
+        "stages"        => [],
+        "artifacts"     => execution.artifact_revisions.map { |a| { "name" => a.name, "revision_id" => a.revision_id, "summary" => a.revision_summary } },
+        "ttl"           => (Time.now + 90 * 24 * 60 * 60).to_i
+      }
+    )
+  rescue StandardError => e
+    puts "Error saving execution history for #{pipeline_name}: #{e.message}"
+  end
+
   def fetch_history(pipeline_name, limit: 20)
     return [] unless TABLE_NAME
 
     result = @client.query(
       table_name: TABLE_NAME,
       key_condition_expression: "pipeline_name = :name",
-      expression_attribute_values: { ":name" => pipeline_name },
-      scan_index_forward: false,
-      limit: limit
+      expression_attribute_values: { ":name" => pipeline_name }
     )
 
-    # Sort by started_at timestamp in descending order (latest first)
-    result.items.sort_by { |item| item["started_at"] }.reverse
+    result.items.sort_by { |item| item["started_at"] }.reverse.first(limit)
   rescue StandardError => e
     puts "Error fetching pipeline history for #{pipeline_name}: #{e.message}"
     []
