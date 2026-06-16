@@ -92,6 +92,25 @@ Parameters:
     Type: Number
     Default: 7
 
+  CrossAccountRoleAccountId:
+    Description: "AWS Account ID containing the CrossAccountRole to assume for dynamoDB access"
+    Type: "String"
+
+  DevAccountId:
+    Description: "AWS Account ID for dev environment"
+    Type: "String"
+    Default: "none"
+
+  BuildAccountId:
+    Description: "AWS Account ID for build environment"
+    Type: "String"
+    Default: "none"
+
+  DevECRRepositoryName:
+    Description: "ECR repository name in dev account"
+    Type: "String"
+    Default: "none"
+
 Conditions:
   CreateVPCConfigurationForTestContainer:
     Fn::And:
@@ -138,9 +157,21 @@ Conditions:
       - !Ref ECRImageRetentionEnabled
       - "True"
 
+  CreateECRResources:
+    Fn::Equals:
+      - !Ref Environment
+      - "dev"
+
+  CreateCrossAccountEventBridge:
+    Fn::Not:
+      - Fn::Equals:
+          - !Ref Environment
+          - "dev"
+
 Resources:
   AdHocTestRunnerImageRepository:
     Type: AWS::ECR::Repository
+    Condition: CreateECRResources
     Properties:
       ImageScanningConfiguration:
         ScanOnPush: true
@@ -171,7 +202,7 @@ Resources:
       RepositoryPolicyText:
         Version: 2012-10-17
         Statement:
-          - Sid: AllowAccountToPull
+          - Sid: AllowOrganizationAccess
             Effect: Allow
             Principal: "*"
             Action:
@@ -187,6 +218,14 @@ Resources:
             Condition:
               StringEquals:
                 "aws:PrincipalOrgID": !Ref AWSOrganizationId
+          - Sid: AllowBuildAccountAccess
+            Effect: Allow
+            Principal:
+              AWS: !Sub "arn:aws:iam::${BuildAccountId}:root"
+            Action:
+              - "ecr:BatchCheckLayerAvailability"
+              - "ecr:BatchGetImage"
+              - "ecr:GetDownloadUrlForLayer"
       Tags:
         - Key: Name
           Value: !Sub "${AWS::StackName}-AdHocTestRunnerImageRepository"
@@ -195,6 +234,7 @@ Resources:
 
   AdHocTestRunnerImageRepositoryPolicy:
     Type: AWS::IAM::ManagedPolicy
+    Condition: CreateECRResources
     Properties:
       ManagedPolicyName: !Sub "${AWS::StackName}-AdHocTestRunnerImageRepositoryPolicy"
       Roles:
@@ -477,6 +517,18 @@ Resources:
               - "codebuild:BatchPutTestCases"
             Resource: !Sub "arn:${AWS::Partition}:codebuild:${AWS::Region}:${AWS::AccountId}:report-group/*"
 
+  CrossAccountRolePolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - "sts:AssumeRole"
+            Resource:
+              - !Sub "arn:aws:iam::${CrossAccountRoleAccountId}:role/CrossAccountRole-new-${Environment}"
+
   VPCTestPolicy:
     Type: AWS::IAM::ManagedPolicy
     Condition: CreateVPCConfigurationForTestContainer
@@ -520,6 +572,7 @@ Resources:
             Action: "sts:AssumeRole"
       ManagedPolicyArns:
         - !Ref TestPolicy
+        - !Ref CrossAccountRolePolicy
         - !Sub "arn:${AWS::Partition}:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
         - !If
           - CreateVPCConfigurationForTestContainer
@@ -536,7 +589,10 @@ Resources:
         Type: "NO_ARTIFACTS"
       Environment:
         ComputeType: !Ref TestComputeType
-        Image: !Sub "${AdHocTestRunnerImageRepository.RepositoryUri}:latest"
+        Image: !If
+          - CreateECRResources
+          - !Sub "${AdHocTestRunnerImageRepository.RepositoryUri}:${Environment}"
+          - !Sub "${DevAccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${DevECRRepositoryName}:${Environment}"
         Type: "LINUX_CONTAINER"
         ImagePullCredentialsType: "SERVICE_ROLE"
         PrivilegedMode: false
@@ -568,7 +624,7 @@ Resources:
 
             build:
               commands:
-                - /test/run-acceptance-tests.sh -s ${Environment} || { echo "Test execution failed"; exit 1; }
+                - /test/run-acceptance-ad-hoc-tests.sh -s ${Environment} || { echo "Test execution failed"; exit 1; }
 
             post_build:
               commands:
@@ -618,11 +674,45 @@ Resources:
               - Effect: Allow
                 Action: codebuild:StartBuild
                 Resource: !GetAtt AdHocTestCodeBuildProject.Arn
+        - !If
+          - CreateECRResources
+          - PolicyName: CrossAccountEventBridgePolicy
+            PolicyDocument:
+              Version: "2012-10-17"
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - events:PutEvents
+                  Resource:
+                    - !Sub "arn:aws:events:${AWS::Region}:${BuildAccountId}:event-bus/ecr-events"
+          - !Ref AWS::NoValue
+
+  CrossAccountEventBus:
+    Type: AWS::Events::EventBus
+    Condition: CreateCrossAccountEventBridge
+    Properties:
+      Name: ecr-events
+      Description: Event bus for receiving ECR events from dev account
+
+  CrossAccountEventBusPolicy:
+    Type: AWS::Events::EventBusPolicy
+    Condition: CreateCrossAccountEventBridge
+    Properties:
+      EventBusName: !Ref CrossAccountEventBus
+      StatementId: AllowDevAccountEvents
+      Statement:
+        Sid: AllowDevAccountEvents
+        Effect: Allow
+        Principal:
+          AWS: !Sub "arn:aws:iam::${DevAccountId}:root"
+        Action: events:PutEvents
+        Resource: !GetAtt CrossAccountEventBus.Arn
 
   ECRImagePushRule:
     Type: AWS::Events::Rule
+    Condition: CreateECRResources
     Properties:
-      Description: Trigger CodeBuild when new image is pushed to ECR
+      Description: Forward ECR push events to build account for build tags only
       EventPattern:
         source:
           - aws.ecr
@@ -636,12 +726,106 @@ Resources:
           repository-name:
             - !Ref AdHocTestRunnerImageRepository
           image-tag:
-            - latest
+            - "build"
+      State: ENABLED
+      Targets:
+        - Arn: !Sub "arn:aws:events:${AWS::Region}:${BuildAccountId}:event-bus/ecr-events"
+          Id: CrossAccountTarget
+          RoleArn: !GetAtt EventBridgeRole.Arn
+
+  ECRDevImageRule:
+    Type: AWS::Events::Rule
+    Condition: CreateECRResources
+    Properties:
+      Description: Trigger CodeBuild for dev tagged images in dev account
+      EventPattern:
+        source:
+          - aws.ecr
+        detail-type:
+          - ECR Image Action
+        detail:
+          action-type:
+            - PUSH
+          result:
+            - SUCCESS
+          repository-name:
+            - !Ref AdHocTestRunnerImageRepository
+          image-tag:
+            - "dev"
       State: ENABLED
       Targets:
         - Arn: !GetAtt AdHocTestCodeBuildProject.Arn
           RoleArn: !GetAtt EventBridgeRole.Arn
-          Id: CodeBuildTarget
+          Id: DevCodeBuildTarget
+          InputTransformer:
+            InputPathsMap:
+              imageTag: "$.detail.image-tag"
+              repositoryName: "$.detail.repository-name"
+            InputTemplate: |
+              {
+                "environmentVariablesOverride": [
+                  {
+                    "name": "IMAGE_TAG",
+                    "value": "<imageTag>"
+                  },
+                  {
+                    "name": "REPOSITORY_NAME",
+                    "value": "<repositoryName>"
+                  },
+                  {
+                    "name": "TARGET_ENVIRONMENT",
+                    "value": "dev"
+                  }
+                ]
+              }
+
+  # Event receive rules for build account - only build tags should trigger tests
+  ECRBuildImageReceiveRule:
+    Type: AWS::Events::Rule
+    Condition: CreateCrossAccountEventBridge
+    Properties:
+      EventBusName: !Ref CrossAccountEventBus
+      Description: Trigger CodeBuild for build tagged images only
+      EventPattern:
+        source:
+          - aws.ecr
+        detail-type:
+          - ECR Image Action
+        detail:
+          action-type:
+            - PUSH
+          result:
+            - SUCCESS
+          image-tag:
+            - "build"
+        account:
+          - !Ref DevAccountId
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt AdHocTestCodeBuildProject.Arn
+          RoleArn: !GetAtt EventBridgeRole.Arn
+          Id: BuildCodeBuildTarget
+          InputTransformer:
+            InputPathsMap:
+              imageTag: "$.detail.image-tag"
+              repositoryName: "$.detail.repository-name"
+            InputTemplate: |
+              {
+                "environmentVariablesOverride": [
+                  {
+                    "name": "IMAGE_TAG",
+                    "value": "<imageTag>"
+                  },
+                  {
+                    "name": "REPOSITORY_NAME",
+                    "value": "<repositoryName>"
+                  },
+                  {
+                    "name": "TARGET_ENVIRONMENT",
+                    "value": "build"
+                  }
+                ]
+              }
 
 Outputs:
   AdHocTestCodeBuildProjectArn:
@@ -651,6 +835,12 @@ Outputs:
   AdHocAcceptanceTestsArtifactBucketName:
     Value: !Ref AdHocAcceptanceTestsArtifactBucket
   RepositoryUri:
+    Condition: CreateECRResources
     Value: !GetAtt AdHocTestRunnerImageRepository.RepositoryUri
   RepositoryArn:
+    Condition: CreateECRResources
     Value: !GetAtt AdHocTestRunnerImageRepository.Arn
+  CrossAccountEventBusArn:
+    Condition: CreateCrossAccountEventBridge
+    Value: !GetAtt CrossAccountEventBus.Arn
+    Description: "ARN of the cross-account event bus for ECR events"

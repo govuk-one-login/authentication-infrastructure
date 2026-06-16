@@ -27,13 +27,13 @@ fi
 
 ENV=$1
 
-if [[ "${ENV}" == "dev" ]]; then
-  export AWS_ACCOUNT=di-auth-development
-  export AWS_PROFILE=di-auth-development-admin
+if [[ ${ENV} == "dev" ]]; then
+  export AWS_ACCOUNT=di-authentication-development
+  export AWS_PROFILE=di-authentication-development-AdministratorAccessPermission
   PARAMS_FILE="parameters-dev.json"
-elif [[ "${ENV}" == "build" ]]; then
-  export AWS_ACCOUNT=gds-di-development
-  export AWS_PROFILE=gds-di-development-admin
+elif [[ ${ENV} == "build" ]]; then
+  export AWS_ACCOUNT=di-authentication-build
+  export AWS_PROFILE=di-authentication-build-ApprovedAdmin
   PARAMS_FILE="parameters-build.json"
 else
   echo "Error: Invalid environment. Use 'dev' or 'build'"
