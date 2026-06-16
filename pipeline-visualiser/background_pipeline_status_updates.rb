@@ -32,18 +32,33 @@ def start_background_pipeline_status_updater(aws_clients)
                                              .first
 
         latest_id = latest_execution_summary.pipeline_execution_id
-
-        # To get variables we have to request the pipeline
-        # execution with GetPipelineExecution
         latest = client.get_pipeline_execution({
           pipeline_name: pipeline,
           pipeline_execution_id: latest_id,
         })
 
-        viewdata = generate_pipeline_viewdata(state, latest.pipeline_execution, latest_execution_summary.start_time, client_config["gds_cli_role"] || "")
+        viewdata = generate_pipeline_viewdata(state, latest.pipeline_execution, latest_execution_summary.start_time, client_config["gds_cli_role"] || "", latest_execution_summary.status)
 
         pipelines_map[viewdata.name] = viewdata
         history_store.save(viewdata)
+
+        # Save any other terminal executions that aren't the latest
+        executions.pipeline_execution_summaries.each do |exec_summary|
+          next if exec_summary.pipeline_execution_id == latest_id
+          next unless PipelineHistoryStore::TERMINAL_STATUSES.include?(exec_summary.status.to_s)
+
+          full_exec = client.get_pipeline_execution({
+            pipeline_name: pipeline,
+            pipeline_execution_id: exec_summary.pipeline_execution_id,
+          })
+          history_store.save_execution(
+            pipeline_name: pipeline,
+            execution: full_exec.pipeline_execution,
+            start_time: exec_summary.start_time
+          )
+        rescue StandardError => e
+          puts "Error saving history for #{pipeline} execution #{exec_summary.pipeline_execution_id}: #{e.message}"
+        end
       rescue StandardError => e
         # Log only error message, not full backtrace
         puts "Error processing pipeline #{pipeline}: #{e.message}"
@@ -56,8 +71,8 @@ def start_background_pipeline_status_updater(aws_clients)
   pipelines_map
 end
 
-def generate_pipeline_viewdata(state, execution, last_start_time, gds_cli_role)
-  summary = PipelineSummary.new(state, execution, last_start_time)
+def generate_pipeline_viewdata(state, execution, last_start_time, gds_cli_role, authoritative_status = nil)
+  summary = PipelineSummary.new(state, execution, last_start_time, authoritative_status)
   summary.gds_cli_role = gds_cli_role
 
   summary.artifacts = execution.artifact_revisions.map { |artifact| generate_artifact_viewdata(artifact) }

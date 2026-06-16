@@ -1,3 +1,5 @@
+<meta http-equiv="refresh" content="30">
+
 <h1 class="govuk-heading-l">DI Auth Pipelines</h1>
 <section>
   <h2 class="govuk-heading-m">Running pipelines</h2>
@@ -6,6 +8,7 @@
     <caption class="govuk-table__caption govuk-visually-hidden">Running pipelines</caption>
     <thead class="govuk-table__head">
       <tr class="govuk-table__row">
+        <th scope="col" class="govuk-table__header">Env</th>
         <th scope="col" class="govuk-table__header">Pipeline</th>
         <th scope="col" class="govuk-table__header">Stage</th>
         <th scope="col" class="govuk-table__header">State</th>
@@ -15,13 +18,14 @@
     <tbody class="govuk-table__body">
       <% if view.running_pipelines.length == 0 %>
         <tr class="govuk-table__row">
-          <td class="govuk-table__cell" colspan="4">
+          <td class="govuk-table__cell" colspan="5">
             There are no running pipelines
           </td>
         </tr>
       <% else %>
         <% view.running_pipelines.each do |pipeline| %>
           <tr class="govuk-table__row">
+            <td class="govuk-table__cell"><%= pipeline.group_name %></td>
             <td class="govuk-table__cell">
               <a href="<%= view.pipeline_url(pipeline.name) %>" class="govuk-link"><%= pipeline.name %></a>
             </td>
@@ -49,6 +53,7 @@
     <caption class="govuk-table__caption govuk-visually-hidden">Running pipelines</caption>
     <thead class="govuk-table__head">
     <tr class="govuk-table__row">
+      <th scope="col" class="govuk-table__header">Env</th>
       <th scope="col" class="govuk-table__header">Pipeline</th>
       <th scope="col" class="govuk-table__header">Stage</th>
       <th scope="col" class="govuk-table__header">Error</th>
@@ -64,6 +69,7 @@
     <% else %>
       <% view.failing_pipelines.each do |pipeline| %>
         <tr class="govuk-table__row">
+          <td class="govuk-table__cell"><%= pipeline.group_name %></td>
           <td class="govuk-table__cell">
             <a href="<%= view.pipeline_url(pipeline.name) %>" class="govuk-link"><%= pipeline.name %></a>
           </td>
