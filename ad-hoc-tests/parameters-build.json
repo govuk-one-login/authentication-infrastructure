@@ -5,7 +5,7 @@
   },
   {
     "ParameterKey": "GitHubActionsRoleName",
-    "ParameterValue": "build-auth-deploy-pipeline-GitHubActionsRole-160U5ADTRKQ2O"
+    "ParameterValue": "authentication-api-pipeline-GitHubActionsRole-hQsg9hnK2Ukc"
   },
   {
     "ParameterKey": "AWSOrganizationId",
@@ -37,15 +37,15 @@
   },
   {
     "ParameterKey": "TestVpcId",
-    "ParameterValue": "vpc-03db44fa71b8d00b2"
+    "ParameterValue": "vpc-095e2f57f31498e5d"
   },
   {
     "ParameterKey": "TestSubnetIdA",
-    "ParameterValue": "subnet-06431beae9b136e15"
+    "ParameterValue": "subnet-055927eafb2d73cd3"
   },
   {
     "ParameterKey": "TestSubnetIdB",
-    "ParameterValue": "subnet-016db45a259212743"
+    "ParameterValue": "subnet-03d50d98f5a4829cc"
   },
   {
     "ParameterKey": "CustomKmsKeyArns",
@@ -58,5 +58,21 @@
   {
     "ParameterKey": "LogRetentionDays",
     "ParameterValue": "7"
+  },
+  {
+    "ParameterKey": "DeployECR",
+    "ParameterValue": "False"
+  },
+  {
+    "ParameterKey": "CrossAccountRoleAccountId",
+    "ParameterValue": "761723964695"
+  },
+  {
+    "ParameterKey": "DevECRRepositoryName",
+    "ParameterValue": "dev-ad-hoc-tests-adhoctestrunnerimagerepository-ghvdzd2cyr46"
+  },
+  {
+    "ParameterKey": "DevAccountId",
+    "ParameterValue": "975050272416"
   }
 ]

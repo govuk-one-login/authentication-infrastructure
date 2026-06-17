@@ -5,7 +5,7 @@
   },
   {
     "ParameterKey": "GitHubActionsRoleName",
-    "ParameterValue": "dev-auth-deploy-pipeline-GitHubActionsRole-QrtGginNnjDD"
+    "ParameterValue": "authentication-api-pipeline-GitHubActionsRole-eoW45BhwCqWg"
   },
   {
     "ParameterKey": "AWSOrganizationId",
@@ -37,15 +37,15 @@
   },
   {
     "ParameterKey": "TestVpcId",
-    "ParameterValue": "vpc-04918b35a66969280"
+    "ParameterValue": "vpc-0ad3a83e46742a372"
   },
   {
     "ParameterKey": "TestSubnetIdA",
-    "ParameterValue": "subnet-04234e8fb1ee28d2c"
+    "ParameterValue": "subnet-04a0851b2083a2782"
   },
   {
     "ParameterKey": "TestSubnetIdB",
-    "ParameterValue": "subnet-0c91be3c7426cf2e6"
+    "ParameterValue": "subnet-0c6f6e7abc765bd57"
   },
   {
     "ParameterKey": "CustomKmsKeyArns",
@@ -58,5 +58,13 @@
   {
     "ParameterKey": "LogRetentionDays",
     "ParameterValue": "7"
+  },
+  {
+    "ParameterKey": "CrossAccountRoleAccountId",
+    "ParameterValue": "653994557586"
+  },
+  {
+    "ParameterKey": "BuildAccountId",
+    "ParameterValue": "058264536367"
   }
 ]
