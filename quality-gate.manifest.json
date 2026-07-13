@@ -1,0 +1,113 @@
+{
+  "$schema": "https://raw.githubusercontent.com/govuk-one-login/quality-gates/refs/tags/v0.13.0/schemas/schema.json",
+  "services": [
+    {
+      "product": "Authentication",
+      "component": "authentication-frontend",
+      "promotionType": "securePipelines",
+      "checks": [
+        {
+          "checkTypes": [
+            "integration"
+          ],
+          "phase": "build",
+          "provider": "Stack Orchestration Tool",
+          "config": {
+            "file": "configuration/di-authentication-build/frontend-pipeline/parameters.json",
+            "path": "$[?@.ParameterKey=='OneLoginTestImageRepositoryNames']"
+          }
+        }
+      ]
+    },
+    {
+      "product": "Authentication",
+      "component": "authentication-frontend",
+      "promotionType": "securePipelines",
+      "checks": [
+        {
+          "checkTypes": [
+            "canary"
+          ],
+          "phase": "build",
+          "provider": "Stack Orchestration Tool",
+          "config": {
+            "file": "configuration/di-authentication-build/frontend-pipeline/parameters.json",
+            "path": "$[?@.ParameterKey=='ECSCanaryDeployment']"
+          }
+        }
+      ]
+    },
+    {
+      "product": "Authentication",
+      "component": "authentication-frontend",
+      "promotionType": "securePipelines",
+      "checks": [
+        {
+          "checkTypes": [
+            "canary"
+          ],
+          "phase": "staging",
+          "provider": "Stack Orchestration Tool",
+          "config": {
+            "file": "configuration/di-authentication-staging/frontend-pipeline/parameters.json",
+            "path": "$[?@.ParameterKey=='ECSCanaryDeployment']"
+          }
+        }
+      ]
+    },
+    {
+      "product": "Authentication",
+      "component": "authentication-frontend",
+      "promotionType": "securePipelines",
+      "checks": [
+        {
+          "checkTypes": [
+            "canary"
+          ],
+          "phase": "production",
+          "provider": "Stack Orchestration Tool",
+          "config": {
+            "file": "configuration/di-authentication-production/frontend-pipeline/parameters.json",
+            "path": "$[?@.ParameterKey=='ECSCanaryDeployment']"
+          }
+        }
+      ]
+    },
+    {
+      "product": "Authentication",
+      "component": "authentication-api",
+      "promotionType": "securePipelines",
+      "checks": [
+        {
+          "checkTypes": [
+            "integration"
+          ],
+          "phase": "build",
+          "provider": "Stack Orchestration Tool",
+          "config": {
+            "file": "configuration/di-authentication-build/authentication-api-pipeline/parameters.json",
+            "path": "$[?@.ParameterKey=='OneLoginTestImageRepositoryNames']"
+          }
+        }
+      ]
+    },
+    {
+      "product": "Authentication",
+      "component": "authentication-api",
+      "promotionType": "securePipelines",
+      "checks": [
+        {
+          "checkTypes": [
+            "canary"
+          ],
+          "phase": "build",
+          "provider": "Stack Orchestration Tool",
+          "config": {
+            "file": "configuration/di-authentication-build/authentication-api-pipeline/parameters.json",
+            "path": "$[?@.ParameterKey=='LambdaCanaryDeployment']"
+          }
+        }
+      ]
+    }
+  ]
+}
