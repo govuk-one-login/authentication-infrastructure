@@ -5,7 +5,7 @@
   },
   {
     "ParameterKey": "Environment",
-    "ParameterValue": "dev"
+    "ParameterValue": "build"
   },
   {
     "ParameterKey": "ProgrammaticPermissionsBoundary",
@@ -28,6 +28,10 @@
     "ParameterValue": "arn:aws:signer:eu-west-2:216552277552:/signing-profiles/DynatraceSigner/5uwzCCGTPq,arn:aws:signer:eu-west-2:354770603991:/signing-profiles/SigningProfile_SxeU7YX0F6Pb/HyVGO9gC7b"
   },
   {
+    "ParameterKey": "AllowedAccounts",
+    "ParameterValue": "851725205974"
+  },
+  {
     "ParameterKey": "AllowedServiceOne",
     "ParameterValue": "SSM"
   },
@@ -44,12 +48,24 @@
     "ParameterValue": "Lambda"
   },
   {
-    "ParameterKey": "ECSCanaryDeployment",
-    "ParameterValue": "None"
+    "ParameterKey": "IncludePromotion",
+    "ParameterValue": "Yes"
   },
   {
-    "ParameterKey": "IncludePromotion",
-    "ParameterValue": "No"
+    "ParameterKey": "SlackNotificationType",
+    "ParameterValue": "Failures"
+  },
+  {
+    "ParameterKey": "BuildNotificationStackName",
+    "ParameterValue": "build-notifications"
+  },
+  {
+    "ParameterKey": "ECSCanaryDeployment",
+    "ParameterValue": "CodeDeployDefault.ECSCanary10Percent5Minutes"
+  },
+  {
+    "ParameterKey": "TestContainerAllowCrossAccountAssumeRole",
+    "ParameterValue": "Yes"
   },
   {
     "ParameterKey": "TestReportFormat",
