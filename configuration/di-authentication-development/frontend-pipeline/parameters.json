@@ -54,5 +54,13 @@
   {
     "ParameterKey": "StoreTestReportInS3Bucket",
     "ParameterValue": "Yes"
+  },
+  {
+    "ParameterKey": "RunTestContainerInVPC",
+    "ParameterValue": "True"
+  },
+  {
+    "ParameterKey": "TestContainerAllowCrossAccountAssumeRole",
+    "ParameterValue": "Yes"
   }
 ]
