@@ -53,6 +53,9 @@ Conditions:
   IsDevEnvironment: !Equals
     - !Ref Environment
     - "dev"
+  IsProduction: !Equals
+    - !Ref Environment
+    - "production"
 
 Mappings:
   EnvironmentConfiguration:
@@ -354,6 +357,57 @@ Resources:
       Tags:
         Application: "Authentication"
         Source: govuk-one-login/authentication-infrastructure/alerts/template.yaml
+
+  ProdAuthNotificationsChannelTopic:
+    Type: AWS::SNS::Topic
+    Condition: IsProduction
+    Properties:
+      TopicName: "production-auth-notifications-channel"
+      Tags:
+        - Key: Name
+          Value: "production-auth-notifications-channel"
+        - Key: Service
+          Value: "Authentication"
+        - Key: Source
+          Value: "govuk-one-login/authentication-infrastructure/alerts/template.yaml"
+
+  ProdAuthNotificationsChannelTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Condition: IsProduction
+    Properties:
+      Topics:
+        - !Ref ProdAuthNotificationsChannelTopic
+      PolicyDocument:
+        Statement:
+          - Action: "sns:Publish"
+            Effect: Allow
+            Resource: !Ref ProdAuthNotificationsChannelTopic
+            Principal:
+              Service:
+                - cloudwatch.amazonaws.com
+
+  ProdAuthNotificationsChannelTopicSSM:
+    Type: AWS::SSM::Parameter
+    Condition: IsProduction
+    Properties:
+      Description: "The ARN of the production SNS topic for #di-authentication-notifications (separate from the #di-2nd-line alerts topic)"
+      Name: "/deploy/production/auth_notifications_channel_topic_arn"
+      Type: String
+      Value: !Ref ProdAuthNotificationsChannelTopic
+      Tags:
+        Application: "Authentication"
+        Source: govuk-one-login/authentication-infrastructure/alerts/template.yaml
+
+  ProdAuthNotificationsChannelChatbot:
+    Type: AWS::Chatbot::SlackChannelConfiguration
+    Condition: IsProduction
+    Properties:
+      ConfigurationName: !Sub "${AWS::StackName}-auth-notifications-channel"
+      IamRoleArn: !GetAtt ChatbotRole.Arn
+      SlackChannelId: "C06HMLMEQ1W"
+      SlackWorkspaceId: !Ref SlackWorkspaceId
+      SnsTopicArns:
+        - !Ref ProdAuthNotificationsChannelTopic
 
 # Below SNS topic are for Authdevs only created in Dev AWS account
 # IF subscription if required for testing in authdev please created againt 'dev-alerts' Lambda
