@@ -253,7 +253,7 @@ function provision_pipeline {
 
   TMP_PARAM_FILE=$(mktemp)
   echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
-  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" utils-pipeline sam-deploy-pipeline v2.87.0
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" utils-pipeline sam-deploy-pipeline v2.111.1
 }
 
 # ------------------

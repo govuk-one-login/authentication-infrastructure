@@ -558,7 +558,7 @@ function provision_pipeline {
 
   TMP_PARAM_FILE=$(mktemp)
   echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
-  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" dev-utils-pipeline sam-deploy-pipeline v2.87.0
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" dev-utils-pipeline sam-deploy-pipeline v2.111.1
 
   # AuthDev1 Utils pipeline
   PARAMETERS_FILE="configuration/$AWS_ACCOUNT/authdev1-utils-pipeline/parameters.json"
@@ -570,7 +570,7 @@ function provision_pipeline {
 
   TMP_PARAM_FILE=$(mktemp)
   echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
-  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev1-utils-pipeline sam-deploy-pipeline v2.87.0
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev1-utils-pipeline sam-deploy-pipeline v2.111.1
 
   # AuthDev2 Utils pipeline
   PARAMETERS_FILE="configuration/$AWS_ACCOUNT/authdev2-utils-pipeline/parameters.json"
@@ -582,7 +582,7 @@ function provision_pipeline {
 
   TMP_PARAM_FILE=$(mktemp)
   echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
-  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev2-utils-pipeline sam-deploy-pipeline v2.87.0
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev2-utils-pipeline sam-deploy-pipeline v2.111.1
 
   # AuthDev3 Utils pipeline
   PARAMETERS_FILE="configuration/$AWS_ACCOUNT/authdev3-utils-pipeline/parameters.json"
@@ -594,7 +594,7 @@ function provision_pipeline {
 
   TMP_PARAM_FILE=$(mktemp)
   echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
-  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev3-utils-pipeline sam-deploy-pipeline v2.87.0
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" authdev3-utils-pipeline sam-deploy-pipeline v2.111.1
 
 }
 
