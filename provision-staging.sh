@@ -92,6 +92,11 @@ ArtifactSourceBucketArn=${CFN_frontend_pipeline_ArtifactPromotionBucketArn:-"non
 ArtifactSourceBucketEventTriggerRoleArn=${CFN_frontend_pipeline_ArtifactPromotionBucketEventTriggerRoleArn:-"none"}
 
 # shellcheck disable=SC1091
+source "./scripts/read_cloudformation_stack_outputs.sh" "apex-website-pipeline"
+ApexArtifactSourceBucketArn=${CFN_apex_website_pipeline_ArtifactPromotionBucketArn:-"none"}
+ApexArtifactSourceBucketEventTriggerRoleArn=${CFN_apex_website_pipeline_ArtifactPromotionBucketEventTriggerRoleArn:-"none"}
+
+# shellcheck disable=SC1091
 source "./scripts/read_cloudformation_stack_outputs.sh" "authentication-api-pipeline"
 AuthenticationApiArtifactSourceBucketArn=${CFN_authentication_api_pipeline_ArtifactPromotionBucketArn:-"none"}
 AuthenticationApiArtifactSourceBucketEventTriggerRoleArn=${CFN_authentication_api_pipeline_ArtifactPromotionBucketEventTriggerRoleArn:-"none"}
@@ -189,6 +194,20 @@ function provision_pipeline {
   echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
   export AWS_REGION="eu-west-2"
   PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" frontend-pipeline sam-deploy-pipeline "${PIPELINE_TEMPLATE_VERSION}"
+
+  # Staging-apex-website-pipeline
+  PARAMETERS_FILE="configuration/$AWS_ACCOUNT/apex-website-pipeline/parameters.json"
+  PARAMETERS=$(jq ". += [
+                            {\"ParameterKey\":\"ContainerSignerKmsKeyArn\",\"ParameterValue\":\"${ContainerSignerKmsKeyArn}\"},
+                            {\"ParameterKey\":\"SigningProfileArn\",\"ParameterValue\":\"${SigningProfileArn}\"},
+                            {\"ParameterKey\":\"SigningProfileVersionArn\",\"ParameterValue\":\"${SigningProfileVersionArn}\"},
+                            {\"ParameterKey\":\"ArtifactSourceBucketArn\",\"ParameterValue\":\"${ApexArtifactSourceBucketArn}\"},
+                            {\"ParameterKey\":\"ArtifactSourceBucketEventTriggerRoleArn\",\"ParameterValue\":\"${ApexArtifactSourceBucketEventTriggerRoleArn}\"}
+                        ] | tojson" -r "${PARAMETERS_FILE}")
+
+  TMP_PARAM_FILE=$(mktemp)
+  echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
+  PARAMETERS_FILE=$TMP_PARAM_FILE ./provisioner.sh "${AWS_ACCOUNT}" apex-website-pipeline sam-deploy-pipeline v2.114.0
 
   # backend pipeline
   PARAMETERS_FILE="configuration/$AWS_ACCOUNT/authentication-api-pipeline/parameters.json"
