@@ -21,6 +21,10 @@
   },
   {
     "ParameterKey": "LogDestination",
-    "ParameterValue": "csls_cw_logs_destination_prodpython-2"
+    "ParameterValue": "LogGroupOnly"
+  },
+  {
+    "ParameterKey": "OriginCloakingHeaderManagedSecretRotationMonthWeekDaySchedule",
+    "ParameterValue": "MON#3"
   }
 ]
