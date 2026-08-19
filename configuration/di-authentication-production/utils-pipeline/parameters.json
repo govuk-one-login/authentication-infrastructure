@@ -61,7 +61,7 @@
   },
   {
     "ParameterKey": "AccessDynamoDBAccounts",
-    "ParameterValue": "172348255554,533266965190"
+    "ParameterValue": "172348255554,533266965190,026991849909"
   },
   {
     "ParameterKey": "TestContainerAllowCrossAccountAssumeRole",
