@@ -108,6 +108,24 @@
           "path": "$[?@.ParameterKey=='LambdaCanaryDeployment']"
         }
       ]
+    },
+    {
+      "product": "Authentication",
+      "component": "authentication-deploy",
+      "promotionType": "securePipelines",
+      "automated": [
+        {
+          "provider": "Stack Orchestration Tool",
+          "phase": "build",
+          "checks": [
+            {
+              "name": "integration"
+            }
+          ],
+          "file": "configuration/gds-di-development/build-auth-deploy-pipeline/parameters.json",
+          "path": "$[?@.ParameterKey=='TestImageRepositoryUri']"
+        }
+      ]
     }
   ]
 }
