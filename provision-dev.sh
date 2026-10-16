@@ -105,7 +105,6 @@ function provision_base_stacks {
   CONTAINER_IMAGE_TEMPLATE_VERSION="v3.0.0"
   # NOTE: tag immutability is manually disabled for these ecr repositories
   ./provisioner.sh "${AWS_ACCOUNT}" frontend-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
-  ./provisioner.sh "${AWS_ACCOUNT}" frontend-apitest-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
   ./provisioner.sh "${AWS_ACCOUNT}" service-down-page-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
   ./provisioner.sh "${AWS_ACCOUNT}" acceptance-tests-image-repository test-image-repository v1.2.0
 
@@ -120,6 +119,9 @@ function provision_base_stacks {
   # NOTE: tag immutability is manually disabled for these ecr repositories
   ./provisioner.sh "${AWS_ACCOUNT}" authdev3-frontend-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
   ./provisioner.sh "${AWS_ACCOUNT}" authdev3-service-down-page-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
+
+  #Below Template is used to create a Transit Gateway cross account role in the di-authentication-development
+  ./provisioner.sh "${AWS_ACCOUNT}" tgw-cross-account-role tgw-cross-account-role LATEST
 
   TEMPLATE_URL=file://deployment-configs/template.yaml ./provisioner.sh "${AWS_ACCOUNT}" deployment-configs deployment-configs LATEST
 }
