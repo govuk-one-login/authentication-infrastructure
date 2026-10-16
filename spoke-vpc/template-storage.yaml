@@ -1,0 +1,41 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: >
+  S3 bucket for storing spoke-vpc CloudFormation templates
+
+Resources:
+  SpokeVpcTemplateBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: aws:kms
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  SpokeVpcTemplateBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref SpokeVpcTemplateBucket
+      PolicyDocument:
+        Statement:
+          - Sid: DenyNonSSLRequests
+            Effect: Deny
+            Principal: "*"
+            Action: s3:*
+            Resource:
+              - !GetAtt SpokeVpcTemplateBucket.Arn
+              - !Sub "${SpokeVpcTemplateBucket.Arn}/*"
+            Condition:
+              Bool:
+                aws:SecureTransport: false
+
+Outputs:
+  SpokeVpcTemplateBucketName:
+    Value: !Ref SpokeVpcTemplateBucket

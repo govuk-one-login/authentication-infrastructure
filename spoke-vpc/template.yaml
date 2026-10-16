@@ -1,0 +1,4714 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+
+Description: >
+  devplatform-deploy vpc template version: Auth Version 1.0.0
+  VPC and networking resources template with Transit Gateway and IPAM integration managed by dev-platform.
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "VPC Type"
+        Parameters:
+          - VpcType
+      - Label:
+          default: "General Configuration"
+        Parameters:
+          - Environment
+          - CidrBlock
+          - AvailabilityZoneCount
+          - VpcLinkEnabled
+      - Label:
+          default: "Egress Control"
+        Parameters:
+          - AllowedDomains
+          - AllowRules
+          - AdditionalAllowRules
+          - DeployEgressTestLambda
+          - EgressTestLambdaCustomURLs
+      - Label:
+          default: "NAT GW EIPs"
+        Parameters:
+          - ZoneAEIPAllocationId
+          - ZoneBEIPAllocationId
+          - ZoneCEIPAllocationId
+      - Label:
+          default: "Created for the Orch/Auth Secure Pipelines migration. Route table settings for VPC Peering connection"
+        Parameters:
+          - VpcPeeringConnectionId
+          - VpcPeeringRequesterCidr
+      - Label:
+          default: "Disaster Recovery Settings"
+        Parameters:
+          - UseDisasterRecovery
+      - Label:
+          default: "Enabled AWS APIs"
+        Parameters:
+          - AppConfigApiEnabled
+          - AppConfigDataApiEnabled
+          - AthenaApiEnabled
+          - BatchApiEnabled
+          - CloudFormationEndpointEnabled
+          - CloudTrailApiEnabled
+          - CloudWatchApiEnabled
+          - CloudWatchLogsApiEnabled
+          - CodeBuildApiEnabled
+          - CodeDeployApiEnabled
+          - DynamoDBApiEnabled
+          - DynatraceApiEnabled
+          - ECRApiEnabled
+          - EventsApiEnabled
+          - ExecuteApiGatewayEnabled
+          - FirehoseApiEnabled
+          - GlueApiEnabled
+          - IdentityStoreApiEnabled
+          - KinesisApiEnabled
+          - KMSApiEnabled
+          - LambdaApiEnabled
+          - LogsApiEnabled
+          - PrivateCAApiEnabled
+          - S3ApiEnabled
+          - SecretsManagerApiEnabled
+          - SESSmtpEnabled
+          - SNSApiEnabled
+          - SQSApiEnabled
+          - SSMApiEnabled
+          - SSMParametersStoreEnabled
+          - StatesApiEnabled
+          - STSApiEnabled
+          - TextractApiEnabled
+          - XRayApiEnabled
+      - Label:
+          default: "Rest API Gateway VPC Link"
+        Parameters:
+          - RestAPIGWVpcLinkEnabled
+          - AccessLogsCustomBucketNameEnabled
+      - Label:
+          default: "NLB Cross Zone support"
+        Parameters:
+          - NlbCrossZoneEnabled
+      - Label:
+          default: "VPC Flow Logs"
+        Parameters:
+          - FlowLogCloudWatchEnabled
+
+###################################
+#   Parameters
+###################################
+
+Parameters:
+  FlowLogCloudWatchEnabled:
+    Description: >
+      Enable VPC Flow Logs to CloudWatch Logs. When disabled, flow logs will not be created within the account but are centrally collected by Amazon Security Lake. Please contact the PSRE pod for more information.
+    Type: "String"
+    Default: "No"
+    AllowedValues:
+      - "Yes"
+      - "No"
+
+  VpcType:
+    Description: >
+      [VPC TYPE-AGNOSTIC]
+      Selects the Legacy or Spoke VPC type.
+      Spoke VPC allows applications to use the new secure egress service (Transit Gateway).
+      Legacy VPC should not be used for new applications and should only be selected for applications
+      that have not yet been migrated to Spoke VPC and Transit Gateway.
+      The Legacy VPC type will be removed in a future release.
+    Type: "String"
+    AllowedValues:
+      - Legacy
+      - Spoke
+    Default: Legacy
+
+  Environment:
+    Description: >
+      [SPOKE VPC ONLY]
+      The service environment this VPC is deployed into.
+      Determines the IPAM pool for IP address allocation, the Transit Gateway ID, and the Disaster Recovery Transit Gateway ID.
+    Type: "String"
+    AllowedValues:
+      - none
+      - demo
+      - dev
+      - build
+      - staging
+      - integration
+      - production
+    Default: none
+
+  DeployEgressTestLambda:
+    Description: >
+      [SPOKE VPC ONLY]
+      Deploy a lambda you can use to confirm egress via the Transit Gateway.
+      The lambda will test a set of default URLs, and you can specify custom URLs via the EgressTestLambdaCustomURLs parameter.
+    Type: "String"
+    Default: "No"
+    AllowedValues:
+      - "Yes"
+      - "No"
+
+  EgressTestLambdaCustomURLs:
+    Description: >
+      [SPOKE VPC ONLY]
+      Specify any custom URLs the egress-test lambda will validate.
+      These will be stored as a comma-delimited list under the lambda's CUSTOM_URLS environment variable.
+      Include the protocol (e.g. https://)
+    Type: "String"
+    Default: "none"
+
+  UseDisasterRecovery:
+    Description: >
+      [SPOKE VPC ONLY]
+      *** DO NOT SET THIS TO `Yes` UNLESS RESPONDING TO A DISASTER SCENARIO ***
+      Only set to `Yes` when actively responding to a production Transit Gateway hub outage, to
+      redirect egress traffic via the Disaster Recovery Transit Gateway hub.
+      This is an operational switch for incident response only — it does not enable or configure
+      DR capability. It must be returned to `No` once the incident is resolved.
+    Type: "String"
+    Default: "No"
+    AllowedValues:
+      - "Yes"
+      - "No"
+
+  CidrBlock:
+    Description: >
+      [LEGACY VPC ONLY]
+      The CIDR block that defines the IP range that the VPC will use. Defaults
+      to 10.0.0.0/16 and there is no specific reason to change this unless you
+      have multiple VPCs that are going to be peered or connected via a Transit
+      Gateway. Must be a /16.
+    Type: "String"
+    AllowedPattern: "([0-9]{1,3}\\.){3}[0-9]{1,3}(\\/16)?"
+    Default: "10.0.0.0/16"
+
+  AvailabilityZoneCount:
+    Description: >
+      [LEGACY VPC ONLY]
+      The number of availability zones to configure. It is expected that
+      AWS will be more reliable than our application and as such two
+      availability zones should be sufficient for the vast majority of use
+      cases. The availability zone count will always be 3 for Spoke VPC.
+    Type: "Number"
+    AllowedValues:
+      - 2
+      - 3
+    Default: 3
+
+  FirewallS3Bucket:
+    Description: >
+      [LEGACY VPC ONLY]
+      The S3 bucket destination for Network Firewall logs
+    Type: "String"
+    Default: "log-archive-nwf-alerts-logs-523017967436-eu-west-2"
+
+  ZoneAEIPAllocationId:
+    Description: >
+      [LEGACY VPC ONLY]
+      The EIP allocation id to use for the NAT Gateway in Zone A. If not
+      specified an EIP will be automatically provisioned.
+    Type: "String"
+    Default: "none"
+
+  ZoneBEIPAllocationId:
+    Description: >
+      [LEGACY VPC ONLY]
+      The EIP allocation id to use for the NAT Gateway in Zone B. If not
+      specified an EIP will be automatically provisioned.
+    Type: "String"
+    Default: "none"
+
+  ZoneCEIPAllocationId:
+    Description: >
+      [LEGACY VPC ONLY]
+      The EIP allocation id to use for the NAT Gateway in Zone C. If not
+      specified an EIP will be automatically provisioned. This will only
+      be used if AvailabilityZoneCount is set to 3.
+    Type: "String"
+    Default: "none"
+
+  VpcLinkEnabled:
+    Description: >
+      [VPC TYPE-AGNOSTIC]
+      Allow a public API gateway to connect to services that are deployed
+      in the VPC. This is not required if the API Gateway only connects to
+      Lambda functions.
+    Type: "String"
+    Default: "No"
+    AllowedValues:
+      - "Yes"
+      - "No"
+
+  AllowedDomains:
+    Description: >
+      [VPC TYPE-AGNOSTIC]
+      Allow these domains to be resolved by DNS. If no AllowedDomains are needed,
+      input none. Please note: to enable egress, you must fill the AllowedDomains or AllowRules params.
+    Type: "CommaDelimitedList"
+    Default: "none"
+    AllowedPattern: ".+"
+
+  AllowRules:
+    Description: >
+      [LEGACY VPC ONLY]
+      Suricata rules needed to pass traffic. Consecutive sid's are used.
+      Please note: to enable egress, you must fill the AllowedDomains or AllowRules params.
+      Example rule to allow traffic for all domains under account.gov.uk:
+      pass tls $HOME_NET any -> $EXTERNAL_NET 443 (tls.sni;
+      content:".account.gov.uk"; endswith; msg:"Pass TLS to *.account.gov.uk";
+      flow:established; sid:2001; rev:1;)
+    Type: "String"
+    Default: "none"
+
+  AdditionalAllowRules:
+    Description: >
+      [LEGACY VPC ONLY]
+      Additional Suricata rules needed to pass traffic. Consecutive sid's are used.
+      Please note: to enable egress, you must fill the AllowedDomains or AllowRules params.
+      Example rule to allow traffic for all domains under account.gov.uk:
+      pass tls $HOME_NET any -> $EXTERNAL_NET 443 (tls.sni;
+      content:".account.gov.uk"; endswith; msg:"Pass TLS to *.account.gov.uk";
+      flow:established; sid:2001; rev:1;)
+      This parameter is for when the maximum length of the AllowRules parameter has been
+      reached but more rules are required.
+    Type: "String"
+    Default: "none"
+
+  AccessLogsCustomBucketNameEnabled:
+    Description: >
+      [VPC TYPE-AGNOSTIC]
+      Controls the AccessLogsBucket BucketName.
+      By default (Yes) the AccessLogsBucket is named as {AWS::StackName}-{Pseudo random element from stack id}. This allows the bucket name to be found programatically and avoids naming collisions within the account.
+      When set to No the bucket will be named by Cloudformation standard resource naming approach. Please seek guidance from #dev-platform before setting 'No'
+    Type: "String"
+    Default: "Yes"
+    AllowedValues:
+      - "Yes"
+      - "No"
+
+  NlbCrossZoneEnabled:
+    Description: >
+      [VPC TYPE-AGNOSTIC]
+      This enables NLB Cross-zone load balancing, which can be used to route
+      traffic accross the Availability Zones. Default is Yes (enabled)
+    Type: "String"
+    Default: "Yes"
+    AllowedValues:
+      - "Yes"
+      - "No"
+
+  AppConfigApiEnabled:
+    Description: >
+      [VPC TYPE-AGNOSTIC]
+      The App Config API is enabled. This is only required in stacks where the
+      application uses App Config.
+    Type: "String"
+    Default: "No"
+    AllowedValues:
+      - "Yes"
+      - "No"
+
+  AppConfigDataApiEnabled:
+    Description: >
+      [VPC TYPE-AGNOSTIC]
+      The App Config Data API is enabled. This is only required in stacks where the
+      application uses App Config Data.
+    Type: "String"
+    Default: "No"
+    AllowedValues:
+      - "Yes"
+      - "No"
+
+  AthenaApiEnabled:
+    Description: >
+      [VPC TYPE-AGNOSTIC]
+      The Athena API is enabled. This is only required in stacks where the
+      application uses Athena as a data engine.
+    Type: "String"
+    Default: "No"
+    AllowedValues:
+      - "Yes"
+      - "No"
+
+  BatchApiEnabled:
+    Description: >
+      [VPC TYPE-AGNOSTIC]
+      The AWS Batch API is enabled. Only enable if you require access to the
+      fully managed batch computing service.
+    Type: "String"
+    Default: "No"
+    AllowedValues:
+      - "Yes"
+      - "No"
+
+  CloudFormationEndpointEnabled:
+    Description: >
+      [VPC TYPE-AGNOSTIC]
+      This provisions a cloudformation VPC Endpoint, which may be needed when either
+      using custom resources or wait conditions.
+    Type: "String"
+    Default: "No"
+    AllowedValues:
+      - "Yes"
+      - "No"
+
+  CloudTrailApiEnabled:
+    Description: >
+      [VPC TYPE-AGNOSTIC]
+      The Cloud Trail API is enabled. This is required for lambdas that will
+      make Cloud Trail queries, retrieve results and interact with other
+      features of the service.
+    Type: "String"
+    Default: "No"
+    AllowedValues:
+      - "Yes"
+      - "No"
+
+  CloudWatchApiEnabled:
+    Description: >
+      [VPC TYPE-AGNOSTIC]
+      The CloudWatch Metrics API is enabled. This is only required in stacks
+      where applications explicitly emit metrics using the PutMetricData API
+      call (rather than using the logs embedded metric format) or perform a
+      Canary-style release by setting a DeploymentPreference on a Lambda.
+    Type: "String"
+    Default: "No"
+    AllowedValues:
+      - "Yes"
+      - "No"
+
+  CloudWatchLogsApiEnabled:
+    Description: >
+      [VPC TYPE-AGNOSTIC]
+      The CloudWatch Logs API is enabled. This is only required in stacks
+      where applications explicitly emit or query Cloudwatch logs.
+    Type: "String"
+    Default: "No"
+    AllowedValues:
+      - "Yes"
+      - "No"
+
+  CodeBuildApiEnabled:
+    Description: >
+      [VPC TYPE-AGNOSTIC]
+      The CodeBuild API is enabled.  This is only required for stacks who
+      use CodeBuild within their VPC and know it's required for executing
+      certain API calls.
+    Type: "String"
+    Default: "No"
+    AllowedValues:
+      - "Yes"
+      - "No"
+
+  CodeDeployApiEnabled:
+    Description: >
+      [VPC TYPE-AGNOSTIC]
+      The Code Deploy API is enabled. This is only required in stacks that perform a
+      Canary-style release by setting a DeploymentPreference on a Lambda. It
+      allows the Lambda runtime to update the hook execution status in the associated
+      Deployment Group.
+    Type: "String"
+    Default: "No"
+    AllowedValues:
+      - "Yes"
+      - "No"
+
+  DynamoDBApiEnabled:
+    Description: >
+      [VPC TYPE-AGNOSTIC]
+      The DynamoDB API is enabled. This is only required in stacks where the
+      application uses DynamoDB as a data store.
+    Type: "String"
+    Default: "No"
+    AllowedValues:
+      - "Yes"
+      - "No"
+
+  DynatraceApiEnabled:
+    Description: >
+      [VPC TYPE-AGNOSTIC]
+      The Dynatrace API is enabled. This is only required in stacks
+      where applications explicitly emit or query Dynatrace.
+    Type: "String"
+    Default: "No"
+    AllowedValues:
+      - "Yes"
+      - "No"
+
+  EventsApiEnabled:
+    Description: >
+      [VPC TYPE-AGNOSTIC]
+      The Events API is enabled. This is only required in stacks where the
+      application processes event bridge events.
+    Type: "String"
+    Default: "No"
+    AllowedValues:
+      - "Yes"
+      - "No"
+
+  ECRApiEnabled:
+    Description: >
+      [VPC TYPE-AGNOSTIC]
+      The Elastic Container Registry (ECR) API is enabled. This is only required in
+      stacks that deploy containers to Fargate.
+    Type: "String"
+    Default: "No"
+    AllowedValues:
+      - "Yes"
+      - "No"
+
+  ExecuteApiGatewayEnabled:
+    Description: >
+      [VPC TYPE-AGNOSTIC]
+      The Execute API is enabled. This is only required in stacks that use private REST APIs,
+      with private dns enabled. More information available at
+      'https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-private-apis.html'
+    Type: "String"
+    Default: "No"
+    AllowedValues:
+      - "Yes"
+      - "No"
+
+  FirehoseApiEnabled:
+    Description: >
+      [VPC TYPE-AGNOSTIC]
+      The Kinesis Firehose API is enabled. This is only required in stacks where the
+      application directly writes records to a Kinesis Firehose. It is not required
+      if there is a separate process that runs outside the VPC that streams data to
+      the Firehose.
+    Type: "String"
+    Default: "No"
+    AllowedValues:
+      - "Yes"
+      - "No"
+
+  GlueApiEnabled:
+    Description: >
+      [VPC TYPE-AGNOSTIC]
+      The Glue API is enabled. Only enable if you require access to the
+      Glue serverless data integration service.
+    Type: "String"
+    Default: "No"
+    AllowedValues:
+      - "Yes"
+      - "No"
+
+  IdentityStoreApiEnabled:
+    Description: >
+      [VPC TYPE-AGNOSTIC]
+      The Identity Store API service is enabled.
+      This is endpoint required specifically for the T.E.A.M application:
+      'https://govukverify.atlassian.net/wiki/x/Xo_T5'
+      IMPORTANT: it is not recommended that you enable this unless deploying
+      for use with T.E.A.M
+    Type: "String"
+    Default: "No"
+    AllowedValues:
+      - "Yes"
+      - "No"
+
+  KinesisApiEnabled:
+    Description: >
+      [VPC TYPE-AGNOSTIC]
+      The Kinesis API is enabled. This is only required in stacks where the
+      application uses Kinesis streams.
+    Type: "String"
+    Default: "No"
+    AllowedValues:
+      - "Yes"
+      - "No"
+
+  KMSApiEnabled:
+    Description: >
+      [VPC TYPE-AGNOSTIC]
+      The AWS Key Management Service (KMS) is enabled. This should be enabled
+      in most stacks as most event sources and targets should be using KMS to
+      encrypt data at rest.
+    Type: "String"
+    Default: "No"
+    AllowedValues:
+      - "Yes"
+      - "No"
+
+  LambdaApiEnabled:
+    Description: >
+      [VPC TYPE-AGNOSTIC]
+      The Lambda API is enabled. This is only required in stacks that either
+      directly invoke a Lambda using the AWS API or perform a
+      Canary-style release by setting a DeploymentPreference on a Lambda. It
+      allows the Lambda runtime to invoke the associate hook functions.
+    Type: "String"
+    Default: "No"
+    AllowedValues:
+      - "Yes"
+      - "No"
+
+  LogsApiEnabled:
+    Description: >
+      [LEGACY VPC ONLY]
+      The CloudWatch Logs API is enabled. This is not required for a Lambda
+      to emit logging events by writing to standard output. This is required
+      if the Lambda explicitly writes logs to a log group or for container
+      logging.
+    Type: "String"
+    Default: "No"
+    AllowedValues:
+      - "Yes"
+      - "No"
+
+  PrivateCAApiEnabled:
+    Description: >
+      [VPC TYPE-AGNOSTIC]
+      The Private Certificate Authority is enabled. This is only required for
+      services hosted in private subnets to access a Private CA.
+    Type: "String"
+    Default: "No"
+    AllowedValues:
+      - "Yes"
+      - "No"
+
+  RestAPIGWVpcLinkEnabled:
+    Description: >
+      [VPC TYPE-AGNOSTIC]
+      This provisions resources required to create a WAF in the Fargate stacks.
+      To be compatible with WAF you need a Network Load Balancer, and a REST API gateway.
+      They rely on having a VPC link to the Application Load Balancer.
+    Type: "String"
+    Default: "No"
+    AllowedValues:
+      - "Yes"
+      - "No"
+
+  S3ApiEnabled:
+    Description: >
+      [VPC TYPE-AGNOSTIC]
+      The S3 API is enabled. This is only required in stacks where the
+      application uses S3 as a data store.
+    Type: "String"
+    Default: "No"
+    AllowedValues:
+      - "Yes"
+      - "No"
+
+  SecretsManagerApiEnabled:
+    Description: >
+      [VPC TYPE-AGNOSTIC]
+      The AWS SecretsManager API is enabled. This is only required in stacks
+      that read secret values from secrets manager.
+    Type: "String"
+    Default: "No"
+    AllowedValues:
+      - "Yes"
+      - "No"
+
+  SESSmtpEnabled:
+    Description: >
+      [VPC TYPE-AGNOSTIC]
+      This provisions a Simple Email Service (SES) Endpoint, which can be used to send e-mail
+    Type: "String"
+    Default: "No"
+    AllowedValues:
+      - "Yes"
+      - "No"
+
+  SNSApiEnabled:
+    Description: >
+      [VPC TYPE-AGNOSTIC]
+      The SNS API is enabled. This is only required in stacks where the
+      application uses SNS topics.
+    Type: "String"
+    Default: "No"
+    AllowedValues:
+      - "Yes"
+      - "No"
+
+  SQSApiEnabled:
+    Description: >
+      [VPC TYPE-AGNOSTIC]
+      The SQS API is enabled. This is only required in stacks where the
+      application uses SQS queues.
+    Type: "String"
+    Default: "No"
+    AllowedValues:
+      - "Yes"
+      - "No"
+
+  STSApiEnabled:
+    Description: >
+      [VPC TYPE-AGNOSTIC]
+      This provisions a Security Token Service (STS) Endpoint, which can be used to request
+      temporary credentials
+    Type: "String"
+    Default: "No"
+    AllowedValues:
+      - "Yes"
+      - "No"
+
+  SSMApiEnabled:
+    Description: >
+      [VPC TYPE-AGNOSTIC]
+      The AWS SSM API is enabled. This is required for applications to read
+      values from the SSM parameter store.
+    Type: "String"
+    Default: "No"
+    AllowedValues:
+      - "Yes"
+      - "No"
+
+  SSMParametersStoreEnabled:
+    Description: >
+      [VPC TYPE-AGNOSTIC]
+      Store VPC Id, Subnet Id's and the Vpc Link Id into SSM Parameter store to
+      be accessed where import function is not supported. This is required by
+      templates using blue/green hook deployments.
+    Type: "String"
+    Default: "No"
+    AllowedValues:
+      - "Yes"
+      - "No"
+
+  StatesApiEnabled:
+    Description: >
+      [VPC TYPE-AGNOSTIC]
+      The States API is enabled. This is only required in stacks which make
+      use of Step Functions.
+    Type: "String"
+    Default: "No"
+    AllowedValues:
+      - "Yes"
+      - "No"
+
+  TextractApiEnabled:
+    Description: >
+      [VPC TYPE-AGNOSTIC]
+      The Textract API is enabled. This is only required in stacks that use the Amazon
+      Textract service.
+    Type: "String"
+    Default: "No"
+    AllowedValues:
+      - "Yes"
+      - "No"
+
+  XRayApiEnabled:
+    Description: >
+      [VPC TYPE-AGNOSTIC]
+      The AWS X-Ray API is enabled. This is not required for a Lambda to emit
+      Trace events via the X-Ray daemon (e.g. by using Lambda Powertools). It
+      is only required is the Lambda makes explicit calls to the X-Ray API or
+      for containers to emit Trace events.
+    Type: "String"
+    Default: "No"
+    AllowedValues:
+      - "Yes"
+      - "No"
+
+  VpcPeeringConnectionId:
+    Description: >
+      [VPC TYPE-AGNOSTIC]
+      Created for the Orch/Auth Secure Pipelines migration to allow for cross-account DynamoDB access.
+      The ID of an existing VPC peering connection.
+      WARNING: peering connection must exist beforehand. this is not a bootstrap parameter
+    Type: "String"
+    Default: "none"
+
+  VpcPeeringRequesterCidr:
+    Description: >
+      [VPC TYPE-AGNOSTIC]
+      Created for the Orch/Auth Secure Pipelines migration to allow for cross-account DynamoDB access.
+      The IPv4 CIDR address block of the other VPC of an existing VPC peering connection.
+      WARNING: peering connection must exist beforehand. this is not a bootstrap parameter
+    Type: "String"
+    Default: "none"
+
+###################################
+#   Rules
+###################################
+
+Rules:
+
+  #--- Validate supported parameter usage for Legacy VPC ---#
+
+  LegacyVpcCannotUseDeployEgressTestLambda:
+    RuleCondition:
+      Fn::Equals:
+        - !Ref VpcType
+        - Legacy
+    Assertions:
+      - Assert:
+          Fn::Equals:
+            - !Ref DeployEgressTestLambda
+            - "No"
+        AssertDescription: |
+          DeployEgressTestLambda is a Spoke VPC parameter. The egress test lambda
+          validates Transit Gateway connectivity which is not available
+          in Legacy VPCs. Set DeployEgressTestLambda to 'No' or switch VpcType to Spoke.
+      - Assert:
+          Fn::Equals:
+            - !Ref EgressTestLambdaCustomURLs
+            - "none"
+        AssertDescription: |
+          EgressTestLambdaCustomURLs is a Spoke VPC parameter. It requires DeployEgressTestLambda
+          to validate custom URL reachability via Transit Gateway. Since this is only
+          supported for Spoke VPCs, set the value to 'none' or change VpcType to Spoke.
+
+  LegacyVpcCannotUseDisasterRecovery:
+    RuleCondition:
+      Fn::Equals:
+        - !Ref VpcType
+        - Legacy
+    Assertions:
+      - Assert:
+          Fn::Equals:
+            - !Ref UseDisasterRecovery
+            - "No"
+        AssertDescription: |
+          UseDisasterRecovery is a Spoke VPC parameter. Disaster Recovery
+          routing is only available for Spoke VPCs. Set to 'No' or switch
+          VpcType to Spoke.
+
+  LegacyRequireAllowRulesBeforeAdditionalAllowRules:
+    RuleCondition:
+      Fn::And:
+        - Fn::Equals:
+            - !Ref VpcType
+            - Legacy
+        - Fn::Not:
+            - Fn::Or:
+                - Fn::Equals:
+                    - !Ref AdditionalAllowRules
+                    - ''
+                - Fn::Equals:
+                    - !Ref AdditionalAllowRules
+                    - "none"
+    Assertions:
+      - Assert:
+          Fn::Not:
+            - Fn::Or:
+                - Fn::Equals:
+                    - !Ref AllowRules
+                    - ''
+                - Fn::Equals:
+                    - !Ref AllowRules
+                    - "none"
+        AssertDescription: |
+          The 'AllowRules' parameter must be populated before 'AdditionalAllowRules'
+          can be used.
+
+  LegacyVpcCannotUseEnvironment:
+    RuleCondition:
+      Fn::Equals:
+        - !Ref VpcType
+        - Legacy
+    Assertions:
+      - Assert:
+          Fn::Equals:
+            - !Ref Environment
+            - "none"
+        AssertDescription: |
+          Environment is a Spoke VPC parameter and cannot be used with Legacy VPC deployments.
+          Leave Environment as 'none' or switch VpcType to Spoke.
+
+  #--- Validate supported parameter usage for Spoke VPC ---#
+
+
+  SpokeVpcRequiresEnvironment:
+    RuleCondition:
+      Fn::Equals:
+        - !Ref VpcType
+        - Spoke
+    Assertions:
+      - Assert:
+          Fn::Not:
+            - Fn::Equals:
+                - !Ref Environment
+                - "none"
+        AssertDescription: |
+          Environment is required for Spoke VPC deployments.
+          Specify one of: demo, dev, build, staging, integration, production.
+
+
+  SpokeVpcCannotUseCidrBlock:
+    RuleCondition:
+      Fn::Equals:
+        - !Ref VpcType
+        - Spoke
+    Assertions:
+      - Assert:
+          Fn::Equals:
+            - !Ref CidrBlock
+            - "10.0.0.0/16"
+        AssertDescription: |
+          CidrBlock cannot be customised for Spoke VPC deployments.
+          Spoke VPCs obtain their CIDR from IPAM. Leave CidrBlock at
+          the default value or switch VpcType to Legacy.
+
+  SpokeVpcCannotAmendAvailabilityZoneCount:
+    RuleCondition:
+      Fn::Equals:
+        - !Ref VpcType
+        - Spoke
+    Assertions:
+      - Assert:
+          Fn::Equals:
+            - !Ref AvailabilityZoneCount
+            - "3"
+        AssertDescription: |
+          AvailabilityZoneCount must be 3 for Spoke VPC deployments.
+          Spoke VPCs always deploy across 3 availability zones. Set
+          AvailabilityZoneCount to 3 or switch VpcType to Legacy.
+
+  SpokeVpcCannotUseFirewallS3Bucket:
+    RuleCondition:
+      Fn::Equals:
+        - !Ref VpcType
+        - Spoke
+    Assertions:
+      - Assert:
+          Fn::Equals:
+            - !Ref FirewallS3Bucket
+            - "log-archive-nwf-alerts-logs-523017967436-eu-west-2"
+        AssertDescription: |
+          FirewallS3Bucket is a Legacy VPC parameter and cannot be used
+          with Spoke VPC deployments. Spoke VPCs use a central Network
+          Firewall configuration. Leave FirewallS3Bucket at the default
+          value or switch VpcType to Legacy.
+
+  SpokeVpcCannotUseEIPAllocationIds:
+    RuleCondition:
+      Fn::Equals:
+        - !Ref VpcType
+        - Spoke
+    Assertions:
+      - Assert:
+          Fn::Equals:
+            - !Ref ZoneAEIPAllocationId
+            - "none"
+        AssertDescription: |
+          ZoneAEIPAllocationId is a Legacy VPC parameter. Spoke VPCs do
+          not provision NAT Gateways or EIPs. Leave ZoneAEIPAllocationId
+          as 'none' or switch VpcType to Legacy.
+      - Assert:
+          Fn::Equals:
+            - !Ref ZoneBEIPAllocationId
+            - "none"
+        AssertDescription: |
+          ZoneBEIPAllocationId is a Legacy VPC parameter. Spoke VPCs do
+          not provision NAT Gateways or EIPs. Leave ZoneBEIPAllocationId
+          as 'none' or switch VpcType to Legacy.
+      - Assert:
+          Fn::Equals:
+            - !Ref ZoneCEIPAllocationId
+            - "none"
+        AssertDescription: |
+          ZoneCEIPAllocationId is a Legacy VPC parameter. Spoke VPCs do
+          not provision NAT Gateways or EIPs. Leave ZoneCEIPAllocationId
+          as 'none' or switch VpcType to Legacy.
+
+  SpokeVpcCannotUseAllowRules:
+    RuleCondition:
+      Fn::Equals:
+        - !Ref VpcType
+        - Spoke
+    Assertions:
+      - Assert:
+          Fn::Equals:
+            - !Ref AllowRules
+            - "none"
+        AssertDescription: |
+          AllowRules is a Legacy VPC parameter. Spoke VPCs use a central
+          Network Firewall configuration and do not support custom Suricata
+          rules. Leave AllowRules empty or switch VpcType to Legacy.
+
+  SpokeVpcCannotUseLogsApi:
+    RuleCondition:
+      Fn::Equals:
+        - !Ref VpcType
+        - Spoke
+    Assertions:
+      - Assert:
+          Fn::Equals:
+            - !Ref LogsApiEnabled
+            - "No"
+        AssertDescription: |
+          LogsApiEnabled is a Legacy VPC parameter. The LogsApiEnabled
+          endpoint is not provisioned for Spoke VPCs. For Spoke VPCs set
+          LogsApiEnabled to 'No' and use CloudWatchLogsApiEnabled instead
+          if CloudWatch Logs access is needed, or switch VpcType to Legacy.
+
+
+###################################
+#   Conditions
+###################################
+
+Conditions:
+  IsLegacyVpc:
+    Fn::Equals:
+      - !Ref VpcType
+      - Legacy
+
+  IsSpokeVpc:
+    Fn::Equals:
+      - !Ref VpcType
+      - Spoke
+
+  AccessLogsCustomBucketName:
+    Fn::Equals:
+      - !Ref AccessLogsCustomBucketNameEnabled
+      - "Yes"
+
+  ProvisionAvailabilityZoneC:
+    Fn::Or:
+      - Condition: IsSpokeVpc
+      - Condition: LegacyProvisionAvailabilityZoneC
+
+  LegacyProvisionAvailabilityZoneC:
+    Fn::And:
+      - Condition: IsLegacyVpc
+      - Fn::Equals:
+        - !Ref AvailabilityZoneCount
+        - 3
+
+  LegacyProvisionRouteThroughVpcPeering:
+    Fn::And:
+      - Condition: IsLegacyVpc
+      - Fn::Not:
+        - Fn::Equals:
+          - !Ref VpcPeeringConnectionId
+          - "none"
+      - Fn::Not:
+        - Fn::Equals:
+          - !Ref VpcPeeringRequesterCidr
+          - "none"
+
+  LegacyProvisionRouteThroughVpcPeeringZoneC:
+    Fn::And:
+      - Condition: LegacyProvisionAvailabilityZoneC
+      - Condition: LegacyProvisionRouteThroughVpcPeering
+
+  SpokeProvisionRouteThroughVpcPeering:
+    Fn::And:
+      - Condition: IsSpokeVpc
+      - Fn::Not:
+        - Fn::Equals:
+          - !Ref VpcPeeringConnectionId
+          - "none"
+      - Fn::Not:
+        - Fn::Equals:
+          - !Ref VpcPeeringRequesterCidr
+          - "none"
+
+  ProvisionAllowedDomainsList:
+    Fn::Not:
+      - Fn::Equals:
+        - !Join ['', !Ref AllowedDomains]
+        - "none"
+
+  ProvisionAllowRulesList:
+    Fn::Not:
+      - Fn::Or:
+        - Fn::Equals:
+          - !Ref AllowRules
+          - ""
+        - Fn::Equals:
+          - !Ref AllowRules
+          - "none"
+
+  ProvisionAdditionalAllowRulesList:
+    Fn::Not:
+      - Fn::Or:
+        - Fn::Equals:
+          - !Ref AdditionalAllowRules
+          - ""
+        - Fn::Equals:
+          - !Ref AdditionalAllowRules
+          - "none"
+
+  ProvisionOutboundInternet:
+    Fn::Or:
+      - Condition: LegacyProvisionOutboundInternet
+      - Condition: SpokeProvisionOutboundInternet
+
+  LegacyProvisionOutboundInternet:
+    Fn::And:
+      - Condition: IsLegacyVpc
+      - Fn::Or:
+        - Condition: ProvisionAllowedDomainsList
+        - Condition: ProvisionAllowRulesList
+
+  SpokeProvisionOutboundInternet:
+    Fn::And:
+      - Condition: IsSpokeVpc
+      - Condition: ProvisionAllowedDomainsList
+
+  ProvisionOutboundInternetInZoneC:
+    Fn::Or:
+      - Condition: LegacyProvisionOutboundInternetInZoneC
+      - Condition: SpokeProvisionOutboundInternet
+
+  LegacyProvisionOutboundInternetInZoneC:
+    Fn::And:
+      - Condition: LegacyProvisionAvailabilityZoneC
+      - Condition: LegacyProvisionOutboundInternet
+
+  SpokeProvisionEgressTestResources:
+    Fn::And:
+      - Condition: IsSpokeVpc
+      - Fn::Equals:
+        - !Ref DeployEgressTestLambda
+        - "Yes"
+
+  LegacyProvisionZoneAElasticIP:
+    Fn::And:
+      - Condition: LegacyProvisionOutboundInternet
+      - Fn::Equals:
+        - !Ref ZoneAEIPAllocationId
+        - "none"
+
+  LegacyProvisionZoneBElasticIP:
+    Fn::And:
+      - Condition: LegacyProvisionOutboundInternet
+      - Fn::Equals:
+        - !Ref ZoneBEIPAllocationId
+        - "none"
+
+  LegacyProvisionZoneCElasticIP:
+    Fn::And:
+      - Condition: LegacyProvisionOutboundInternetInZoneC
+      - Fn::Equals:
+        - !Ref ZoneCEIPAllocationId
+        - "none"
+
+  ProvisionVpcLink:
+    Fn::Equals:
+      - !Ref VpcLinkEnabled
+      - "Yes"
+
+  ProvisionRestAPIGWVpcLink:
+    Fn::Equals:
+      - !Ref RestAPIGWVpcLinkEnabled
+      - "Yes"
+
+  ProvisionAppConfigVPCEndpoint:
+    Fn::Equals:
+      - !Ref AppConfigApiEnabled
+      - "Yes"
+
+  ProvisionAppConfigDataVPCEndpoint:
+    Fn::Equals:
+      - !Ref AppConfigDataApiEnabled
+      - "Yes"
+
+  ProvisionIdentityStoreVPCEndpoint:
+    Fn::Equals:
+      - !Ref IdentityStoreApiEnabled
+      - "Yes"
+
+  ProvisionCloudTrailVPCEndpoint:
+    Fn::Equals:
+      - !Ref CloudTrailApiEnabled
+      - "Yes"
+
+  ProvisionCloudFormationEndpoint:
+    Fn::Equals:
+      - !Ref CloudFormationEndpointEnabled
+      - "Yes"
+
+  LegacyProvisionLogsVPCEndpoint:
+    Fn::And:
+      - Condition: IsLegacyVpc
+      - Fn::Equals:
+        - !Ref LogsApiEnabled
+        - "Yes"
+
+  ProvisionPrivateCAVPCEndpoint:
+    Fn::Equals:
+      - !Ref PrivateCAApiEnabled
+      - "Yes"
+
+  ProvisionBatchVPCEndpoint:
+    Fn::Equals:
+      - !Ref BatchApiEnabled
+      - "Yes"
+
+  ProvisionGlueVPCEndpoint:
+    Fn::Equals:
+      - !Ref GlueApiEnabled
+      - "Yes"
+
+  ProvisionCodeBuildVPCEndpoint:
+    Fn::Equals:
+      - !Ref CodeBuildApiEnabled
+      - "Yes"
+
+  ProvisionCloudWatchVPCEndpoint:
+    Fn::Equals:
+      - !Ref CloudWatchApiEnabled
+      - "Yes"
+
+  ProvisionCloudWatchLogsVPCEndpoint:
+    Fn::Equals:
+      - !Ref CloudWatchLogsApiEnabled
+      - "Yes"
+
+  ProvisionDynatraceVPCEndpoint:
+    Fn::Equals:
+      - !Ref DynatraceApiEnabled
+      - "Yes"
+
+  ProvisionXRayVPCEndpoint:
+    Fn::Equals:
+      - !Ref XRayApiEnabled
+      - "Yes"
+
+  ProvisionSSMVPCEndpoint:
+    Fn::Equals:
+      - !Ref SSMApiEnabled
+      - "Yes"
+
+  ProvisionSecretsManagerVPCEndpoint:
+    Fn::Equals:
+      - !Ref SecretsManagerApiEnabled
+      - "Yes"
+
+  ProvisionKMSVPCEndpoint:
+    Fn::Equals:
+      - !Ref KMSApiEnabled
+      - "Yes"
+
+  ProvisionDynamoDBVPCEndpoint:
+    Fn::Equals:
+      - !Ref DynamoDBApiEnabled
+      - "Yes"
+
+  ProvisionAthenaVPCEndpoint:
+    Fn::Equals:
+      - !Ref AthenaApiEnabled
+      - "Yes"
+
+  ProvisionS3VPCEndpoint:
+    Fn::Or:
+      - Fn::Equals:
+        - !Ref S3ApiEnabled
+        - "Yes"
+      - Fn::Equals:
+        - !Ref ECRApiEnabled
+        - "Yes"
+      - Fn::Equals:
+        - !Ref CloudFormationEndpointEnabled
+        - "Yes"
+
+  ProvisionSQSVPCEndpoint:
+    Fn::Equals:
+      - !Ref SQSApiEnabled
+      - "Yes"
+
+  ProvisionSNSVPCEndpoint:
+    Fn::Equals:
+      - !Ref SNSApiEnabled
+      - "Yes"
+
+  ProvisionKinesisVPCEndpoint:
+    Fn::Equals:
+      - !Ref KinesisApiEnabled
+      - "Yes"
+
+  ProvisionFirehoseVPCEndpoint:
+    Fn::Equals:
+      - !Ref FirehoseApiEnabled
+      - "Yes"
+
+  ProvisionEventsVPCEndpoint:
+    Fn::Equals:
+      - !Ref EventsApiEnabled
+      - "Yes"
+
+  ProvisionStatesVPCEndpoint:
+    Fn::Equals:
+      - !Ref StatesApiEnabled
+      - "Yes"
+
+  ProvisionECRVPCEndpoint:
+    Fn::Equals:
+      - !Ref ECRApiEnabled
+      - "Yes"
+
+  ProvisionLambdaVPCEndpoint:
+    Fn::Equals:
+      - !Ref LambdaApiEnabled
+      - "Yes"
+
+  ProvisionCodeDeployVPCEndpoint:
+    Fn::Equals:
+      - !Ref CodeDeployApiEnabled
+      - "Yes"
+
+  ProvisionExecuteApiGatewayVPCEndpoint:
+    Fn::Equals:
+      - !Ref ExecuteApiGatewayEnabled
+      - "Yes"
+
+  ProvisionTextractVPCEndpoint:
+    Fn::Equals:
+      - !Ref TextractApiEnabled
+      - "Yes"
+
+  ProvisionSESSmtpVPCEndpoint:
+    Fn::Equals:
+      - !Ref SESSmtpEnabled
+      - "Yes"
+
+  ProvisionSTSVPCEndpoint:
+    Fn::Equals:
+      - !Ref STSApiEnabled
+      - "Yes"
+
+  SSMParametersStoreEnabled:
+    Fn::Equals:
+      - !Ref SSMParametersStoreEnabled
+      - "Yes"
+
+  CreateSSMParametersForZoneCSubnetIds:
+    Fn::And:
+      - Condition: ProvisionAvailabilityZoneC
+      - Condition: SSMParametersStoreEnabled
+
+  CreateSSMParameterForVpcLinkId:
+    Fn::And:
+      - Condition: ProvisionVpcLink
+      - Condition: SSMParametersStoreEnabled
+
+  CreateSSMParameterForApiGatewayVpcLinkId:
+    Fn::And:
+      - Condition: ProvisionRestAPIGWVpcLink
+      - Condition: SSMParametersStoreEnabled
+
+  LegacyCreateSSMParameterForZoneAElasticIP:
+    Fn::And:
+      - Condition: LegacyProvisionZoneAElasticIP
+      - Condition: SSMParametersStoreEnabled
+
+  LegacyCreateSSMParameterForZoneBElasticIP:
+    Fn::And:
+      - Condition: LegacyProvisionZoneBElasticIP
+      - Condition: SSMParametersStoreEnabled
+
+  LegacyCreateSSMParameterForZoneCElasticIP:
+    Fn::And:
+      - Condition: LegacyProvisionZoneCElasticIP
+      - Condition: SSMParametersStoreEnabled
+
+  CreateSSMParameterForExecuteApiGatewayVpcEndpointId:
+    Fn::And:
+      - Condition: ProvisionExecuteApiGatewayVPCEndpoint
+      - Condition: SSMParametersStoreEnabled
+
+  ProvisionNlbCrossZone:
+    Fn::Equals:
+      - !Ref NlbCrossZoneEnabled
+      - "Yes"
+
+  SpokeProvisionDisasterRecoveryTransitGatewayAttachment:
+    Fn::And:
+      - Condition: SpokeProvisionOutboundInternet
+      - Fn::Not:
+        - Fn::Equals:
+          - Fn::FindInMap:
+              - EnvironmentConfiguration
+              - !Ref Environment
+              - DisasterRecoveryTransitGatewayId
+              - DefaultValue: none
+          - none
+
+  SpokeUseDisasterRecoveryTransitGateway:
+    Fn::And:
+      - Condition: SpokeProvisionDisasterRecoveryTransitGatewayAttachment
+      - Fn::Equals:
+        - !Ref UseDisasterRecovery
+        - "Yes"
+
+  ProvisionFlowLogCloudWatch:
+    Fn::Equals:
+      - !Ref FlowLogCloudWatchEnabled
+      - "Yes"
+
+###################################
+#   Mappings
+###################################
+
+Mappings:
+  EnvironmentConfiguration:
+    demo:
+      IpamPool: Development
+      TransitGatewayId: "tgw-0efcc71a6b299b504"
+      DisasterRecoveryTransitGatewayId: "none"
+    dev:
+      IpamPool: Development
+      TransitGatewayId: "tgw-037ccd82182b7d1da"
+      DisasterRecoveryTransitGatewayId: "none"
+    build:
+      IpamPool: Build
+      TransitGatewayId: "tgw-06493a63242d7fa50"
+      DisasterRecoveryTransitGatewayId: "none"
+    staging:
+      IpamPool: Staging
+      TransitGatewayId: "tgw-0b64a5ae3108f37da"
+      DisasterRecoveryTransitGatewayId: "none"
+    integration:
+      IpamPool: Integration
+      TransitGatewayId: "tgw-07a087a57d090fc29"
+      DisasterRecoveryTransitGatewayId: "none"
+    production:
+      IpamPool: Production
+      TransitGatewayId: "tgw-00941dcb040644b98"
+      DisasterRecoveryTransitGatewayId: "tgw-02ad17b20fa31c6b1"
+
+  SubnetZoneIds:
+    eu-west-2:
+      "a": "euw2-az1"
+      "b": "euw2-az2"
+      "c": "euw2-az3"
+
+  # Please do not amend these values. If you think these need to be amended for your service please raise a DevPlatform Support request.
+  # See https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/intrinsic-function-reference-cidr.html
+  VpcSize:
+    Large:
+      VpcNetworkPrefixBits: 19
+      TgwSubnetHostBits: 6
+      PrivateSubnetHostBits: 9
+      ProtectedSubnetHostBits: 9
+      PublicSubnetHostBits: 9
+
+  # see https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-access-logs.html
+  ElasticLoadBalancerAccountIds:
+    eu-west-2:
+      AccountId: 652711504416
+
+###################################
+#   Outputs
+###################################
+
+Outputs:
+  VpcId:
+    Description: The ID of the VPC.
+    Value: !Ref Vpc
+    Export:
+      Name: !Sub "${AWS::StackName}-VpcId"
+
+  VpcCidr:
+    Description: VPC CIDR range.
+    Value: !GetAtt Vpc.CidrBlock
+    Export:
+      Name: !Sub "${AWS::StackName}-VpcCidr"
+
+  TransitGatewayId:
+    Condition: SpokeProvisionOutboundInternet
+    Description: The Transit Gateway ID for the selected environment
+    Value: !FindInMap [EnvironmentConfiguration, !Ref Environment, TransitGatewayId]
+
+  AWSServicesEndpointSecurityGroupId:
+    Description: The ID of the security group attached to the AWS services VPC endpoints.
+    Value: !GetAtt AwsServicesEndpointSecurityGroup.GroupId
+    Export:
+      Name: !Sub "${AWS::StackName}-AWSServicesEndpointSecurityGroupId"
+
+  PrivateSubnetIdA:
+    Description: The ID of the private subnet for Availability Zone A.
+    Value: !Ref PrivateSubnetA
+    Export:
+      Name: !Sub "${AWS::StackName}-PrivateSubnetIdA"
+
+  PrivateSubnetIdB:
+    Description: The ID of the private subnet for Availability Zone B.
+    Value: !Ref PrivateSubnetB
+    Export:
+      Name: !Sub "${AWS::StackName}-PrivateSubnetIdB"
+
+  PrivateSubnetIdC:
+    Condition: ProvisionAvailabilityZoneC
+    Description: The ID of the private subnet for Availability Zone C.
+    Value: !Ref PrivateSubnetC
+    Export:
+      Name: !Sub "${AWS::StackName}-PrivateSubnetIdC"
+
+  PrivateSubnets:
+    Description: A list of the private subnets
+    Value: !Join
+      - ','
+      - - !Ref PrivateSubnetA
+        - !Ref PrivateSubnetB
+        - !If [ProvisionAvailabilityZoneC, !Ref PrivateSubnetC, !Ref AWS::NoValue]
+    Export:
+      Name: !Sub "${AWS::StackName}-PrivateSubnets"
+
+  ProtectedSubnetIdA:
+    Description: The ID of the protected subnet for Availability Zone A.
+    Value: !Ref ProtectedSubnetA
+    Export:
+      Name: !Sub "${AWS::StackName}-ProtectedSubnetIdA"
+
+  ProtectedSubnetIdB:
+    Description: The ID of the protected subnet for Availability Zone B.
+    Value: !Ref ProtectedSubnetB
+    Export:
+      Name: !Sub "${AWS::StackName}-ProtectedSubnetIdB"
+
+  ProtectedSubnetIdC:
+    Condition: ProvisionAvailabilityZoneC
+    Description: The ID of the protected subnet for Availability Zone C.
+    Value: !Ref ProtectedSubnetC
+    Export:
+      Name: !Sub "${AWS::StackName}-ProtectedSubnetIdC"
+
+  ProtectedSubnets:
+    Description: A list of the protected subnets
+    Value: !Join
+      - ','
+      - - !Ref ProtectedSubnetA
+        - !Ref ProtectedSubnetB
+        - !If [ProvisionAvailabilityZoneC, !Ref ProtectedSubnetC, !Ref AWS::NoValue]
+    Export:
+      Name: !Sub "${AWS::StackName}-ProtectedSubnets"
+
+  PublicSubnetIdA:
+    Description: The ID of the public subnet for Availability Zone A.
+    Value: !Ref PublicSubnetA
+    Export:
+      Name: !Sub "${AWS::StackName}-PublicSubnetIdA"
+
+  PublicSubnetIdB:
+    Description: The ID of the public subnet for Availability Zone B.
+    Value: !Ref PublicSubnetB
+    Export:
+      Name: !Sub "${AWS::StackName}-PublicSubnetIdB"
+
+  PublicSubnetIdC:
+    Condition: ProvisionAvailabilityZoneC
+    Description: The ID of the public subnet for Availability Zone C.
+    Value: !Ref PublicSubnetC
+    Export:
+      Name: !Sub "${AWS::StackName}-PublicSubnetIdC"
+
+  PublicSubnets:
+    Description: A list of the public subnets
+    Value: !Join
+      - ','
+      - - !Ref PublicSubnetA
+        - !Ref PublicSubnetB
+        - !If [ProvisionAvailabilityZoneC, !Ref PublicSubnetC, !Ref AWS::NoValue]
+    Export:
+      Name: !Sub "${AWS::StackName}-PublicSubnets"
+
+  TgwSubnetIdA:
+    Condition: SpokeProvisionOutboundInternet
+    Description: The ID of the Transit Gateway subnet for Availability Zone A.
+    Value: !Ref TgwSubnetA
+    Export:
+      Name: !Sub "${AWS::StackName}-TgwSubnetIdA"
+
+  TgwSubnetIdB:
+    Condition: SpokeProvisionOutboundInternet
+    Description: The ID of the Transit Gateway subnet for Availability Zone B.
+    Value: !Ref TgwSubnetB
+    Export:
+      Name: !Sub "${AWS::StackName}-TgwSubnetIdB"
+
+  TgwSubnetIdC:
+    Condition: SpokeProvisionOutboundInternet
+    Description: The ID of the Transit Gateway subnet for Availability Zone C.
+    Value: !Ref TgwSubnetC
+    Export:
+      Name: !Sub "${AWS::StackName}-TgwSubnetIdC"
+
+  TgwSubnetACidr:
+    Condition: SpokeProvisionOutboundInternet
+    Description: The CIDR range of the Transit Gateway subnet for Availability Zone A.
+    Value: !GetAtt TgwSubnetA.CidrBlock
+    Export:
+      Name: !Sub "${AWS::StackName}-TgwSubnetACidr"
+
+  TgwSubnetBCidr:
+    Condition: SpokeProvisionOutboundInternet
+    Description: The CIDR range of the Transit Gateway subnet for Availability Zone B.
+    Value: !GetAtt TgwSubnetB.CidrBlock
+    Export:
+      Name: !Sub "${AWS::StackName}-TgwSubnetBCidr"
+
+  TgwSubnetCCidr:
+    Condition: SpokeProvisionOutboundInternet
+    Description: The CIDR range of the Transit Gateway subnet for Availability Zone C.
+    Value: !GetAtt TgwSubnetC.CidrBlock
+    Export:
+      Name: !Sub "${AWS::StackName}-TgwSubnetCCidr"
+
+  FirewallSubnetIdA:
+    Condition: IsLegacyVpc
+    Description: The ID of the firewall subnet for Availability Zone A.
+    Value: !Ref FirewallSubnetA
+    Export:
+      Name: !Sub "${AWS::StackName}-FirewallSubnetIdA"
+
+  FirewallSubnetIdB:
+    Condition: IsLegacyVpc
+    Description: The ID of the firewall subnet for Availability Zone B.
+    Value: !Ref FirewallSubnetB
+    Export:
+      Name: !Sub "${AWS::StackName}-FirewallSubnetIdB"
+
+  FirewallSubnetIdC:
+    Condition: LegacyProvisionAvailabilityZoneC
+    Description: The ID of the firewall subnet for Availability Zone C.
+    Value: !Ref FirewallSubnetC
+    Export:
+      Name: !Sub "${AWS::StackName}-FirewallSubnetIdC"
+
+  FirewallSubnetACidr:
+    Condition: IsLegacyVpc
+    Description: The CIDR range of the firewall subnet for Availability Zone A.
+    Value: !GetAtt FirewallSubnetA.CidrBlock
+    Export:
+      Name: !Sub "${AWS::StackName}-FirewallSubnetACidr"
+
+  FirewallSubnetBCidr:
+    Condition: IsLegacyVpc
+    Description: The CIDR range of the firewall subnet for Availability Zone B.
+    Value: !GetAtt FirewallSubnetB.CidrBlock
+    Export:
+      Name: !Sub "${AWS::StackName}-FirewallSubnetBCidr"
+
+  FirewallSubnetCCidr:
+    Condition: LegacyProvisionAvailabilityZoneC
+    Description: The CIDR range of the firewall subnet for Availability Zone C.
+    Value: !GetAtt FirewallSubnetC.CidrBlock
+    Export:
+      Name: !Sub "${AWS::StackName}-FirewallSubnetCCidr"
+
+  ApiGatewayVpcLinkId:
+    Condition: ProvisionRestAPIGWVpcLink
+    Description: WAF component - The ID of the VPC link only to be used with REST APIs
+    Value: !Ref ApiGatewayVpcLink
+    Export:
+      Name: !Sub "${AWS::StackName}-ApiGatewayVpcLinkId"
+
+  ApiGatewayVpcLinkTargetNLB:
+    Condition: ProvisionRestAPIGWVpcLink
+    Description: WAF component - The URN of the Network Load Balancer targeted by the VPC link (REST API)
+    Value: !Ref NetworkLoadBalancer
+    Export:
+      Name: !Sub "${AWS::StackName}-ApiGatewayVpcLinkTargetNLB"
+
+  ApiGatewayVpcLinkTargetNLBDNS:
+    Condition: ProvisionRestAPIGWVpcLink
+    Description: WAF component - The DNS name of Network Load Balancer targeted by the VPC link (REST API)
+    Value: !GetAtt NetworkLoadBalancer.DNSName
+    Export:
+      Name: !Sub "${AWS::StackName}-ApiGatewayVpcLinkTargetNLBDNS"
+
+  VpcLinkId:
+    Condition: ProvisionVpcLink
+    Description: The ID of the VPC link that connects to the private subnets.
+    Value: !Ref VpcLink
+    Export:
+      Name: !Sub "${AWS::StackName}-VpcLinkId"
+
+  NatGatewayZoneAEIP:
+    Condition: LegacyProvisionZoneAElasticIP
+    Description: The EIP allocated for the NAT Gateway in Zone A
+    Value: !Ref NatGatewayZoneAEIP
+    Export:
+      Name: !Sub "${AWS::StackName}-NatGatewayZoneAEIP"
+
+  NatGatewayZoneBEIP:
+    Condition: LegacyProvisionZoneBElasticIP
+    Description: The EIP allocated for the NAT Gateway in Zone B
+    Value: !Ref NatGatewayZoneBEIP
+    Export:
+      Name: !Sub "${AWS::StackName}-NatGatewayZoneBEIP"
+
+  NatGatewayZoneCEIP:
+    Condition: LegacyProvisionZoneCElasticIP
+    Description: The EIP allocated for the NAT Gateway in Zone C
+    Value: !Ref NatGatewayZoneCEIP
+    Export:
+      Name: !Sub "${AWS::StackName}-NatGatewayZoneCEIP"
+
+  ExecuteApiGatewayVpcEndpointId:
+    Condition: ProvisionExecuteApiGatewayVPCEndpoint
+    Description: The id of the VPC Endpoint interface for API Gateway.
+    Value: !Ref ExecuteApiGatewayEndpoint
+    Export:
+      Name: !Sub "${AWS::StackName}-ExecuteApiGatewayEndpointId"
+
+  ExecuteApiGatewayVpcEndpointPrimaryDnsEntry:
+    Condition: ProvisionExecuteApiGatewayVPCEndpoint
+    Description: >
+      The primary DNS entry for the ExecuteAPI VPC Endpoint.
+      Required for Private API custom domain names with internal lambdas in the same VPC.
+    Value: !Select [1, !Split [':', !Select [0, !GetAtt ExecuteApiGatewayEndpoint.DnsEntries]]]
+    Export:
+      Name: !Sub "${AWS::StackName}-ExecuteApiGatewayVpcEndpointPrimaryDnsEntry"
+
+  ExecuteApiGatewayVpcEndpointHostedZoneId:
+    Condition: ProvisionExecuteApiGatewayVPCEndpoint
+    Description: >
+      The Hosted Zone ID for the ExecuteAPI VPC Endpoint.
+      Required for Private API custom domain names with internal lambdas in the same VPC.
+    Value: !Select [0, !Split [':', !Select [0, !GetAtt ExecuteApiGatewayEndpoint.DnsEntries]]]
+    Export:
+      Name: !Sub "${AWS::StackName}-ExecuteApiGatewayVpcEndpointHostedZoneId"
+
+  FlowLogLogGroup:
+    Condition: ProvisionFlowLogCloudWatch
+    Description: The Name of the CloudWatch Log Group for VPC Flow Logs.
+    Value: !Ref FlowLogLogGroup
+    Export:
+      Name: !Sub "${AWS::StackName}-FlowLogLogGroup"
+
+  TgwRouteTableA:
+    Condition: SpokeProvisionOutboundInternet
+    Description: The ID of Tgw subnet Route Table A.
+    Value: !Ref TgwRouteTableA
+    Export:
+      Name: !Sub "${AWS::StackName}-TgwRouteTableA"
+
+  TgwRouteTableB:
+    Condition: SpokeProvisionOutboundInternet
+    Description: The ID of Tgw subnet Route Table B.
+    Value: !Ref TgwRouteTableB
+    Export:
+      Name: !Sub "${AWS::StackName}-TgwRouteTableB"
+
+  TgwRouteTableC:
+    Condition: SpokeProvisionOutboundInternet
+    Description: The ID of Tgw subnet Route Table C.
+    Value: !Ref TgwRouteTableC
+    Export:
+      Name: !Sub "${AWS::StackName}-TgwRouteTableC"
+
+  FirewallRouteTableA:
+    Condition: IsLegacyVpc
+    Description: The ID of Firewall Route Table A.
+    Value: !Ref FirewallRouteTableA
+    Export:
+      Name: !Sub "${AWS::StackName}-FirewallRouteTableA"
+
+  FirewallRouteTableB:
+    Condition: IsLegacyVpc
+    Description: The ID of Firewall Route Table B.
+    Value: !Ref FirewallRouteTableB
+    Export:
+      Name: !Sub "${AWS::StackName}-FirewallRouteTableB"
+
+  FirewallRouteTableC:
+    Condition: LegacyProvisionAvailabilityZoneC
+    Description: The ID of Firewall Route Table C.
+    Value: !Ref FirewallRouteTableC
+    Export:
+      Name: !Sub "${AWS::StackName}-FirewallRouteTableC"
+
+###################################
+#   Resources
+###################################
+
+Resources:
+  LoggingKmsKey:
+    Type: AWS::KMS::Key
+    Properties:
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              AWS: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:root"
+            Action:
+              - "kms:*"
+            Resource:
+              - "*"
+          - Effect: "Allow"
+            Principal:
+              Service: !Sub "logs.${AWS::Region}.amazonaws.com"
+            Action:
+              - "kms:Encrypt*"
+              - "kms:Decrypt*"
+              - "kms:ReEncrypt*"
+              - "kms:GenerateDataKey*"
+              - "kms:Describe*"
+            Resource:
+              - "*"
+            Condition:
+              ArnLike:
+                "kms:EncryptionContext:aws:logs:arn": !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
+
+  Vpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      InstanceTenancy: default
+      CidrBlock: !If
+        - IsLegacyVpc
+        - !Ref CidrBlock
+        - !Ref AWS::NoValue
+      Ipv4NetmaskLength: !If
+        - IsSpokeVpc
+        - !FindInMap [VpcSize, Large, VpcNetworkPrefixBits]
+        - !Ref AWS::NoValue
+      Ipv4IpamPoolId: !If
+        - IsSpokeVpc
+        - !GetAtt CustomGetPoolId.Data
+        - !Ref AWS::NoValue
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-Vpc"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+        - !If
+            - IsSpokeVpc
+            - Key: "IpamPool"
+              Value:
+                Fn::FindInMap:
+                  - EnvironmentConfiguration
+                  - !Ref Environment
+                  - IpamPool
+                  - DefaultValue: none
+            - !Ref AWS::NoValue
+
+  # IAM Role, Lambda Function and Custom Resource for Retrieving IPAM Pool ID that is used by VPC
+  CustomGetPoolId:
+    Type: Custom::GetIpamPoolId
+    Condition: IsSpokeVpc
+    Properties:
+      ServiceToken: !GetAtt IpamLambdaGetPoolId.Arn
+
+  IpamLambdaRoleGetPoolId:
+    Type: AWS::IAM::Role
+    Condition: IsSpokeVpc
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service: "lambda.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: "/"
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+      Policies:
+        - PolicyName: ipampolicy
+          PolicyDocument:
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "ec2:DescribeIpamPools"
+                Resource: "*"
+
+  IpamLambdaGetPoolId:
+    Type: AWS::Serverless::Function
+    Condition: IsSpokeVpc
+    # checkov:skip=CKV_AWS_116: DLQ not required.
+    # checkov:skip=CKV_AWS_117: Internet access not required.
+    # checkov:skip=CKV_AWS_173: The environment variables do not require encryption.
+    Properties:
+      ReservedConcurrentExecutions: 5
+      CodeUri: ipam-pool
+      Environment:
+        Variables:
+          IPAMPOOL: !FindInMap [EnvironmentConfiguration, !Ref Environment, IpamPool]
+      Handler: app.lambda_handler
+      MemorySize: 128
+      Role: !GetAtt IpamLambdaRoleGetPoolId.Arn
+      Runtime: python3.12
+      Timeout: 60
+      Tags:
+        IpamPool: !FindInMap [EnvironmentConfiguration, !Ref Environment, IpamPool]
+        Name: !Sub "${AWS::StackName}-IpamLambdaGetPoolId"
+        Service: "ci/cd"
+        Source: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  EgressTestLambdaRole:
+    Type: AWS::IAM::Role
+    Condition: SpokeProvisionEgressTestResources
+    # checkov:skip=CKV_AWS_111:states:The mix of VPC permissions don't take a resource
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service: "lambda.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: "/"
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+      Policies:
+        - PolicyName: egresstestpolicy
+          PolicyDocument:
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - ec2:CreateNetworkInterface
+                  - ec2:DescribeDhcpOptions
+                  - ec2:DescribeNetworkInterfaces
+                  - ec2:DeleteNetworkInterface
+                  - ec2:DescribeSubnets
+                  - ec2:DescribeSecurityGroups
+                  - ec2:DescribeVpcs
+                Resource: "*"
+                # Permissions can't be scoped to resources
+
+  EgressTestSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Condition: SpokeProvisionEgressTestResources
+    Properties:
+      GroupDescription: >-
+        Permits unrestricted outbound on 443 to allow the egress-test lambda to access the internet over SSL.
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          Description: Allow to the wider internet on port 443
+          FromPort: 443
+          IpProtocol: tcp
+          ToPort: 443
+      VpcId: !Ref Vpc
+
+  EgressTestLambda:
+    Type: AWS::Serverless::Function
+    # checkov:skip=CKV_AWS_116: DLQ not required.
+    # checkov:skip=CKV_AWS_173: The environment variables do not require encryption.
+    Condition: SpokeProvisionEgressTestResources
+    Properties:
+      ReservedConcurrentExecutions: 5
+      CodeUri: egress-test
+      Environment:
+        Variables:
+          DEFAULT_URLS: "https://signin.account.gov.uk/"
+          CUSTOM_URLS: !Ref EgressTestLambdaCustomURLs
+          BLOCKED_URLS: "https://gds-way.digital.cabinet-office.gov.uk/"
+          TIMEOUT: 5
+      Handler: app.lambda_handler
+      MemorySize: 128
+      Role: !GetAtt EgressTestLambdaRole.Arn
+      Runtime: python3.12
+      Timeout: 60
+      VpcConfig:
+        SecurityGroupIds:
+          - !GetAtt EgressTestSecurityGroup.GroupId
+        SubnetIds:
+          - !Ref ProtectedSubnetA
+          - !Ref ProtectedSubnetB
+          - !Ref ProtectedSubnetC
+      Tags:
+        Name: !Sub "${AWS::StackName}-EgressTestLambda"
+        Service: "ci/cd"
+        Source: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  ParameterVpcId:
+    Type: AWS::SSM::Parameter
+    Condition: SSMParametersStoreEnabled
+    Properties:
+      Name: !Sub "/${AWS::StackName}/VpcId"
+      Type: String
+      Value: !Ref Vpc
+      Description: VPC ID
+      Tags:
+        Name: !Sub "${AWS::StackName}-ParameterVpcId"
+        Service: "ci/cd"
+        Source: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  ParameterVpcCidr:
+    Type: AWS::SSM::Parameter
+    Condition: SSMParametersStoreEnabled
+    Properties:
+      Name: !Sub "/${AWS::StackName}/VpcCidr"
+      Type: String
+      Value: !GetAtt Vpc.CidrBlock
+      Description: SSM Parameter for VPC CIDR Range.
+      Tags:
+        Name: !Sub "${AWS::StackName}-ParameterVpcCidr"
+        Service: "ci/cd"
+        Source: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  FlowLogPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Condition: ProvisionFlowLogCloudWatch
+    Properties:
+      ManagedPolicyName:
+        Fn::Join:
+          - "-"
+          - - !Ref AWS::StackName
+            - "FlowLogPolicy"
+            - Fn::Select:
+                - 4
+                - Fn::Split:
+                    - "-"
+                    - Fn::Select:
+                        - 2
+                        - Fn::Split:
+                            - "/"
+                            - Ref: AWS::StackId
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - 'logs:CreateLogStream'
+              - 'logs:PutLogEvents'
+              - 'logs:DescribeLogGroups'
+              - 'logs:DescribeLogStreams'
+            Resource: !GetAtt 'FlowLogLogGroup.Arn'
+
+  FlowLogRole:
+    Type: AWS::IAM::Role
+    Condition: ProvisionFlowLogCloudWatch
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: 'vpc-flow-logs.amazonaws.com'
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - !GetAtt FlowLogPolicy.PolicyArn
+
+  FlowLogLogGroup:
+    Type: AWS::Logs::LogGroup
+    Condition: ProvisionFlowLogCloudWatch
+    Properties:
+      RetentionInDays: 30
+      KmsKeyId: !GetAtt LoggingKmsKey.Arn
+      LogGroupClass: "INFREQUENT_ACCESS"
+
+  FlowLog:
+    Type: AWS::EC2::FlowLog
+    Condition: ProvisionFlowLogCloudWatch
+    Properties:
+      DeliverLogsPermissionArn: !GetAtt FlowLogRole.Arn
+      LogDestinationType: cloud-watch-logs
+      LogGroupName: !Ref FlowLogLogGroup
+      ResourceId: !Ref Vpc
+      ResourceType: VPC
+      TrafficType: ALL
+
+  BlockSshRule:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !GetAtt Vpc.DefaultNetworkAcl
+      RuleNumber: 30
+      Protocol: 6
+      RuleAction: deny
+      CidrBlock: 0.0.0.0/0
+      PortRange:
+        From: 22
+        To: 22
+
+  #
+  # Private subnet in Availability Zone A
+  #
+
+  PrivateSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: !If
+        - IsSpokeVpc
+        - !Select [3, !Cidr [!GetAtt Vpc.CidrBlock, 12, !FindInMap [VpcSize, Large, PrivateSubnetHostBits]]]
+        - !Select [5, !Cidr [!Ref CidrBlock, 8, 9]]
+      AvailabilityZoneId: !FindInMap [SubnetZoneIds, !Ref AWS::Region, "a"]
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-PrivateSubnetA"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  PrivateRouteTableA:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-PrivateRouteTableA"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  RouteTableAssociationForPrivateSubnetA:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTableA
+      SubnetId: !Ref PrivateSubnetA
+
+  VpcPeeringRoutePrivateSubnetA:
+    Type: AWS::EC2::Route
+    Condition: LegacyProvisionRouteThroughVpcPeering
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Delete
+    Properties:
+      RouteTableId: !Ref PrivateRouteTableA
+      DestinationCidrBlock: !Ref VpcPeeringRequesterCidr
+      VpcPeeringConnectionId: !Ref VpcPeeringConnectionId
+
+  SpokePeeringRoutePrivateSubnetA:
+    Type: AWS::EC2::Route
+    Condition: SpokeProvisionRouteThroughVpcPeering
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Delete
+    Properties:
+      RouteTableId: !Ref PrivateRouteTableA
+      DestinationCidrBlock: !Ref VpcPeeringRequesterCidr
+      VpcPeeringConnectionId: !Ref VpcPeeringConnectionId
+
+  ParameterPrivateSubnetAId:
+    Type: AWS::SSM::Parameter
+    Condition: SSMParametersStoreEnabled
+    Properties:
+      Name: !Sub "/${AWS::StackName}/PrivateSubnetA"
+      Type: String
+      Value: !Ref PrivateSubnetA
+      Description: Private Subnet A Id
+      Tags:
+        Name: !Sub "${AWS::StackName}-ParameterPrivateSubnetAId"
+        Service: "ci/cd"
+        Source: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  #
+  # Private subnet in Availability Zone B
+  #
+
+  PrivateSubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: !If
+        - IsSpokeVpc
+        - !Select [4, !Cidr [!GetAtt Vpc.CidrBlock, 12, !FindInMap [VpcSize, Large, PrivateSubnetHostBits]]]
+        - !Select [6, !Cidr [!Ref CidrBlock, 8, 9]]
+      AvailabilityZoneId: !FindInMap [SubnetZoneIds, !Ref AWS::Region, "b"]
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-PrivateSubnetB"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  PrivateRouteTableB:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-PrivateRouteTableB"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  RouteTableAssociationForPrivateSubnetB:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTableB
+      SubnetId: !Ref PrivateSubnetB
+
+  VpcPeeringRoutePrivateSubnetB:
+    Type: AWS::EC2::Route
+    Condition: LegacyProvisionRouteThroughVpcPeering
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Delete
+    Properties:
+      RouteTableId: !Ref PrivateRouteTableB
+      DestinationCidrBlock: !Ref VpcPeeringRequesterCidr
+      VpcPeeringConnectionId: !Ref VpcPeeringConnectionId
+
+  SpokePeeringRoutePrivateSubnetB:
+    Type: AWS::EC2::Route
+    Condition: SpokeProvisionRouteThroughVpcPeering
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Delete
+    Properties:
+      RouteTableId: !Ref PrivateRouteTableB
+      DestinationCidrBlock: !Ref VpcPeeringRequesterCidr
+      VpcPeeringConnectionId: !Ref VpcPeeringConnectionId
+
+  ParameterPrivateSubnetBId:
+    Type: AWS::SSM::Parameter
+    Condition: SSMParametersStoreEnabled
+    Properties:
+      Name: !Sub "/${AWS::StackName}/PrivateSubnetB"
+      Type: String
+      Value: !Ref PrivateSubnetB
+      Description: Private Subnet B Id
+      Tags:
+        Name: !Sub "${AWS::StackName}-ParameterPrivateSubnetBId"
+        Service: "ci/cd"
+        Source: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  #
+  # Private subnet in Availability Zone C
+  #
+
+  PrivateSubnetC:
+    Type: AWS::EC2::Subnet
+    Condition: ProvisionAvailabilityZoneC
+    Properties:
+      CidrBlock: !If
+        - IsSpokeVpc
+        - !Select [5, !Cidr [!GetAtt Vpc.CidrBlock, 12, !FindInMap [VpcSize, Large, PrivateSubnetHostBits]]]
+        - !Select [7, !Cidr [!Ref CidrBlock, 8, 9]]
+      AvailabilityZoneId: !FindInMap [SubnetZoneIds, !Ref AWS::Region, "c"]
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-PrivateSubnetC"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  PrivateRouteTableC:
+    Type: AWS::EC2::RouteTable
+    Condition: ProvisionAvailabilityZoneC
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-PrivateRouteTableC"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  RouteTableAssociationForPrivateSubnetC:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Condition: ProvisionAvailabilityZoneC
+    Properties:
+      RouteTableId: !Ref PrivateRouteTableC
+      SubnetId: !Ref PrivateSubnetC
+
+  VpcPeeringRoutePrivateSubnetC:
+    Type: AWS::EC2::Route
+    Condition: LegacyProvisionRouteThroughVpcPeeringZoneC
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Delete
+    Properties:
+      RouteTableId: !Ref PrivateRouteTableC
+      DestinationCidrBlock: !Ref VpcPeeringRequesterCidr
+      VpcPeeringConnectionId: !Ref VpcPeeringConnectionId
+
+  SpokePeeringRoutePrivateSubnetC:
+    Type: AWS::EC2::Route
+    Condition: SpokeProvisionRouteThroughVpcPeering
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Delete
+    Properties:
+      RouteTableId: !Ref PrivateRouteTableC
+      DestinationCidrBlock: !Ref VpcPeeringRequesterCidr
+      VpcPeeringConnectionId: !Ref VpcPeeringConnectionId
+
+  ParameterPrivateSubnetCId:
+    Type: AWS::SSM::Parameter
+    Condition: CreateSSMParametersForZoneCSubnetIds
+    Properties:
+      Name: !Sub "/${AWS::StackName}/PrivateSubnetC"
+      Type: String
+      Value: !Ref PrivateSubnetC
+      Description: Private Subnet C ID
+      Tags:
+        Name: !Sub "${AWS::StackName}-ParameterPrivateSubnetCId"
+        Service: "ci/cd"
+        Source: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  #
+  # Protected subnet in Availability Zone A
+  #
+
+  ProtectedSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: !If
+        - IsSpokeVpc
+        - !Select [6, !Cidr [!GetAtt Vpc.CidrBlock, 12, !FindInMap [VpcSize, Large, ProtectedSubnetHostBits]]]
+        - !Select [2, !Cidr [!Ref CidrBlock, 8, 9]]
+      AvailabilityZoneId: !FindInMap [SubnetZoneIds, !Ref AWS::Region, "a"]
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-ProtectedSubnetA"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  ProtectedRouteTableA:
+    Condition: IsLegacyVpc
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-ProtectedRouteTableA"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  RouteTableAssociationForProtectedSubnetA:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !If [IsSpokeVpc, !Ref SpokeProtectedRouteTableA, !Ref ProtectedRouteTableA]
+      SubnetId: !Ref ProtectedSubnetA
+
+  InternetRouteProtectedSubnetA:
+    Type: AWS::EC2::Route
+    Condition: LegacyProvisionOutboundInternet
+    Properties:
+      RouteTableId: !Ref ProtectedRouteTableA
+      DestinationCidrBlock: "0.0.0.0/0"
+      NatGatewayId: !Ref NatGatewayA
+
+  SpokeProtectedRouteTableA:
+    Condition: IsSpokeVpc
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-SpokeProtectedRouteTableA"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  SpokeInternetRouteProtectedSubnetA:
+    Type: AWS::EC2::Route
+    Condition: SpokeProvisionOutboundInternet
+    DependsOn: TgwAttachment
+    Properties:
+      RouteTableId: !Ref SpokeProtectedRouteTableA
+      DestinationCidrBlock: "0.0.0.0/0"
+      TransitGatewayId: !If
+        - SpokeUseDisasterRecoveryTransitGateway
+        - !FindInMap [EnvironmentConfiguration, !Ref Environment, DisasterRecoveryTransitGatewayId]
+        - !FindInMap [EnvironmentConfiguration, !Ref Environment, TransitGatewayId]
+
+  VpcPeeringRouteProtectedSubnetA:
+    Type: AWS::EC2::Route
+    Condition: LegacyProvisionRouteThroughVpcPeering
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Delete
+    Properties:
+      RouteTableId: !Ref ProtectedRouteTableA
+      DestinationCidrBlock: !Ref VpcPeeringRequesterCidr
+      VpcPeeringConnectionId: !Ref VpcPeeringConnectionId
+
+  SpokePeeringRouteProtectedSubnetA:
+    Type: AWS::EC2::Route
+    Condition: SpokeProvisionRouteThroughVpcPeering
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Delete
+    Properties:
+      RouteTableId: !Ref SpokeProtectedRouteTableA
+      DestinationCidrBlock: !Ref VpcPeeringRequesterCidr
+      VpcPeeringConnectionId: !Ref VpcPeeringConnectionId
+
+  ParameterProtectedSubnetAId:
+    Type: AWS::SSM::Parameter
+    Condition: SSMParametersStoreEnabled
+    Properties:
+      Name: !Sub "/${AWS::StackName}/ProtectedSubnetA"
+      Type: String
+      Value: !Ref ProtectedSubnetA
+      Description: Protected Subnet A Id
+      Tags:
+        Name: !Sub "${AWS::StackName}-ParameterProtectedSubnetAId"
+        Service: "ci/cd"
+        Source: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  #
+  # Protected subnet in Availability Zone B
+  #
+
+  ProtectedSubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: !If
+        - IsSpokeVpc
+        - !Select [7, !Cidr [!GetAtt Vpc.CidrBlock, 12, !FindInMap [VpcSize, Large, ProtectedSubnetHostBits]]]
+        - !Select [3, !Cidr [!Ref CidrBlock, 8, 9]]
+      AvailabilityZoneId: !FindInMap [SubnetZoneIds, !Ref AWS::Region, "b"]
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-ProtectedSubnetB"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  ProtectedRouteTableB:
+    Condition: IsLegacyVpc
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-ProtectedRouteTableB"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  RouteTableAssociationForProtectedSubnetB:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !If [IsSpokeVpc, !Ref SpokeProtectedRouteTableB, !Ref ProtectedRouteTableB]
+      SubnetId: !Ref ProtectedSubnetB
+
+  InternetRouteProtectedSubnetB:
+    Type: AWS::EC2::Route
+    Condition: LegacyProvisionOutboundInternet
+    Properties:
+      RouteTableId: !Ref ProtectedRouteTableB
+      DestinationCidrBlock: "0.0.0.0/0"
+      NatGatewayId: !Ref NatGatewayB
+
+  SpokeProtectedRouteTableB:
+    Condition: IsSpokeVpc
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-SpokeProtectedRouteTableB"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  SpokeInternetRouteProtectedSubnetB:
+    Type: AWS::EC2::Route
+    Condition: SpokeProvisionOutboundInternet
+    DependsOn: TgwAttachment
+    Properties:
+      RouteTableId: !Ref SpokeProtectedRouteTableB
+      DestinationCidrBlock: "0.0.0.0/0"
+      TransitGatewayId: !If
+        - SpokeUseDisasterRecoveryTransitGateway
+        - !FindInMap [EnvironmentConfiguration, !Ref Environment, DisasterRecoveryTransitGatewayId]
+        - !FindInMap [EnvironmentConfiguration, !Ref Environment, TransitGatewayId]
+
+  VpcPeeringRouteProtectedSubnetB:
+    Type: AWS::EC2::Route
+    Condition: LegacyProvisionRouteThroughVpcPeering
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Delete
+    Properties:
+      RouteTableId: !Ref ProtectedRouteTableB
+      DestinationCidrBlock: !Ref VpcPeeringRequesterCidr
+      VpcPeeringConnectionId: !Ref VpcPeeringConnectionId
+
+  SpokePeeringRouteProtectedSubnetB:
+    Type: AWS::EC2::Route
+    Condition: SpokeProvisionRouteThroughVpcPeering
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Delete
+    Properties:
+      RouteTableId: !Ref SpokeProtectedRouteTableB
+      DestinationCidrBlock: !Ref VpcPeeringRequesterCidr
+      VpcPeeringConnectionId: !Ref VpcPeeringConnectionId
+
+  ParameterProtectedSubnetBId:
+    Type: AWS::SSM::Parameter
+    Condition: SSMParametersStoreEnabled
+    Properties:
+      Name: !Sub "/${AWS::StackName}/ProtectedSubnetB"
+      Type: String
+      Value: !Ref ProtectedSubnetB
+      Description: Protected Subnet B Id
+      Tags:
+        Name: !Sub "${AWS::StackName}-ParameterProtectedSubnetBId"
+        Service: "ci/cd"
+        Source: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  #
+  # Protected subnet in Availability Zone C
+  #
+
+  ProtectedSubnetC:
+    Type: AWS::EC2::Subnet
+    Condition: ProvisionAvailabilityZoneC
+    Properties:
+      CidrBlock: !If
+        - IsSpokeVpc
+        - !Select [8, !Cidr [!GetAtt Vpc.CidrBlock, 12, !FindInMap [VpcSize, Large, ProtectedSubnetHostBits]]]
+        - !Select [4, !Cidr [!Ref CidrBlock, 8, 9]]
+      AvailabilityZoneId: !FindInMap [SubnetZoneIds, !Ref AWS::Region, "c"]
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-ProtectedSubnetC"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  ProtectedRouteTableC:
+    Type: AWS::EC2::RouteTable
+    Condition: LegacyProvisionAvailabilityZoneC
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-ProtectedRouteTableC"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  RouteTableAssociationForProtectedSubnetC:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Condition: ProvisionAvailabilityZoneC
+    Properties:
+      RouteTableId: !If [LegacyProvisionAvailabilityZoneC, !Ref ProtectedRouteTableC, !Ref SpokeProtectedRouteTableC]
+      SubnetId: !Ref ProtectedSubnetC
+
+  InternetRouteProtectedSubnetC:
+    Type: AWS::EC2::Route
+    Condition: LegacyProvisionOutboundInternetInZoneC
+    Properties:
+      RouteTableId: !Ref ProtectedRouteTableC
+      DestinationCidrBlock: "0.0.0.0/0"
+      NatGatewayId: !Ref NatGatewayC
+
+  SpokeProtectedRouteTableC:
+    Condition: IsSpokeVpc
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-SpokeProtectedRouteTableC"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  SpokeInternetRouteProtectedSubnetC:
+    Type: AWS::EC2::Route
+    Condition: SpokeProvisionOutboundInternet
+    DependsOn: TgwAttachment
+    Properties:
+      RouteTableId: !Ref SpokeProtectedRouteTableC
+      DestinationCidrBlock: "0.0.0.0/0"
+      TransitGatewayId: !If
+        - SpokeUseDisasterRecoveryTransitGateway
+        - !FindInMap [EnvironmentConfiguration, !Ref Environment, DisasterRecoveryTransitGatewayId]
+        - !FindInMap [EnvironmentConfiguration, !Ref Environment, TransitGatewayId]
+
+  VpcPeeringRouteProtectedSubnetC:
+    Type: AWS::EC2::Route
+    Condition: LegacyProvisionRouteThroughVpcPeeringZoneC
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Delete
+    Properties:
+      RouteTableId: !Ref ProtectedRouteTableC
+      DestinationCidrBlock: !Ref VpcPeeringRequesterCidr
+      VpcPeeringConnectionId: !Ref VpcPeeringConnectionId
+
+  SpokePeeringRouteProtectedSubnetC:
+    Type: AWS::EC2::Route
+    Condition: SpokeProvisionRouteThroughVpcPeering
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Delete
+    Properties:
+      RouteTableId: !Ref SpokeProtectedRouteTableC
+      DestinationCidrBlock: !Ref VpcPeeringRequesterCidr
+      VpcPeeringConnectionId: !Ref VpcPeeringConnectionId
+
+  ParameterProtectedSubnetCId:
+    Type: AWS::SSM::Parameter
+    Condition: CreateSSMParametersForZoneCSubnetIds
+    Properties:
+      Name: !Sub "/${AWS::StackName}/ProtectedSubnetC"
+      Type: String
+      Value: !Ref ProtectedSubnetC
+      Description: Protected Subnet C ID
+      Tags:
+        Name: !Sub "${AWS::StackName}-ParameterProtectedSubnetCId"
+        Service: "ci/cd"
+        Source: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  #
+  # Legacy firewall subnet in Availability Zone A
+  #
+
+  FirewallSubnetA:
+    Type: AWS::EC2::Subnet
+    Condition: IsLegacyVpc
+    Properties:
+      AvailabilityZoneId: !FindInMap [SubnetZoneIds, !Ref AWS::Region, "a"]
+      CidrBlock: !Select [4, !Cidr [!Ref CidrBlock, 8, 6]]
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-FirewallSubnetA"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  FirewallRouteTableA:
+    Type: AWS::EC2::RouteTable
+    Condition: IsLegacyVpc
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-FirewallRouteTableA"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  RouteTableAssociationForFirewallSubnetA:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Condition: IsLegacyVpc
+    Properties:
+      RouteTableId: !Ref FirewallRouteTableA
+      SubnetId: !Ref FirewallSubnetA
+
+  InternetRouteFirewallSubnetA:
+    Type: AWS::EC2::Route
+    Condition: LegacyProvisionOutboundInternet
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      RouteTableId: !Ref FirewallRouteTableA
+      DestinationCidrBlock: "0.0.0.0/0"
+      GatewayId: !Ref InternetGateway
+
+  #
+  # Transit Gateway Subnet A
+  #
+
+  TgwSubnetA:
+    Type: AWS::EC2::Subnet
+    Condition: SpokeProvisionOutboundInternet
+    Properties:
+      CidrBlock: !Select [4, !Cidr [!GetAtt Vpc.CidrBlock, 8, !FindInMap [VpcSize, Large, TgwSubnetHostBits]]]
+      AvailabilityZoneId: !FindInMap [SubnetZoneIds, !Ref AWS::Region, "a"]
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-TgwSubnetA"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  TgwRouteTableA:
+    Type: AWS::EC2::RouteTable
+    Condition: SpokeProvisionOutboundInternet
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-TgwRouteTableA"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  TgwRouteTableAssociationForTgwSubnetA:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Condition: SpokeProvisionOutboundInternet
+    Properties:
+      RouteTableId: !Ref TgwRouteTableA
+      SubnetId: !Ref TgwSubnetA
+
+  DefaultTgwRouteSubnetA:
+    Type: AWS::EC2::Route
+    Condition: SpokeProvisionOutboundInternet
+    DependsOn: TgwAttachment
+    Properties:
+      RouteTableId: !Ref TgwRouteTableA
+      DestinationCidrBlock: "0.0.0.0/0"
+      TransitGatewayId: !If
+        - SpokeUseDisasterRecoveryTransitGateway
+        - !FindInMap [EnvironmentConfiguration, !Ref Environment, DisasterRecoveryTransitGatewayId]
+        - !FindInMap [EnvironmentConfiguration, !Ref Environment, TransitGatewayId]
+
+  #
+  # Legacy firewall subnet in Availability Zone B
+  #
+
+  FirewallSubnetB:
+    Type: AWS::EC2::Subnet
+    Condition: IsLegacyVpc
+    Properties:
+      AvailabilityZoneId: !FindInMap [SubnetZoneIds, !Ref AWS::Region, "b"]
+      CidrBlock: !Select [5, !Cidr [!Ref CidrBlock, 8, 6]]
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-FirewallSubnetB"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  FirewallRouteTableB:
+    Type: AWS::EC2::RouteTable
+    Condition: IsLegacyVpc
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-FirewallRouteTableB"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  RouteTableAssociationForFirewallSubnetB:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Condition: IsLegacyVpc
+    Properties:
+      RouteTableId: !Ref FirewallRouteTableB
+      SubnetId: !Ref FirewallSubnetB
+
+  InternetRouteFirewallSubnetB:
+    Type: AWS::EC2::Route
+    Condition: LegacyProvisionOutboundInternet
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      RouteTableId: !Ref FirewallRouteTableB
+      DestinationCidrBlock: "0.0.0.0/0"
+      GatewayId: !Ref InternetGateway
+
+  #
+  # Transit Gateway Subnet B
+  #
+
+  TgwSubnetB:
+    Type: AWS::EC2::Subnet
+    Condition: SpokeProvisionOutboundInternet
+    Properties:
+      CidrBlock: !Select [5, !Cidr [!GetAtt Vpc.CidrBlock, 8, !FindInMap [VpcSize, Large, TgwSubnetHostBits]]]
+      AvailabilityZoneId: !FindInMap [SubnetZoneIds, !Ref AWS::Region, "b"]
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-TgwSubnetB"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  TgwRouteTableB:
+    Type: AWS::EC2::RouteTable
+    Condition: SpokeProvisionOutboundInternet
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-TgwRouteTableB"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  TgwRouteTableAssociationForTgwSubnetB:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Condition: SpokeProvisionOutboundInternet
+    Properties:
+      RouteTableId: !Ref TgwRouteTableB
+      SubnetId: !Ref TgwSubnetB
+
+  DefaultTgwRouteSubnetB:
+    Type: AWS::EC2::Route
+    Condition: SpokeProvisionOutboundInternet
+    DependsOn: TgwAttachment
+    Properties:
+      RouteTableId: !Ref TgwRouteTableB
+      DestinationCidrBlock: "0.0.0.0/0"
+      TransitGatewayId: !If
+        - SpokeUseDisasterRecoveryTransitGateway
+        - !FindInMap [EnvironmentConfiguration, !Ref Environment, DisasterRecoveryTransitGatewayId]
+        - !FindInMap [EnvironmentConfiguration, !Ref Environment, TransitGatewayId]
+
+  #
+  # Legacy firewall subnet in Availability Zone C
+  #
+
+  FirewallSubnetC:
+    Type: AWS::EC2::Subnet
+    Condition: LegacyProvisionAvailabilityZoneC
+    Properties:
+      AvailabilityZoneId: !FindInMap [SubnetZoneIds, !Ref AWS::Region, "c"]
+      CidrBlock: !Select [6, !Cidr [!Ref CidrBlock, 8, 6]]
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-FirewallSubnetC"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  FirewallRouteTableC:
+    Type: AWS::EC2::RouteTable
+    Condition: LegacyProvisionAvailabilityZoneC
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-FirewallRouteTableC"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  RouteTableAssociationForFirewallSubnetC:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Condition: LegacyProvisionAvailabilityZoneC
+    Properties:
+      RouteTableId: !Ref FirewallRouteTableC
+      SubnetId: !Ref FirewallSubnetC
+
+  InternetRouteFirewallSubnetC:
+    Type: AWS::EC2::Route
+    Condition: LegacyProvisionOutboundInternetInZoneC
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      RouteTableId: !Ref FirewallRouteTableC
+      DestinationCidrBlock: "0.0.0.0/0"
+      GatewayId: !Ref InternetGateway
+
+  #
+  # Transit Gateway Subnet C
+  #
+
+  TgwSubnetC:
+    Type: AWS::EC2::Subnet
+    Condition: SpokeProvisionOutboundInternet
+    Properties:
+      CidrBlock: !Select [6, !Cidr [!GetAtt Vpc.CidrBlock, 8, !FindInMap [VpcSize, Large, TgwSubnetHostBits]]]
+      AvailabilityZoneId: !FindInMap [SubnetZoneIds, !Ref AWS::Region, "c"]
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-TgwSubnetC"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  TgwRouteTableC:
+    Type: AWS::EC2::RouteTable
+    Condition: SpokeProvisionOutboundInternet
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-TgwRouteTableC"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  TgwRouteTableAssociationForTgwSubnetC:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Condition: SpokeProvisionOutboundInternet
+    Properties:
+      RouteTableId: !Ref TgwRouteTableC
+      SubnetId: !Ref TgwSubnetC
+
+  DefaultTgwRouteSubnetC:
+    Type: AWS::EC2::Route
+    Condition: SpokeProvisionOutboundInternet
+    DependsOn: TgwAttachment
+    Properties:
+      RouteTableId: !Ref TgwRouteTableC
+      DestinationCidrBlock: "0.0.0.0/0"
+      TransitGatewayId: !If
+        - SpokeUseDisasterRecoveryTransitGateway
+        - !FindInMap [EnvironmentConfiguration, !Ref Environment, DisasterRecoveryTransitGatewayId]
+        - !FindInMap [EnvironmentConfiguration, !Ref Environment, TransitGatewayId]
+
+  #
+  # Transit Gateway Attachment
+  #
+
+  TgwAttachment:
+    Type: AWS::EC2::TransitGatewayAttachment
+    Condition: SpokeProvisionOutboundInternet
+    Properties:
+      Options:
+        Ipv6Support: disable
+        DnsSupport: enable
+        ApplianceModeSupport: enable
+      TransitGatewayId: !FindInMap [EnvironmentConfiguration, !Ref Environment, TransitGatewayId]
+      VpcId: !Ref Vpc
+      SubnetIds:
+        - !Ref TgwSubnetA
+        - !Ref TgwSubnetB
+        - !Ref TgwSubnetC
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-TgwAttachment"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  #
+  # Disaster Recovery Transit Gateway Attachment
+  #
+
+  DisasterRecoveryTransitGatewayAttachment:
+    Type: AWS::EC2::TransitGatewayAttachment
+    Condition: SpokeProvisionDisasterRecoveryTransitGatewayAttachment
+    Properties:
+      Options:
+        Ipv6Support: disable
+        DnsSupport: enable
+        ApplianceModeSupport: enable
+      TransitGatewayId: !FindInMap [EnvironmentConfiguration, !Ref Environment, DisasterRecoveryTransitGatewayId]
+      VpcId: !Ref Vpc
+      SubnetIds:
+        - !Ref TgwSubnetA
+        - !Ref TgwSubnetB
+        - !Ref TgwSubnetC
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-DisasterRecoveryTgwAttachment"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  #
+  # Public subnet in Availability Zone A
+  #
+
+  PublicSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: !If
+        - IsSpokeVpc
+        - !Select [9, !Cidr [!GetAtt Vpc.CidrBlock, 12, !FindInMap [VpcSize, Large, PublicSubnetHostBits]]]
+        - !Select [0, !Cidr [!Ref CidrBlock, 8, 6]]
+      MapPublicIpOnLaunch: !If
+        - IsLegacyVpc
+        - true
+        - !Ref AWS::NoValue
+      AvailabilityZoneId: !FindInMap [SubnetZoneIds, !Ref AWS::Region, "a"]
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-PublicSubnetA"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  PublicRouteTableA:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-PublicRouteTableA"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  RouteTableAssociationForPublicSubnetA:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTableA
+      SubnetId: !Ref PublicSubnetA
+
+  InternetRoutePublicSubnetA:
+    Type: AWS::EC2::Route
+    Condition: ProvisionOutboundInternet
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PublicRouteTableA
+      DestinationCidrBlock: "0.0.0.0/0"
+      VpcEndpointId: !If
+        - IsLegacyVpc
+        - !GetAtt NetworkFirewallENIZoneA.EndpointId
+        - !Ref AWS::NoValue
+      GatewayId: !If
+        - IsSpokeVpc
+        - !Ref InternetGateway
+        - !Ref AWS::NoValue
+
+  #
+  # Public subnet in Availability Zone B
+  #
+
+  PublicSubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: !If
+        - IsSpokeVpc
+        - !Select [10, !Cidr [!GetAtt Vpc.CidrBlock, 12, !FindInMap [VpcSize, Large, PublicSubnetHostBits]]]
+        - !Select [1, !Cidr [!Ref CidrBlock, 8, 6]]
+      MapPublicIpOnLaunch: !If
+        - IsLegacyVpc
+        - true
+        - !Ref AWS::NoValue
+      AvailabilityZoneId: !FindInMap [SubnetZoneIds, !Ref AWS::Region, "b"]
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-PublicSubnetB"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  PublicRouteTableB:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-PublicRouteTableB"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  RouteTableAssociationForPublicSubnetB:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTableB
+      SubnetId: !Ref PublicSubnetB
+
+  InternetRoutePublicSubnetB:
+    Type: AWS::EC2::Route
+    Condition: ProvisionOutboundInternet
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PublicRouteTableB
+      DestinationCidrBlock: "0.0.0.0/0"
+      VpcEndpointId: !If
+        - IsLegacyVpc
+        - !GetAtt NetworkFirewallENIZoneB.EndpointId
+        - !Ref AWS::NoValue
+      GatewayId: !If
+        - IsSpokeVpc
+        - !Ref InternetGateway
+        - !Ref AWS::NoValue
+
+  #
+  # Public subnet in Availability Zone C
+  #
+
+  PublicSubnetC:
+    Type: AWS::EC2::Subnet
+    Condition: ProvisionAvailabilityZoneC
+    Properties:
+      CidrBlock: !If
+        - IsSpokeVpc
+        - !Select [11, !Cidr [!GetAtt Vpc.CidrBlock, 12, !FindInMap [VpcSize, Large, PublicSubnetHostBits]]]
+        - !Select [2, !Cidr [!Ref CidrBlock, 8, 6]]
+      MapPublicIpOnLaunch: !If
+        - IsLegacyVpc
+        - true
+        - !Ref AWS::NoValue
+      AvailabilityZoneId: !FindInMap [SubnetZoneIds, !Ref AWS::Region, "c"]
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-PublicSubnetC"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  PublicRouteTableC:
+    Type: AWS::EC2::RouteTable
+    Condition: ProvisionAvailabilityZoneC
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-PublicRouteTableC"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  RouteTableAssociationForPublicSubnetC:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Condition: ProvisionAvailabilityZoneC
+    Properties:
+      RouteTableId: !Ref PublicRouteTableC
+      SubnetId: !Ref PublicSubnetC
+
+  InternetRoutePublicSubnetC:
+    Type: AWS::EC2::Route
+    Condition: ProvisionOutboundInternetInZoneC
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PublicRouteTableC
+      DestinationCidrBlock: "0.0.0.0/0"
+      VpcEndpointId: !If
+        - IsLegacyVpc
+        - !GetAtt NetworkFirewallENIZoneC.EndpointId
+        - !Ref AWS::NoValue
+      GatewayId: !If
+        - IsSpokeVpc
+        - !Ref InternetGateway
+        - !Ref AWS::NoValue
+
+  #
+  # Route table for internet gateway to the public subnets
+  #
+
+  InternetGatewayRouteTable:
+    Type: AWS::EC2::RouteTable
+    Condition: ProvisionOutboundInternet
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-InternetGatewayRouteTable"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  RouteTableAssociationForInternetGateway:
+    DependsOn: InternetGatewayAttachment
+    Type: AWS::EC2::GatewayRouteTableAssociation
+    Condition: ProvisionOutboundInternet
+    Properties:
+      RouteTableId: !Ref InternetGatewayRouteTable
+      GatewayId: !Ref InternetGateway
+
+  IngressRouteFromInternetGatewayToPublicSubnetA:
+    Type: AWS::EC2::Route
+    Condition: LegacyProvisionOutboundInternet
+    Properties:
+      RouteTableId: !Ref InternetGatewayRouteTable
+      DestinationCidrBlock: !Select [0, !Cidr [!Ref CidrBlock, 8, 6]]
+      VpcEndpointId: !GetAtt NetworkFirewallENIZoneA.EndpointId
+
+  IngressRouteFromInternetGatewayToPublicSubnetB:
+    Type: AWS::EC2::Route
+    Condition: LegacyProvisionOutboundInternet
+    Properties:
+      RouteTableId: !Ref InternetGatewayRouteTable
+      DestinationCidrBlock: !Select [1, !Cidr [!Ref CidrBlock, 8, 6]]
+      VpcEndpointId: !GetAtt NetworkFirewallENIZoneB.EndpointId
+
+  IngressRouteFromInternetGatewayToPublicSubnetC:
+    Type: AWS::EC2::Route
+    Condition: LegacyProvisionOutboundInternetInZoneC
+    Properties:
+      RouteTableId: !Ref InternetGatewayRouteTable
+      DestinationCidrBlock: !Select [2, !Cidr [!Ref CidrBlock, 8, 6]]
+      VpcEndpointId: !GetAtt NetworkFirewallENIZoneC.EndpointId
+
+  #
+  # Route53 Resolver Firewall
+  #
+
+  Route53FirewallMatchAllDomainList:
+    Type: AWS::Route53Resolver::FirewallDomainList
+    Properties:
+      Domains:
+        - "*"
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-Route53FirewallMatchAllDomainList"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  Route53FirewallMatchAWSDomainList:
+    Type: AWS::Route53Resolver::FirewallDomainList
+    Properties:
+      Domains:
+        - "*.amazonaws.com"
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-Route53FirewallMatchAWSDomainList"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  Route53FirewallMatchAllowedDomainsList:
+    Type: AWS::Route53Resolver::FirewallDomainList
+    Condition: ProvisionAllowedDomainsList
+    Properties:
+      Domains: !Ref AllowedDomains
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-Route53FirewallMatchAllowedDomainsList"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  Route53FirewallMatchDefaultDomainsList:
+    Type: AWS::Route53Resolver::FirewallDomainList
+    Condition: ProvisionOutboundInternet
+    Properties:
+      Domains:
+        - "*.account.gov.uk"
+        - "*.live.dynatrace.com"
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-Route53FirewallMatchDefaultDomainsList"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  Route53FirewallMatchDynatraceDomainList:
+    Type: AWS::Route53Resolver::FirewallDomainList
+    Condition: ProvisionDynatraceVPCEndpoint
+    Properties:
+      Domains:
+        - "*.live.dynatrace.com"
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-Route53FirewallMatchDynatraceDomainList"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  Route53FirewallRuleGroup:
+    Type: AWS::Route53Resolver::FirewallRuleGroup
+    Properties:
+      FirewallRules:
+        - Action: "ALLOW"
+          FirewallDomainListId: !Ref Route53FirewallMatchAWSDomainList
+          FirewallDomainRedirectionAction: TRUST_REDIRECTION_DOMAIN
+          Priority: 100
+        - !If
+          - ProvisionDynatraceVPCEndpoint
+          - Action: "ALLOW"
+            FirewallDomainListId: !Ref Route53FirewallMatchDynatraceDomainList
+            FirewallDomainRedirectionAction: TRUST_REDIRECTION_DOMAIN
+            Priority: 200
+          - !Ref AWS::NoValue
+        - !If
+          - ProvisionOutboundInternet
+          - Action: "ALLOW"
+            FirewallDomainListId: !Ref Route53FirewallMatchDefaultDomainsList
+            FirewallDomainRedirectionAction: TRUST_REDIRECTION_DOMAIN
+            Priority: 201
+          - !Ref AWS::NoValue
+        - !If
+          - ProvisionAllowedDomainsList
+          - Action: "ALLOW"
+            FirewallDomainListId: !Ref Route53FirewallMatchAllowedDomainsList
+            FirewallDomainRedirectionAction: TRUST_REDIRECTION_DOMAIN
+            Priority: 300
+          - !Ref AWS::NoValue
+        - Action: "BLOCK"
+          BlockResponse: "NODATA"
+          FirewallDomainListId: !Ref Route53FirewallMatchAllDomainList
+          FirewallDomainRedirectionAction: !If
+            - IsSpokeVpc
+            - TRUST_REDIRECTION_DOMAIN
+            - !Ref AWS::NoValue
+          Priority: 1000
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-Route53FirewallRuleGroup"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  Route53FirewallRuleGroupAssociation:
+    Type: AWS::Route53Resolver::FirewallRuleGroupAssociation
+    Properties:
+      FirewallRuleGroupId: !Ref Route53FirewallRuleGroup
+      Priority: 1000
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-Route53FirewallRuleGroupAssociation"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  #
+  # Rest api gateway vpc link
+  #
+
+  ApiGatewayVpcLink:
+    Condition: ProvisionRestAPIGWVpcLink
+    Type: AWS::ApiGateway::VpcLink
+    Properties:
+      Description: Link from REST API Gateway to NetworkLoadBalancer
+      Name: !Sub "${AWS::StackName}-ApiVpcLink"
+      TargetArns:
+        - !Ref NetworkLoadBalancer
+
+  ParameterApiGatewayVpcLinkId:
+    Type: AWS::SSM::Parameter
+    Condition: CreateSSMParameterForApiGatewayVpcLinkId
+    Properties:
+      Name: !Sub "/${AWS::StackName}/ApiGatewayVpcLinkId"
+      Type: String
+      Value: !Ref ApiGatewayVpcLink
+      Description: SSMParameterStoreCreate ApiGatewayVpcLinkId
+      Tags:
+        Name: !Sub "${AWS::StackName}-ParameterApiGatewayVpcLinkId"
+        Service: "ci/cd"
+        Source: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  NetworkLoadBalancer:
+    Condition: ProvisionRestAPIGWVpcLink
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Scheme: internal
+      Type: network
+      Subnets: !If
+        - IsLegacyVpc
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB, !Ref PrivateSubnetC]
+      LoadBalancerAttributes:
+        - Key: access_logs.s3.enabled
+          Value: "true"
+        - Key: access_logs.s3.bucket
+          Value: !Sub "di-lb-access-logs-${AWS::AccountId}-${AWS::Region}"
+        - Key: access_logs.s3.prefix
+          Value: vpc-network-lb
+        - !If
+          - ProvisionNlbCrossZone
+          - Key: load_balancing.cross_zone.enabled
+            Value: 'true'
+          - !Ref AWS::NoValue
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-NetworkLoadBalancer"
+        - Key: Service
+          Value: ci/cd
+        - Key: Source
+          Value: govuk-one-login/devplatform-deploy/vpc/template.yaml
+
+  ParameterApiGatewayVpcLinkTargetNLB:
+    Type: AWS::SSM::Parameter
+    Condition: CreateSSMParameterForApiGatewayVpcLinkId
+    Properties:
+      Name: !Sub "/${AWS::StackName}/ApiGatewayVpcLinkTargetNLB"
+      Type: String
+      Value: !Ref NetworkLoadBalancer
+      Description: SSMParameterStoreCreate ApiGatewayVpcLinkTargetNLB
+      Tags:
+        Name: !Sub "${AWS::StackName}-ParameterApiGatewayVpcLinkTargetNLB"
+        Service: "ci/cd"
+        Source: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  ParameterApiGatewayVpcLinkTargetNLBDNS:
+    Type: AWS::SSM::Parameter
+    Condition: CreateSSMParameterForApiGatewayVpcLinkId
+    Properties:
+      Name: !Sub "/${AWS::StackName}/ApiGatewayVpcLinkTargetNLBDNS"
+      Type: String
+      Value: !GetAtt NetworkLoadBalancer.DNSName
+      Description: SSMParameterStoreCreate ApiGatewayVpcLinkTargetNLBDNS
+      Tags:
+        Name: !Sub "${AWS::StackName}-ParameterApiGatewayVpcLinkTargetNLBDNS"
+        Service: "ci/cd"
+        Source: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  # Deprecated: retained to avoid deleting existing legacy NLB access-log storage.
+  # Network Load Balancer access logs are now written to di-lb-access-logs-<account-id>-<region>.
+  AccessLogsBucket:
+    Condition: ProvisionRestAPIGWVpcLink
+    Type: AWS::S3::Bucket
+    Properties:
+      # checkov:skip=CKV_AWS_18:This is the access logs bucket. It should not log itself.
+      BucketName: !If
+        - AccessLogsCustomBucketName
+        - !Join
+          - "-"
+          - - !Ref AWS::StackName
+            - logs
+            - Fn::Select:
+                - 4
+                - Fn::Split:
+                    - '-'
+                    - Fn::Select:
+                        - 2
+                        - Fn::Split:
+                            - /
+                            - Ref: AWS::StackId
+        - !Ref AWS::NoValue
+      VersioningConfiguration:
+        Status: Enabled
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-accesslogs"
+        - Key: Service
+          Value: ci/cd
+        - Key: Source
+          Value: govuk-one-login/devplatform-deploy/vpc/template.yaml
+        - Key: CheckovRulesToSkip
+          Value: CKV_AWS_18
+
+  # Deprecated: retained to avoid deleting existing legacy NLB access-log storage.
+  # Network Load Balancer access logs are now written to di-lb-access-logs-<account-id>-<region>.
+  AccessLogsBucketPolicy:
+    Condition: ProvisionRestAPIGWVpcLink
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref AccessLogsBucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: AllowLoadBalancerToLogToS3
+            Effect: Allow
+            Principal:
+              AWS: !Sub
+                - "arn:aws:iam::${ElbAccountId}:root"
+                - ElbAccountId: !FindInMap [ElasticLoadBalancerAccountIds, !Ref AWS::Region, AccountId]
+            Action:
+              - s3:PutObject
+            Resource: !Sub "${AccessLogsBucket.Arn}/AWSLogs/${AWS::AccountId}/*"
+          - Sid: AllowAwsLogDeliveryToLogToS3
+            Effect: Allow
+            Principal:
+              Service: delivery.logs.amazonaws.com
+            Action:
+              - s3:PutObject
+            Resource: !Sub "${AccessLogsBucket.Arn}/AWSLogs/${AWS::AccountId}/*"
+            Condition:
+              StringEquals:
+                "s3:x-amz-acl": bucket-owner-full-control
+                "aws:SourceAccount": !Ref AWS::AccountId
+          - Sid: AllowAwsLogDeliveryToReadBucketAcl
+            Effect: Allow
+            Principal:
+              Service: delivery.logs.amazonaws.com
+            Action:
+              - s3:GetBucketAcl
+            Resource: !GetAtt AccessLogsBucket.Arn
+            Condition:
+              StringEquals:
+                "aws:SourceAccount": !Ref AWS::AccountId
+          - Sid: AllowSSLRequestsOnly
+            Effect: Deny
+            Action:
+              - "s3:*"
+            Resource:
+              - !Sub "${AccessLogsBucket.Arn}/*"
+            Principal: "*"
+            Condition:
+              Bool:
+                "aws:SecureTransport": "false"
+
+  #
+  # VPC Link
+  #
+
+  VpcLink:
+    Type: AWS::ApiGatewayV2::VpcLink
+    Condition: ProvisionVpcLink
+    Properties:
+      Name: ApiGatewayLinkToPrivateSubnets
+      SubnetIds: !If
+        - ProvisionAvailabilityZoneC
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB, !Ref PrivateSubnetC]
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+      Tags:
+        Name: !Sub "${AWS::StackName}-VpcLink"
+        Service: "ci/cd"
+        Source: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  ParameterVpcLinkId:
+    Type: AWS::SSM::Parameter
+    Condition: CreateSSMParameterForVpcLinkId
+    Properties:
+      Name: !Sub "/${AWS::StackName}/VpcLinkId"
+      Type: String
+      Value: !Ref VpcLink
+      Description: Vpc Link Id
+      Tags:
+        Name: !Sub "${AWS::StackName}-ParameterVpcLinkId"
+        Service: "ci/cd"
+        Source: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  #
+  # VPC Endpoint (common)
+  #
+
+  AwsServicesEndpointSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security Group to access AWS services via VPC endpoints
+      GroupName: !Join
+        - "-"
+        - - !Ref AWS::StackName
+          - "AwsServicesEndpoint"
+          - Fn::Select:
+              - 4
+              - Fn::Split:
+                  - "-"
+                  - Fn::Select:
+                      - 2
+                      - Fn::Split:
+                          - "/"
+                          - Ref: AWS::StackId
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-AwsServicesEndpointSecurityGroup"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  ParameterAWSServicesEndpointSecurityGroupId:
+    Type: AWS::SSM::Parameter
+    Condition: SSMParametersStoreEnabled
+    Properties:
+      Name: !Sub "/${AWS::StackName}/AWSServicesEndpointSecurityGroupId"
+      Type: String
+      Value: !GetAtt AwsServicesEndpointSecurityGroup.GroupId
+      Description: SSMParametersStore AWSServicesEndpointSecurityGroupId
+      Tags:
+        Name: !Sub "${AWS::StackName}-ParameterAWSServicesEndpointSecurityGroupId"
+        Service: "ci/cd"
+        Source: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  AwsServicesEndpointSecurityGroupIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Allow traffic into endpoints on port 443
+      GroupId: !GetAtt AwsServicesEndpointSecurityGroup.GroupId
+      CidrIp: !GetAtt Vpc.CidrBlock
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+
+  AwsServicesEndpointSecurityGroupIngressSES465:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Allow traffic into endpoints on port 465 for SMTPS
+      GroupId: !GetAtt AwsServicesEndpointSecurityGroup.GroupId
+      CidrIp: !GetAtt Vpc.CidrBlock
+      IpProtocol: tcp
+      FromPort: 465
+      ToPort: 465
+
+  AwsServicesEndpointSecurityGroupIngressSES587:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Allow traffic into endpoints on port 587 for secure mail submission
+      GroupId: !GetAtt AwsServicesEndpointSecurityGroup.GroupId
+      CidrIp: !GetAtt Vpc.CidrBlock
+      IpProtocol: tcp
+      FromPort: 587
+      ToPort: 587
+
+  AwsServicesEndpointSecurityGroupIngressSES2465:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Allow traffic into endpoints on port 2465 for SES SMTP endpoint
+      GroupId: !GetAtt AwsServicesEndpointSecurityGroup.GroupId
+      CidrIp: !GetAtt Vpc.CidrBlock
+      IpProtocol: tcp
+      FromPort: 2465
+      ToPort: 2465
+
+  AwsServicesEndpointSecurityGroupIngressSES2587:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Allow traffic into endpoints on port 2587 for SES SMTP endpoint
+      GroupId: !GetAtt AwsServicesEndpointSecurityGroup.GroupId
+      CidrIp: !GetAtt Vpc.CidrBlock
+      IpProtocol: tcp
+      FromPort: 2587
+      ToPort: 2587
+
+  #
+  # VPC Endpoint (App Config)
+  #
+
+  AppConfigApiEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: ProvisionAppConfigVPCEndpoint
+    Properties:
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.appconfig"
+      SecurityGroupIds:
+        - !GetAtt AwsServicesEndpointSecurityGroup.GroupId
+      SubnetIds: !If
+        - ProvisionAvailabilityZoneC
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB, !Ref PrivateSubnetC]
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+      VpcEndpointType: Interface
+      VpcId: !Ref Vpc
+      PrivateDnsEnabled: true
+
+  #
+  # VPC Endpoint (App Config Data)
+  #
+
+  AppConfigDataApiEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: ProvisionAppConfigDataVPCEndpoint
+    Properties:
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.appconfigdata"
+      SecurityGroupIds:
+        - !GetAtt AwsServicesEndpointSecurityGroup.GroupId
+      SubnetIds: !If
+        - ProvisionAvailabilityZoneC
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB, !Ref PrivateSubnetC]
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+      VpcEndpointType: Interface
+      VpcId: !Ref Vpc
+      PrivateDnsEnabled: true
+      PolicyDocument:
+        Statement:
+          - Sid: AllowAppConfig
+            Effect: Allow
+            Action:
+              - appconfig:StartConfigurationSession
+              - appconfig:GetLatestConfiguration
+            Resource: "*"
+            Principal:
+              AWS: !Ref AWS::AccountId
+
+  #
+  # VPC Endpoint (Identity Store)
+  #
+
+  IdentityStoreApiEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: ProvisionIdentityStoreVPCEndpoint
+    Properties:
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.identitystore"
+      SecurityGroupIds:
+        - !GetAtt AwsServicesEndpointSecurityGroup.GroupId
+      SubnetIds: !If
+        - ProvisionAvailabilityZoneC
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB, !Ref PrivateSubnetC]
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+      VpcEndpointType: Interface
+      VpcId: !Ref Vpc
+      PrivateDnsEnabled: true
+
+  #
+  # VPC Endpoint (Cloud Trail)
+  #
+
+  CloudTrailApiEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: ProvisionCloudTrailVPCEndpoint
+    Properties:
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.cloudtrail"
+      SecurityGroupIds:
+        - !GetAtt AwsServicesEndpointSecurityGroup.GroupId
+      SubnetIds: !If
+        - ProvisionAvailabilityZoneC
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB, !Ref PrivateSubnetC]
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+      VpcEndpointType: Interface
+      VpcId: !Ref Vpc
+      PrivateDnsEnabled: true
+
+  #
+  # VPC Endpoint (CloudWatch Logs)
+  #
+
+  CloudWatchLogsEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: LegacyProvisionLogsVPCEndpoint
+    Properties:
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.logs"
+      SecurityGroupIds:
+        - !GetAtt AwsServicesEndpointSecurityGroup.GroupId
+      SubnetIds: !If
+        - ProvisionAvailabilityZoneC
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB, !Ref PrivateSubnetC]
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+      VpcEndpointType: Interface
+      VpcId: !Ref Vpc
+      PrivateDnsEnabled: true
+
+  #
+  # VPC Endpoint (Private CA)
+  #
+
+  PrivateCAEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: ProvisionPrivateCAVPCEndpoint
+    Properties:
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.acm-pca"
+      SecurityGroupIds:
+        - !GetAtt AwsServicesEndpointSecurityGroup.GroupId
+      SubnetIds: !If
+        - ProvisionAvailabilityZoneC
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB, !Ref PrivateSubnetC]
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+      VpcEndpointType: Interface
+      VpcId: !Ref Vpc
+      PrivateDnsEnabled: true
+
+  #
+  # VPC Endpoint (AWS Batch)
+  #
+
+  BatchApiEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: ProvisionBatchVPCEndpoint
+    Properties:
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.batch"
+      SecurityGroupIds:
+        - !GetAtt AwsServicesEndpointSecurityGroup.GroupId
+      SubnetIds: !If
+        - ProvisionAvailabilityZoneC
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB, !Ref PrivateSubnetC]
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+      VpcEndpointType: Interface
+      VpcId: !Ref Vpc
+      PrivateDnsEnabled: true
+
+  #
+  # VPC Endpoint (AWS Batch)
+  #
+
+  GlueApiEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: ProvisionGlueVPCEndpoint
+    Properties:
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.glue"
+      SecurityGroupIds:
+        - !GetAtt AwsServicesEndpointSecurityGroup.GroupId
+      SubnetIds: !If
+        - ProvisionAvailabilityZoneC
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB, !Ref PrivateSubnetC]
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+      VpcEndpointType: Interface
+      VpcId: !Ref Vpc
+      PrivateDnsEnabled: true
+
+  #
+  # VPC Endpoint (CodeBuild)
+  #
+
+  CodeBuildApiEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: ProvisionCodeBuildVPCEndpoint
+    Properties:
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.codebuild"
+      SecurityGroupIds:
+        - !GetAtt AwsServicesEndpointSecurityGroup.GroupId
+      SubnetIds: !If
+        - ProvisionAvailabilityZoneC
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB, !Ref PrivateSubnetC]
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+      VpcEndpointType: Interface
+      VpcId: !Ref Vpc
+      PrivateDnsEnabled: true
+
+  #
+  # VPC Endpoint (CloudWatch Metrics)
+  #
+
+  CloudWatchApiEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: ProvisionCloudWatchVPCEndpoint
+    Properties:
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.monitoring"
+      SecurityGroupIds:
+        - !GetAtt AwsServicesEndpointSecurityGroup.GroupId
+      SubnetIds: !If
+        - ProvisionAvailabilityZoneC
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB, !Ref PrivateSubnetC]
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+      VpcEndpointType: Interface
+      VpcId: !Ref Vpc
+      PrivateDnsEnabled: true
+
+  #
+  # VPC Endpoint (CloudWatch Logs)
+  #
+
+  CloudWatchLogsApiEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: ProvisionCloudWatchLogsVPCEndpoint
+    Metadata:
+      cfn-lint:
+        config:
+          ignore_checks:
+            # Gets flagged due to duplicate CloudWatch Logs endpoint resource
+            # CloudWatchLogsEndpoint. This will be resolved once the other
+            # endpoint is removed as part of migration to Spoke VPC.
+            - E3064
+    Properties:
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.logs"
+      SecurityGroupIds:
+        - !GetAtt AwsServicesEndpointSecurityGroup.GroupId
+      SubnetIds: !If
+        - ProvisionAvailabilityZoneC
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB, !Ref PrivateSubnetC]
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+      VpcEndpointType: Interface
+      VpcId: !Ref Vpc
+      PrivateDnsEnabled: true
+
+  #
+  # VPC Endpoint (Dynatrace)
+  # This Endpoint is the same no matter which Region we deploy our resources into
+  #
+
+  DynatraceApiEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: ProvisionDynatraceVPCEndpoint
+    Properties:
+      ServiceName: "com.amazonaws.vpce.eu-west-2.vpce-svc-087a837d5ef308cec"
+      SecurityGroupIds:
+        - !GetAtt AwsServicesEndpointSecurityGroup.GroupId
+      SubnetIds: !If
+        - ProvisionAvailabilityZoneC
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB, !Ref PrivateSubnetC]
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+      VpcEndpointType: Interface
+      VpcId: !Ref Vpc
+      PrivateDnsEnabled: false
+
+  DynatraceHostedZoneNonProd:
+    Type: AWS::Route53::HostedZone
+    Condition: ProvisionDynatraceVPCEndpoint
+    Properties:
+      HostedZoneConfig:
+        Comment: Private HostedZone (split-horizon DNS) for Dynatrace OneAgent PrivateLink connectivity
+      Name: "khw46367.live.dynatrace.com."
+      VPCs:
+        - VPCId: !Ref Vpc
+          VPCRegion: !Ref AWS::Region
+
+  DynatraceHostedZoneProd:
+    Type: AWS::Route53::HostedZone
+    Condition: ProvisionDynatraceVPCEndpoint
+    Properties:
+      HostedZoneConfig:
+        Comment: Private HostedZone (split-horizon DNS) for Dynatrace OneAgent PrivateLink connectivity
+      Name: "bhe21058.live.dynatrace.com."
+      VPCs:
+        - VPCId: !Ref Vpc
+          VPCRegion: !Ref AWS::Region
+
+  DynatraceAliasNonProd:
+    Type: AWS::Route53::RecordSet
+    Condition: ProvisionDynatraceVPCEndpoint
+    Properties:
+      HostedZoneId: !Ref DynatraceHostedZoneNonProd
+      Name: "khw46367.live.dynatrace.com."
+      Type: A
+      AliasTarget:
+        DNSName: !Select ['1', !Split [':', !Select ['0', !GetAtt DynatraceApiEndpoint.DnsEntries]]]
+        HostedZoneId: !Select ['0', !Split [':', !Select ['0', !GetAtt DynatraceApiEndpoint.DnsEntries]]]
+      Comment: Dynatrace domain override
+
+  DynatraceAliasProd:
+    Type: AWS::Route53::RecordSet
+    Condition: ProvisionDynatraceVPCEndpoint
+    Properties:
+      HostedZoneId: !Ref DynatraceHostedZoneProd
+      Name: "bhe21058.live.dynatrace.com."
+      Type: A
+      AliasTarget:
+        DNSName: !Select ['1', !Split [':', !Select ['0', !GetAtt DynatraceApiEndpoint.DnsEntries]]]
+        HostedZoneId: !Select ['0', !Split [':', !Select ['0', !GetAtt DynatraceApiEndpoint.DnsEntries]]]
+      Comment: Dynatrace domain override
+
+  #
+  # VPC Endpoint (XRay)
+  #
+
+  XRayApiEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: ProvisionXRayVPCEndpoint
+    Properties:
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.xray"
+      SecurityGroupIds:
+        - !GetAtt AwsServicesEndpointSecurityGroup.GroupId
+      SubnetIds: !If
+        - ProvisionAvailabilityZoneC
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB, !Ref PrivateSubnetC]
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+      VpcEndpointType: Interface
+      VpcId: !Ref Vpc
+      PrivateDnsEnabled: true
+
+  #
+  # VPC Endpoint (SSM)
+  #
+
+  SSMApiEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: ProvisionSSMVPCEndpoint
+    Properties:
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.ssm"
+      SecurityGroupIds:
+        - !GetAtt AwsServicesEndpointSecurityGroup.GroupId
+      SubnetIds: !If
+        - ProvisionAvailabilityZoneC
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB, !Ref PrivateSubnetC]
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+      VpcEndpointType: Interface
+      VpcId: !Ref Vpc
+      PrivateDnsEnabled: true
+
+  SSMMessagesApiEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: ProvisionSSMVPCEndpoint
+    Properties:
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.ssmmessages"
+      SecurityGroupIds:
+        - !GetAtt AwsServicesEndpointSecurityGroup.GroupId
+      SubnetIds: !If
+        - ProvisionAvailabilityZoneC
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB, !Ref PrivateSubnetC]
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+      VpcEndpointType: Interface
+      VpcId: !Ref Vpc
+      PrivateDnsEnabled: true
+
+  EC2MessagesApiEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: ProvisionSSMVPCEndpoint
+    Properties:
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.ec2messages"
+      SecurityGroupIds:
+        - !GetAtt AwsServicesEndpointSecurityGroup.GroupId
+      SubnetIds: !If
+        - ProvisionAvailabilityZoneC
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB, !Ref PrivateSubnetC]
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+      VpcEndpointType: Interface
+      VpcId: !Ref Vpc
+      PrivateDnsEnabled: true
+
+  #
+  # VPC Endpoint (Secrets Manager)
+  #
+
+  SecretsManagerApiEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: ProvisionSecretsManagerVPCEndpoint
+    Properties:
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.secretsmanager"
+      SecurityGroupIds:
+        - !GetAtt AwsServicesEndpointSecurityGroup.GroupId
+      SubnetIds: !If
+        - ProvisionAvailabilityZoneC
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB, !Ref PrivateSubnetC]
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+      VpcEndpointType: Interface
+      VpcId: !Ref Vpc
+      PrivateDnsEnabled: true
+
+  #
+  # VPC Endpoint (KMS)
+  #
+
+  KMSApiEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: ProvisionKMSVPCEndpoint
+    Properties:
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.kms"
+      SecurityGroupIds:
+        - !GetAtt AwsServicesEndpointSecurityGroup.GroupId
+      SubnetIds: !If
+        - ProvisionAvailabilityZoneC
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB, !Ref PrivateSubnetC]
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+      VpcEndpointType: Interface
+      VpcId: !Ref Vpc
+      PrivateDnsEnabled: true
+
+  #
+  # VPC Endpoint (DynamoDB)
+  #
+
+  DynamoDBApiEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: ProvisionDynamoDBVPCEndpoint
+    Properties:
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.dynamodb"
+      VpcEndpointType: Gateway
+      VpcId: !Ref Vpc
+      RouteTableIds: !If
+        - IsLegacyVpc
+        - !If
+          - LegacyProvisionAvailabilityZoneC
+          - [!Ref PrivateRouteTableA, !Ref PrivateRouteTableB, !Ref PrivateRouteTableC, !Ref ProtectedRouteTableA, !Ref ProtectedRouteTableB, !Ref ProtectedRouteTableC]
+          - [!Ref PrivateRouteTableA, !Ref PrivateRouteTableB, !Ref ProtectedRouteTableA, !Ref ProtectedRouteTableB]
+        - [!Ref PrivateRouteTableA, !Ref PrivateRouteTableB, !Ref PrivateRouteTableC, !Ref SpokeProtectedRouteTableA, !Ref SpokeProtectedRouteTableB, !Ref SpokeProtectedRouteTableC]
+
+  #
+  # VPC Endpoint (Athena)
+  #
+
+  AthenaApiEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: ProvisionAthenaVPCEndpoint
+    Properties:
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.athena"
+      SecurityGroupIds:
+        - !GetAtt AwsServicesEndpointSecurityGroup.GroupId
+      SubnetIds: !If
+        - ProvisionAvailabilityZoneC
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB, !Ref PrivateSubnetC]
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+      VpcEndpointType: Interface
+      VpcId: !Ref Vpc
+      PrivateDnsEnabled: true
+
+  #
+  # VPC Endpoint (S3)
+  #
+
+  S3Endpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: ProvisionS3VPCEndpoint
+    Properties:
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.s3"
+      VpcEndpointType: Gateway
+      VpcId: !Ref Vpc
+      RouteTableIds: !If
+        - IsLegacyVpc
+        - !If
+          - LegacyProvisionAvailabilityZoneC
+          - [!Ref PrivateRouteTableA, !Ref PrivateRouteTableB, !Ref PrivateRouteTableC, !Ref ProtectedRouteTableA, !Ref ProtectedRouteTableB, !Ref ProtectedRouteTableC]
+          - [!Ref PrivateRouteTableA, !Ref PrivateRouteTableB, !Ref ProtectedRouteTableA, !Ref ProtectedRouteTableB]
+        - [!Ref PrivateRouteTableA, !Ref PrivateRouteTableB, !Ref PrivateRouteTableC, !Ref SpokeProtectedRouteTableA, !Ref SpokeProtectedRouteTableB, !Ref SpokeProtectedRouteTableC]
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: AllowAllS3Paths
+            Effect: Allow
+            Principal: "*"
+            Action: s3:*
+            Resource: "*"
+
+  #
+  # VPC Endpoint (SQS)
+  #
+
+  SQSApiEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: ProvisionSQSVPCEndpoint
+    Properties:
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.sqs"
+      SecurityGroupIds:
+        - !GetAtt AwsServicesEndpointSecurityGroup.GroupId
+      SubnetIds: !If
+        - ProvisionAvailabilityZoneC
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB, !Ref PrivateSubnetC]
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+      VpcEndpointType: Interface
+      VpcId: !Ref Vpc
+      PrivateDnsEnabled: true
+
+  #
+  # VPC Endpoint (SNS)
+  #
+
+  SNSApiEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: ProvisionSNSVPCEndpoint
+    Properties:
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.sns"
+      SecurityGroupIds:
+        - !GetAtt AwsServicesEndpointSecurityGroup.GroupId
+      SubnetIds: !If
+        - ProvisionAvailabilityZoneC
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB, !Ref PrivateSubnetC]
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+      VpcEndpointType: Interface
+      VpcId: !Ref Vpc
+      PrivateDnsEnabled: true
+
+  #
+  # VPC Endpoint (Kinesis)
+  #
+
+  KinesisApiEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: ProvisionKinesisVPCEndpoint
+    Properties:
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.kinesis-streams"
+      SecurityGroupIds:
+        - !GetAtt AwsServicesEndpointSecurityGroup.GroupId
+      SubnetIds: !If
+        - ProvisionAvailabilityZoneC
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB, !Ref PrivateSubnetC]
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+      VpcEndpointType: Interface
+      VpcId: !Ref Vpc
+      PrivateDnsEnabled: true
+
+  #
+  # VPC Endpoint (Kinesis Firehose)
+  #
+
+  FirehoseApiEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: ProvisionFirehoseVPCEndpoint
+    Properties:
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.kinesis-firehose"
+      SecurityGroupIds:
+        - !GetAtt AwsServicesEndpointSecurityGroup.GroupId
+      SubnetIds: !If
+        - ProvisionAvailabilityZoneC
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB, !Ref PrivateSubnetC]
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+      VpcEndpointType: Interface
+      VpcId: !Ref Vpc
+      PrivateDnsEnabled: true
+
+  #
+  # VPC Endpoint (Events)
+  #
+
+  EventsApiEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: ProvisionEventsVPCEndpoint
+    Properties:
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.events"
+      SecurityGroupIds:
+        - !GetAtt AwsServicesEndpointSecurityGroup.GroupId
+      SubnetIds: !If
+        - ProvisionAvailabilityZoneC
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB, !Ref PrivateSubnetC]
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+      VpcEndpointType: Interface
+      VpcId: !Ref Vpc
+      PrivateDnsEnabled: true
+
+  #
+  # VPC Endpoint (States)
+  #
+
+  StatesApiEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: ProvisionStatesVPCEndpoint
+    Properties:
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.states"
+      SecurityGroupIds:
+        - !GetAtt AwsServicesEndpointSecurityGroup.GroupId
+      SubnetIds: !If
+        - ProvisionAvailabilityZoneC
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB, !Ref PrivateSubnetC]
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+      VpcEndpointType: Interface
+      VpcId: !Ref Vpc
+      PrivateDnsEnabled: true
+
+  SyncStatesApiEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: ProvisionStatesVPCEndpoint
+    Properties:
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.sync-states"
+      SecurityGroupIds:
+        - !GetAtt AwsServicesEndpointSecurityGroup.GroupId
+      SubnetIds: !If
+        - ProvisionAvailabilityZoneC
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB, !Ref PrivateSubnetC]
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+      VpcEndpointType: Interface
+      VpcId: !Ref Vpc
+      PrivateDnsEnabled: true
+
+  #
+  # VPC Endpoint (ECR)
+  #
+
+  EcrApiEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: ProvisionECRVPCEndpoint
+    Properties:
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.ecr.api"
+      SecurityGroupIds:
+        - !GetAtt AwsServicesEndpointSecurityGroup.GroupId
+      SubnetIds: !If
+        - ProvisionAvailabilityZoneC
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB, !Ref PrivateSubnetC]
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+      VpcEndpointType: Interface
+      VpcId: !Ref Vpc
+      PrivateDnsEnabled: true
+      PolicyDocument:
+        Statement:
+          - Sid: AllowPull
+            Effect: Allow
+            Action:
+              - ecr:BatchGetImage
+              - ecr:GetDownloadUrlForLayer
+              - ecr:GetAuthorizationToken
+            Resource: "*"
+            Principal:
+              AWS: !Ref AWS::AccountId
+
+  EcrDockerEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: ProvisionECRVPCEndpoint
+    Properties:
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.ecr.dkr"
+      SecurityGroupIds:
+        - !GetAtt AwsServicesEndpointSecurityGroup.GroupId
+      SubnetIds: !If
+        - ProvisionAvailabilityZoneC
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB, !Ref PrivateSubnetC]
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+      VpcEndpointType: Interface
+      VpcId: !Ref Vpc
+      PrivateDnsEnabled: true
+
+  #
+  # VPC Endpoint (Lambda)
+  #
+
+  LambdaApiEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: ProvisionLambdaVPCEndpoint
+    Properties:
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.lambda"
+      SecurityGroupIds:
+        - !GetAtt AwsServicesEndpointSecurityGroup.GroupId
+      SubnetIds: !If
+        - ProvisionAvailabilityZoneC
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB, !Ref PrivateSubnetC]
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+      VpcEndpointType: Interface
+      VpcId: !Ref Vpc
+      PrivateDnsEnabled: true
+
+  #
+  # VPC Endpoint (CodeDeploy)
+  #
+
+  CodeDeployApiEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: ProvisionCodeDeployVPCEndpoint
+    Properties:
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.codedeploy"
+      SecurityGroupIds:
+        - !GetAtt AwsServicesEndpointSecurityGroup.GroupId
+      SubnetIds: !If
+        - ProvisionAvailabilityZoneC
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB, !Ref PrivateSubnetC]
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+      VpcEndpointType: Interface
+      VpcId: !Ref Vpc
+      PrivateDnsEnabled: true
+
+  #
+  # VPC Endpoint (ExecuteApi)
+  #
+
+  ExecuteApiGatewayEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: ProvisionExecuteApiGatewayVPCEndpoint
+    Properties:
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.execute-api"
+      SecurityGroupIds:
+        - !GetAtt AwsServicesEndpointSecurityGroup.GroupId
+      SubnetIds: !If
+        - ProvisionAvailabilityZoneC
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB, !Ref PrivateSubnetC]
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+      VpcEndpointType: Interface
+      VpcId: !Ref Vpc
+      PrivateDnsEnabled: true
+
+  ParameterExecuteApiGatewayVpcEndpointId:
+    Type: AWS::SSM::Parameter
+    Condition: CreateSSMParameterForExecuteApiGatewayVpcEndpointId
+    Properties:
+      Name: !Sub "/${AWS::StackName}/ExecuteApiGatewayVpcEndpointId"
+      Type: String
+      Value: !Ref ExecuteApiGatewayEndpoint
+      Description: SSMParametersStoreCreate ExecuteApiGatewayEndpoint
+      Tags:
+        Name: !Sub "${AWS::StackName}-ParameterExecuteApiGatewayVpcEndpointId"
+        Service: "ci/cd"
+        Source: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  #
+  # VPC Endpoint (Textract)
+  #
+
+  TextractApiEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: ProvisionTextractVPCEndpoint
+    Properties:
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.textract"
+      SecurityGroupIds:
+        - !GetAtt AwsServicesEndpointSecurityGroup.GroupId
+      SubnetIds: !If
+        - ProvisionAvailabilityZoneC
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB, !Ref PrivateSubnetC]
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+      VpcEndpointType: Interface
+      VpcId: !Ref Vpc
+      PrivateDnsEnabled: true
+
+  #
+  # VPC Endpoint (CloudFormation)
+  #
+
+  CloudFormationEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: ProvisionCloudFormationEndpoint
+    Properties:
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.cloudformation"
+      SecurityGroupIds:
+        - !GetAtt AwsServicesEndpointSecurityGroup.GroupId
+      SubnetIds: !If
+        - ProvisionAvailabilityZoneC
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB, !Ref PrivateSubnetC]
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+      VpcEndpointType: Interface
+      VpcId: !Ref Vpc
+      PrivateDnsEnabled: true
+
+  #
+  # VPC Endpoint (SES SMTP)
+  #
+
+  SESSmtpEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: ProvisionSESSmtpVPCEndpoint
+    Properties:
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.email-smtp"
+      SecurityGroupIds:
+        - !GetAtt AwsServicesEndpointSecurityGroup.GroupId
+      SubnetIds: !If
+        - ProvisionAvailabilityZoneC
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB, !Ref PrivateSubnetC]
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+      VpcEndpointType: Interface
+      VpcId: !Ref Vpc
+      PrivateDnsEnabled: true
+
+  #
+  # VPC Endpoint (STS)
+  #
+
+  STSApiEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: ProvisionSTSVPCEndpoint
+    Properties:
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.sts"
+      SecurityGroupIds:
+        - !GetAtt AwsServicesEndpointSecurityGroup.GroupId
+      SubnetIds: !If
+        - ProvisionAvailabilityZoneC
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB, !Ref PrivateSubnetC]
+        - [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+      VpcEndpointType: Interface
+      VpcId: !Ref Vpc
+      PrivateDnsEnabled: true
+
+  #
+  # Internet Gateway
+  #
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Condition: ProvisionOutboundInternet
+    Properties:
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-InternetGateway"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Condition: ProvisionOutboundInternet
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref Vpc
+
+  #
+  # NAT Gateway Zone A
+  #
+
+  NatGatewayZoneAEIP:
+    Type: AWS::EC2::EIP
+    Condition: LegacyProvisionZoneAElasticIP
+    Properties:
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-NatGatewayZoneAEIP"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  ParameterNatGatewayZoneAEIP:
+    Type: AWS::SSM::Parameter
+    Condition: LegacyCreateSSMParameterForZoneAElasticIP
+    Properties:
+      Name: !Sub "/${AWS::StackName}/NatGatewayZoneAEIP"
+      Type: String
+      Value: !Ref NatGatewayZoneAEIP
+      Description: SSMParameterStoreCreate NatGatewayZoneAEIP
+      Tags:
+        Name: !Sub "${AWS::StackName}-ParameterNatGatewayZoneAEIP"
+        Service: "ci/cd"
+        Source: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  NatGatewayA:
+    Type: AWS::EC2::NatGateway
+    Condition: LegacyProvisionOutboundInternet
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      AllocationId: !If
+        - LegacyProvisionZoneAElasticIP
+        - !GetAtt NatGatewayZoneAEIP.AllocationId
+        - !Ref ZoneAEIPAllocationId
+      SubnetId: !Ref PublicSubnetA
+      ConnectivityType: public
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-NatGatewayA"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  #
+  # NAT Gateway Zone B
+  #
+
+  NatGatewayZoneBEIP:
+    Type: AWS::EC2::EIP
+    Condition: LegacyProvisionZoneBElasticIP
+    Properties:
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-NatGatewayZoneBEIP"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  ParameterNatGatewayZoneBEIP:
+    Type: AWS::SSM::Parameter
+    Condition: LegacyCreateSSMParameterForZoneBElasticIP
+    Properties:
+      Name: !Sub "/${AWS::StackName}/NatGatewayZoneBEIP"
+      Type: String
+      Value: !Ref NatGatewayZoneBEIP
+      Description: SSMParameterStoreCreate NatGatewayZoneBEIP
+      Tags:
+        Name: !Sub "${AWS::StackName}-ParameterNatGatewayZoneBEIP"
+        Service: "ci/cd"
+        Source: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  NatGatewayB:
+    Type: AWS::EC2::NatGateway
+    Condition: LegacyProvisionOutboundInternet
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      AllocationId: !If
+        - LegacyProvisionZoneBElasticIP
+        - !GetAtt NatGatewayZoneBEIP.AllocationId
+        - !Ref ZoneBEIPAllocationId
+      SubnetId: !Ref PublicSubnetB
+      ConnectivityType: public
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-NatGatewayB"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  #
+  # NAT Gateway Zone C
+  #
+  NatGatewayZoneCEIP:
+    Type: AWS::EC2::EIP
+    Condition: LegacyProvisionZoneCElasticIP
+    Properties:
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-NatGatewayZoneCEIP"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  ParameterNatGatewayZoneCEIP:
+    Type: AWS::SSM::Parameter
+    Condition: LegacyCreateSSMParameterForZoneCElasticIP
+    Properties:
+      Name: !Sub "/${AWS::StackName}/NatGatewayZoneCEIP"
+      Type: String
+      Value: !Ref NatGatewayZoneCEIP
+      Description: SSMParameterStoreCreate NatGatewayZoneCEIP
+      Tags:
+        Name: !Sub "${AWS::StackName}-ParameterNatGatewayZoneCEIP"
+        Service: "ci/cd"
+        Source: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  NatGatewayC:
+    Type: AWS::EC2::NatGateway
+    Condition: LegacyProvisionOutboundInternetInZoneC
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      AllocationId: !If
+        - LegacyProvisionZoneCElasticIP
+        - !GetAtt NatGatewayZoneCEIP.AllocationId
+        - !Ref ZoneCEIPAllocationId
+      SubnetId: !Ref PublicSubnetC
+      ConnectivityType: public
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-NatGatewayC"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  #
+  # Network Firewall
+  #
+
+  NetworkFirewall:
+    Type: AWS::NetworkFirewall::Firewall
+    Condition: LegacyProvisionOutboundInternet
+    Properties:
+      FirewallName: !Sub "${AWS::StackName}-Firewall"
+      SubnetMappings:
+        - SubnetId: !Ref FirewallSubnetA
+        - SubnetId: !Ref FirewallSubnetB
+        - !If
+          - LegacyProvisionOutboundInternetInZoneC
+          - SubnetId: !Ref FirewallSubnetC
+          - !Ref AWS::NoValue
+      FirewallPolicyArn: !Ref NetworkFirewallOnlyAllowSpecifiedDomainsPolicy
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-NetworkFirewall"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  NetworkFirewallOnlyAllowSpecifiedDomainsPolicy:
+    Type: AWS::NetworkFirewall::FirewallPolicy
+    Condition: LegacyProvisionOutboundInternet
+    Properties:
+      FirewallPolicyName: !Sub "${AWS::StackName}-OnlyAllowSpecifiedDomainsPolicy"
+      FirewallPolicy:
+        StatefulEngineOptions:
+          RuleOrder: STRICT_ORDER
+        StatefulDefaultActions:
+          - "aws:drop_established"
+        StatelessDefaultActions:
+          - "aws:forward_to_sfe"
+        StatelessFragmentDefaultActions:
+          - "aws:forward_to_sfe"
+        StatefulRuleGroupReferences:
+          - ResourceArn: !Ref NetworkFirewallAllowSpecifiedDomainsRuleGroup
+            Priority: 10
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-OnlyAllowSpecifiedDomainsPolicy"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  NetworkFirewallAllowSpecifiedDomainsRuleGroup:
+    Type: AWS::NetworkFirewall::RuleGroup
+    Condition: LegacyProvisionOutboundInternet
+    Properties:
+      Type: STATEFUL
+      Capacity: 1000
+      RuleGroupName: !Sub "${AWS::StackName}-AllowSpecifiedDomains"
+      RuleGroup:
+        RuleVariables:
+          IPSets:
+            HOME_NET:
+              Definition:
+                - !Ref CidrBlock
+        RulesSource:
+          RulesString: !Sub
+            - '# Allow TCP connection to be established
+                # sid starting 1001
+
+
+                pass tcp $HOME_NET any <> $EXTERNAL_NET 443 (flow:not_established; sid:1001;
+                rev:1;)
+
+                # Default allowed TLS connections
+
+                pass tls $HOME_NET any -> $EXTERNAL_NET 443 (tls.sni; content:".account.gov.uk"; endswith; msg:"Pass TLS to *.account.gov.uk"; flow:established; sid:1002; rev:1;)
+
+                pass tls $HOME_NET any -> $EXTERNAL_NET 443 (tls.sni; content:".live.dynatrace.com"; endswith; msg:"Pass TLS to *.live.dynatrace.com"; flow:established; sid:1003; rev:1;)
+
+                # Custom allow lists added by developer
+
+                # sid starting 2001
+
+                ${AllowRules}
+
+                ${AdditionalAllowRules}
+
+                # Firewall is strict order, with default action of dropping packets - all other
+                traffic is dropped
+
+
+                '
+            - AllowRules: !If [ProvisionAllowRulesList, !Ref AllowRules, ""]
+              AdditionalAllowRules: !If [ProvisionAdditionalAllowRulesList, !Ref AdditionalAllowRules, ""]
+        StatefulRuleOptions:
+          RuleOrder: STRICT_ORDER
+      Tags:
+        - Key: "Name"
+          Value: !Sub "${AWS::StackName}-AllowSpecifiedDomains"
+        - Key: "Service"
+          Value: "ci/cd"
+        - Key: "Source"
+          Value: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  NetworkFirewallLambdaENILogGroup:
+    Type: AWS::Logs::LogGroup
+    Condition: LegacyProvisionOutboundInternet
+    Properties:
+      LogGroupName:
+        !Sub '/aws/lambda/${AWS::StackName}-NetworkFirewallLambdaENI'
+      RetentionInDays: 30
+      KmsKeyId: !GetAtt LoggingKmsKey.Arn
+
+  NetworkFirewallLambdaENIPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Condition: LegacyProvisionOutboundInternet
+    Properties:
+      ManagedPolicyName:
+        Fn::Join:
+          - "-"
+          - - !Ref AWS::StackName
+            - "NetworkFirewallLambdaENIPolicy"
+            - Fn::Select:
+                - 4
+                - Fn::Split:
+                    - "-"
+                    - Fn::Select:
+                        - 2
+                        - Fn::Split:
+                            - "/"
+                            - Ref: AWS::StackId
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: "Allow"
+            Action:
+              - "network-firewall:DescribeFirewall"
+            Resource:
+              - !Ref NetworkFirewall
+
+  NetworkFirewallLambdaENI:
+    Type: AWS::Serverless::Function
+    Condition: LegacyProvisionOutboundInternet
+    Properties:
+      # checkov:skip=CKV_AWS_116: DLQ not required
+      # checkov:skip=CKV_AWS_117: Internet access not required
+      FunctionName: !Select [3, !Split ["/", !Ref NetworkFirewallLambdaENILogGroup]]
+      ReservedConcurrentExecutions: 5
+      CodeUri: network-firewall-eni/src
+      Handler: app.lambda_handler
+      Runtime: "python3.13"
+      Timeout: 120
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - !Ref NetworkFirewallLambdaENIPolicy
+      Tags:
+        CheckovRulesToSkip: CKV_AWS_116.CKV_AWS_117
+        Name: !Select [3, !Split ["/", !Ref NetworkFirewallLambdaENILogGroup]]
+        Service: "ci/cd"
+        Source: "govuk-one-login/devplatform-deploy/vpc/template.yaml"
+
+  NetworkFirewallENIZoneA:
+    Type: AWS::CloudFormation::CustomResource
+    Condition: LegacyProvisionOutboundInternet
+    Properties:
+      ServiceToken: !GetAtt NetworkFirewallLambdaENI.Arn
+      SubnetId: !Ref FirewallSubnetA
+      FirewallArn: !Ref NetworkFirewall
+
+  NetworkFirewallENIZoneB:
+    Type: AWS::CloudFormation::CustomResource
+    Condition: LegacyProvisionOutboundInternet
+    Properties:
+      ServiceToken: !GetAtt NetworkFirewallLambdaENI.Arn
+      SubnetId: !Ref FirewallSubnetB
+      FirewallArn: !Ref NetworkFirewall
+
+  NetworkFirewallENIZoneC:
+    Type: AWS::CloudFormation::CustomResource
+    Condition: LegacyProvisionOutboundInternetInZoneC
+    Properties:
+      ServiceToken: !GetAtt NetworkFirewallLambdaENI.Arn
+      SubnetId: !Ref FirewallSubnetC
+      FirewallArn: !Ref NetworkFirewall
+
+  NetworkFirewallLogging:
+    Type: AWS::NetworkFirewall::LoggingConfiguration
+    Condition: LegacyProvisionOutboundInternet
+    Properties:
+      FirewallArn: !Ref NetworkFirewall
+      LoggingConfiguration:
+        LogDestinationConfigs:
+          - LogType: "ALERT"
+            LogDestinationType: S3
+            LogDestination:
+              bucketName: !Ref FirewallS3Bucket
+
+  # The following resource is deprecated
+  # Network Firewall logs are now stored in central bucket log-archive-nwf-alerts-logs-523017967436-eu-west-2
+  # To be removed once all teams migrate to v2.6.0+
+  NetworkFirewallAlertsLogGroup:
+    Type: AWS::Logs::LogGroup
+    Condition: IsLegacyVpc
+    Properties:
+      LogGroupName: !Sub "/aws/vendedlogs/${AWS::StackName}-firewall-alerts"
+      RetentionInDays: 30
+      KmsKeyId: !GetAtt LoggingKmsKey.Arn

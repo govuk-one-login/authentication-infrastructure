@@ -1,0 +1,48 @@
+{
+  "name": "vpc",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "test": "jest tests/"
+  },
+  "jest": {
+    "transform": {
+      "^.+\\.ts?$": "esbuild-jest"
+    },
+    "clearMocks": true,
+    "reporters": [
+      "default",
+      [
+        "jest-html-reporter",
+        {
+          "includeFailureMsg": true,
+          "append": true,
+          "pageTitle": "vpc test report",
+          "outputPath": "../test-reports/index.html"
+        }
+      ]
+    ],
+    "collectCoverage": true,
+    "coverageDirectory": "coverage",
+    "coverageProvider": "v8",
+    "testMatch": [
+      "**/tests/**/*.test.ts",
+      "!**/*.steps.ts",
+      "**/*.step.ts",
+      "**/*.test.ts"
+    ]
+  },
+  "devDependencies": {
+    "@types/jest": "^29.0.3",
+    "aws-cdk-lib": "^2.229.1",
+    "esbuild": "^0.25.0",
+    "esbuild-jest": "^0.5.0",
+    "jest": "^29.5.0",
+    "jest-cucumber": "^4.5.0",
+    "jest-html-reporter": "^3.10.1",
+    "yaml-cfn": "^0.3.2"
+  },
+  "description": "Stack containing VPC and networking resources. Containers must be deployed within private subnets inside a VPC, so this stack will need to be provisioned in each account that will use containers. For more information, please visit the [documentation page][1].",
+  "author": ""
+}
