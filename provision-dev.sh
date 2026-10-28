@@ -135,8 +135,8 @@ function provision_vpc {
   VPC_TEMPLATE_VERSION="v2.10.1"
   ./provisioner.sh "${AWS_ACCOUNT}" vpc vpc "${VPC_TEMPLATE_VERSION}"
 
-  SPOKE_VPC_TEMPLATE_VERSION="v2.1.0"
-  ./provisioner.sh "${AWS_ACCOUNT}" spoke-vpc spoke-vpc "${SPOKE_VPC_TEMPLATE_VERSION}"
+  SPOKE_VPC_TEMPLATE_VERSION="v4.1.0"
+  ./provisioner.sh "${AWS_ACCOUNT}" spoke-vpc vpc "${SPOKE_VPC_TEMPLATE_VERSION}"
 
 }
 

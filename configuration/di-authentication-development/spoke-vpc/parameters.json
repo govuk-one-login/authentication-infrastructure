@@ -1,75 +1,31 @@
 [
   {
-    "ParameterKey": "FlowLogCloudWatchEnabled",
-    "ParameterValue": "No"
+    "ParameterKey": "VpcType",
+    "ParameterValue": "Spoke"
+  },
+  {
+    "ParameterKey": "Environment",
+    "ParameterValue": "dev"
   },
   {
     "ParameterKey": "VpcLinkEnabled",
     "ParameterValue": "Yes"
   },
   {
-    "ParameterKey": "IpamPool",
-    "ParameterValue": "Development"
-  },
-  {
-    "ParameterKey": "VpcSize",
-    "ParameterValue": "Large"
-  },
-  {
-    "ParameterKey": "TransitGatewayId",
-    "ParameterValue": "tgw-037ccd82182b7d1da"
-  },
-  {
     "ParameterKey": "AllowedDomains",
     "ParameterValue": "*.dev.account.gov.uk.,*.govuk.digital.,*.stubs.account.gov.uk.,api.experianaperture.io.,api.notifications.service.gov.uk.,d2kjg78kcam6ku.cloudfront.net.,de2ghtit0q15h.cloudfront.net.,metadata.google.internal.,noksyhw.x.incapdns.net."
   },
   {
-    "ParameterKey": "TestEgress",
+    "ParameterKey": "DeployEgressTestLambda",
     "ParameterValue": "Yes"
   },
   {
-    "ParameterKey": "TestCustomUrls",
+    "ParameterKey": "EgressTestLambdaCustomURLs",
     "ParameterValue": "https://api.notifications.service.gov.uk"
-  },
-  {
-    "ParameterKey": "DisasterRecoveryTransitGatewayId",
-    "ParameterValue": "None"
-  },
-  {
-    "ParameterKey": "UseDisasterRecovery",
-    "ParameterValue": "No"
-  },
-  {
-    "ParameterKey": "AccessLogsCustomBucketNameEnabled",
-    "ParameterValue": "Yes"
-  },
-  {
-    "ParameterKey": "NlbCrossZoneEnabled",
-    "ParameterValue": "Yes"
-  },
-  {
-    "ParameterKey": "AppConfigApiEnabled",
-    "ParameterValue": "No"
-  },
-  {
-    "ParameterKey": "AppConfigDataApiEnabled",
-    "ParameterValue": "No"
-  },
-  {
-    "ParameterKey": "AthenaApiEnabled",
-    "ParameterValue": "No"
-  },
-  {
-    "ParameterKey": "BatchApiEnabled",
-    "ParameterValue": "No"
   },
   {
     "ParameterKey": "CloudFormationEndpointEnabled",
     "ParameterValue": "Yes"
-  },
-  {
-    "ParameterKey": "CloudTrailApiEnabled",
-    "ParameterValue": "No"
   },
   {
     "ParameterKey": "CloudWatchApiEnabled",
@@ -80,24 +36,12 @@
     "ParameterValue": "Yes"
   },
   {
-    "ParameterKey": "CodeBuildApiEnabled",
-    "ParameterValue": "No"
-  },
-  {
-    "ParameterKey": "CodeDeployApiEnabled",
-    "ParameterValue": "No"
-  },
-  {
     "ParameterKey": "DynamoDBApiEnabled",
     "ParameterValue": "Yes"
   },
   {
     "ParameterKey": "DynatraceApiEnabled",
     "ParameterValue": "Yes"
-  },
-  {
-    "ParameterKey": "EventsApiEnabled",
-    "ParameterValue": "No"
   },
   {
     "ParameterKey": "ECRApiEnabled",
@@ -108,22 +52,6 @@
     "ParameterValue": "Yes"
   },
   {
-    "ParameterKey": "FirehoseApiEnabled",
-    "ParameterValue": "No"
-  },
-  {
-    "ParameterKey": "GlueApiEnabled",
-    "ParameterValue": "No"
-  },
-  {
-    "ParameterKey": "IdentityStoreApiEnabled",
-    "ParameterValue": "No"
-  },
-  {
-    "ParameterKey": "KinesisApiEnabled",
-    "ParameterValue": "No"
-  },
-  {
     "ParameterKey": "KMSApiEnabled",
     "ParameterValue": "Yes"
   },
@@ -132,20 +60,12 @@
     "ParameterValue": "Yes"
   },
   {
-    "ParameterKey": "RestAPIGWVpcLinkEnabled",
-    "ParameterValue": "No"
-  },
-  {
     "ParameterKey": "S3ApiEnabled",
     "ParameterValue": "Yes"
   },
   {
     "ParameterKey": "SecretsManagerApiEnabled",
     "ParameterValue": "Yes"
-  },
-  {
-    "ParameterKey": "SESSmtpEnabled",
-    "ParameterValue": "No"
   },
   {
     "ParameterKey": "SNSApiEnabled",
@@ -162,18 +82,6 @@
   {
     "ParameterKey": "SSMApiEnabled",
     "ParameterValue": "Yes"
-  },
-  {
-    "ParameterKey": "SSMParametersStoreEnabled",
-    "ParameterValue": "No"
-  },
-  {
-    "ParameterKey": "StatesApiEnabled",
-    "ParameterValue": "No"
-  },
-  {
-    "ParameterKey": "TextractApiEnabled",
-    "ParameterValue": "No"
   },
   {
     "ParameterKey": "XRayApiEnabled",
