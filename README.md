@@ -20,7 +20,7 @@ Run `./provision-cloudfront.sh <environment>` to deploy CloudFront distribution 
 | `-n`, `--notification` | Creates a SNS topic with Slack integration and sets up a lambda code storage alarm |
 | `-p`, `--pipelines` | Provision secure pipelines (frontend, authentication-api, account-management, orch-stub, smoke-test) |
 | `-r`, `--pruner` | Provision Lambda version pruner |
-| `-v`, `--vpc` | Provision VPC stack |
+| `-v`, `--vpc` | Provision VPC stack (includes spoke-vpc S3 template bucket and spoke-vpc stack for Transit Gateway peering) |
 | `-l`, `--live-zone-resources <zone-only\|all>` | Provision live hosted zone, certificates and SSM params |
 | `--pipeline-visualiser` | Deploy pipeline visualiser infrastructure (CodePipeline readonly role) |
 
@@ -29,6 +29,7 @@ Examples:
 ```bash
 ./provision-<env>.sh -b                        # Provision base stacks
 ./provision-<env>.sh -p                        # Provision pipelines
+./provision-<env>.sh -v                        # Provision VPC + spoke-vpc (self-contained, no -b required)
 ./provision-<env>.sh -l zone-only              # Provision hosted zone only
 ./provision-<env>.sh -l all                    # Provision hosted zone with all records
 ./provision-<env>.sh --pipeline-visualiser     # Deploy pipeline visualiser
@@ -42,6 +43,28 @@ Examples:
 |----------|---------|-------------|
 | `SKIP_AWS_AUTHENTICATION` | `true` | Skip AWS SSO authentication if already authenticated |
 | `AUTO_APPLY_CHANGESET` | `false` | Automatically apply changesets without confirmation |
+
+### Spoke VPC
+
+The `-v` flag provisions three stacks in order:
+
+1. `vpc` — the main VPC (sourced from the shared template bucket)
+2. `spoke-vpc-template-storage` — a dedicated S3 bucket used to store the spoke-vpc CloudFormation template. Created automatically from [`spoke-vpc/template-storage.yaml`](./spoke-vpc/template-storage.yaml). The bucket has:
+   - KMS server-side encryption
+   - All public access blocked
+   - Versioning enabled
+   - SSL-only bucket policy
+3. `spoke-vpc` — the spoke VPC for Transit Gateway peering with the Auth legacy AWS account, sourced from [`spoke-vpc/template.yaml`](./spoke-vpc/template.yaml)
+
+Both spoke-vpc templates live in the [`spoke-vpc/`](./spoke-vpc/) directory:
+
+```
+spoke-vpc/
+├── template.yaml          # Spoke VPC CloudFormation template
+└── template-storage.yaml  # S3 bucket for storing the spoke-vpc template
+```
+
+The `spoke-vpc-template-storage` bucket is deployed inline within `provision_vpc`, so running `-v` alone is fully self-contained — no need to run `-b` first.
 
 ### Helper scripts
 

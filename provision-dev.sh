@@ -105,7 +105,6 @@ function provision_base_stacks {
   CONTAINER_IMAGE_TEMPLATE_VERSION="v3.0.0"
   # NOTE: tag immutability is manually disabled for these ecr repositories
   ./provisioner.sh "${AWS_ACCOUNT}" frontend-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
-  ./provisioner.sh "${AWS_ACCOUNT}" frontend-apitest-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
   ./provisioner.sh "${AWS_ACCOUNT}" service-down-page-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
   ./provisioner.sh "${AWS_ACCOUNT}" acceptance-tests-image-repository test-image-repository v1.2.0
 
@@ -121,6 +120,9 @@ function provision_base_stacks {
   ./provisioner.sh "${AWS_ACCOUNT}" authdev3-frontend-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
   ./provisioner.sh "${AWS_ACCOUNT}" authdev3-service-down-page-image-repository container-image-repository "${CONTAINER_IMAGE_TEMPLATE_VERSION}"
 
+  #Below Template is used to create a Transit Gateway cross account role
+  ./provisioner.sh "${AWS_ACCOUNT}" tgw-cross-account-role tgw-cross-account-role LATEST
+
   TEMPLATE_URL=file://deployment-configs/template.yaml ./provisioner.sh "${AWS_ACCOUNT}" deployment-configs deployment-configs LATEST
 }
 
@@ -132,6 +134,37 @@ function provision_vpc {
 
   VPC_TEMPLATE_VERSION="v2.10.1"
   ./provisioner.sh "${AWS_ACCOUNT}" vpc vpc "${VPC_TEMPLATE_VERSION}"
+
+  # Spoke VPC for Transit Gateway peering with Auth legacy AWS account
+  TEMPLATE_URL=file://spoke-vpc/template-storage.yaml ./provisioner.sh "${AWS_ACCOUNT}" spoke-vpc-template-storage spoke-vpc-template-storage LATEST
+
+  # shellcheck disable=SC1091
+  source "./scripts/read_cloudformation_stack_outputs.sh" "spoke-vpc-template-storage"
+  # shellcheck disable=SC2154
+  SPOKE_VPC_TEMPLATE_BUCKET=${CFN_spoke_vpc_template_storage_SpokeVpcTemplateBucketName}
+
+  # tgw-cross-account-role must be deployed as part of provision_base_stacks before spoke-vpc can be provisioned
+  TGW_STACK_STATUS=$(aws cloudformation describe-stacks \
+    --stack-name tgw-cross-account-role \
+    --query "Stacks[0].StackStatus" \
+    --output text 2> /dev/null || echo "NOT_FOUND")
+  if [[ ${TGW_STACK_STATUS} != "CREATE_COMPLETE" && ${TGW_STACK_STATUS} != "UPDATE_COMPLETE" ]]; then
+    echo "ERROR: tgw-cross-account-role stack is not deployed (status: ${TGW_STACK_STATUS}). Run with --base-stacks first."
+    exit 1
+  fi
+
+  pushd spoke-vpc
+  sam build --template template.yaml
+  sam package \
+    --s3-bucket "${SPOKE_VPC_TEMPLATE_BUCKET}" \
+    --s3-prefix spoke-vpc \
+    --output-template-file cf-template.yaml
+  popd
+  aws s3 cp spoke-vpc/cf-template.yaml "s3://${SPOKE_VPC_TEMPLATE_BUCKET}/spoke-vpc/template.yaml"
+  PARAMETERS_FILE="configuration/${AWS_ACCOUNT}/spoke-vpc/parameters.json" \
+    TEMPLATE_URL="https://${SPOKE_VPC_TEMPLATE_BUCKET}.s3.amazonaws.com/spoke-vpc/template.yaml" \
+    ./provisioner.sh "${AWS_ACCOUNT}" spoke-vpc spoke-vpc LATEST
+
 }
 
 # -------------------
@@ -633,7 +666,7 @@ function provision_notification {
 
   export AWS_REGION="eu-west-2"
   pushd alerts
-  sam build
+  sam build --template template.yaml
   # shellcheck disable=SC2086
   sam deploy \
     --stack-name "cloudwatch-alarm-notification" \
@@ -672,7 +705,7 @@ function provision_lambda_pruner {
 
   TMP_PARAM_FILE=$(mktemp)
   echo "$PARAMETERS" | jq -r > "$TMP_PARAM_FILE"
-  PARAMETERS_FILE=$TMP_PARAM_FILE TEMPLATE_URL=file://pruner/lambda-version-pruner.yml ./provisioner.sh "${AWS_ACCOUNT}" lambda-version-pruner lambda-version-pruner LATEST
+  PARAMETERS_FILE=$TMP_PARAM_FILE TEMPLATE_URL="file://pruner/lambda-version-pruner.yml" ./provisioner.sh "${AWS_ACCOUNT}" lambda-version-pruner lambda-version-pruner LATEST
 }
 
 # -------------------------

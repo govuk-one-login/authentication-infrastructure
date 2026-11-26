@@ -1,0 +1,102 @@
+[
+  {
+    "ParameterKey": "VpcType",
+    "ParameterValue": "Spoke"
+  },
+  {
+    "ParameterKey": "Environment",
+    "ParameterValue": "build"
+  },
+  {
+    "ParameterKey": "VpcLinkEnabled",
+    "ParameterValue": "Yes"
+  },
+  {
+    "ParameterKey": "AllowedDomains",
+    "ParameterValue": " *.build.account.gov.uk.,*.govuk.digital.,*.stubs.account.gov.uk.,account-api.integration.publishing.service.gov.uk.,api.experianaperture.io.,api.notifications.service.gov.uk.,d2kjg78kcam6ku.cloudfront.net.,de2ghtit0q15h.cloudfront.net.,metadata.google.internal.,noksyhw.x.incapdns.net."
+  },
+  {
+    "ParameterKey": "DeployEgressTestLambda",
+    "ParameterValue": "Yes"
+  },
+  {
+    "ParameterKey": "EgressTestLambdaCustomURLs",
+    "ParameterValue": "https://api.notifications.service.gov.uk"
+  },
+  {
+    "ParameterKey": "CloudFormationEndpointEnabled",
+    "ParameterValue": "Yes"
+  },
+  {
+    "ParameterKey": "CloudWatchApiEnabled",
+    "ParameterValue": "Yes"
+  },
+  {
+    "ParameterKey": "CloudWatchLogsApiEnabled",
+    "ParameterValue": "Yes"
+  },
+  {
+    "ParameterKey": "DynamoDBApiEnabled",
+    "ParameterValue": "Yes"
+  },
+  {
+    "ParameterKey": "DynatraceApiEnabled",
+    "ParameterValue": "Yes"
+  },
+  {
+    "ParameterKey": "ECRApiEnabled",
+    "ParameterValue": "Yes"
+  },
+  {
+    "ParameterKey": "ExecuteApiGatewayEnabled",
+    "ParameterValue": "Yes"
+  },
+  {
+    "ParameterKey": "KMSApiEnabled",
+    "ParameterValue": "Yes"
+  },
+  {
+    "ParameterKey": "LambdaApiEnabled",
+    "ParameterValue": "Yes"
+  },
+  {
+    "ParameterKey": "S3ApiEnabled",
+    "ParameterValue": "Yes"
+  },
+  {
+    "ParameterKey": "SecretsManagerApiEnabled",
+    "ParameterValue": "Yes"
+  },
+  {
+    "ParameterKey": "SNSApiEnabled",
+    "ParameterValue": "Yes"
+  },
+  {
+    "ParameterKey": "SQSApiEnabled",
+    "ParameterValue": "Yes"
+  },
+  {
+    "ParameterKey": "STSApiEnabled",
+    "ParameterValue": "Yes"
+  },
+  {
+    "ParameterKey": "SSMApiEnabled",
+    "ParameterValue": "Yes"
+  },
+  {
+    "ParameterKey": "XRayApiEnabled",
+    "ParameterValue": "Yes"
+  },
+  {
+    "ParameterKey": "FlowLogCloudWatchEnabled",
+    "ParameterValue": "Yes"
+  },
+  {
+    "ParameterKey": "VpcPeeringConnectionId",
+    "ParameterValue": "pcx-07d216fe472e823a2"
+  },
+  {
+    "ParameterKey": "VpcPeeringRequesterCidr",
+    "ParameterValue": "10.0.0.0/16"
+  }
+]
