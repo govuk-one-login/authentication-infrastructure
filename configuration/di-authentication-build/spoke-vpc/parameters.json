@@ -90,5 +90,13 @@
   {
     "ParameterKey": "FlowLogCloudWatchEnabled",
     "ParameterValue": "Yes"
+  },
+  {
+    "ParameterKey": "VpcPeeringConnectionId",
+    "ParameterValue": "pcx-07d216fe472e823a2"
+  },
+  {
+    "ParameterKey": "VpcPeeringRequesterCidr",
+    "ParameterValue": "10.0.0.0/16"
   }
 ]
